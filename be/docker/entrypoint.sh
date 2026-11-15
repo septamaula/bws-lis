@@ -22,6 +22,11 @@ if [ ! -f vendor/autoload.php ]; then
     composer install --no-interaction --prefer-dist
 fi
 
+# 1c. Clear any stale bootstrap configuration caches
+php artisan config:clear 2>/dev/null || true
+php artisan route:clear 2>/dev/null || true
+php artisan cache:clear 2>/dev/null || true
+
 # 2. Ensure application key exists
 if ! grep -q "^APP_KEY=base64:" .env 2>/dev/null; then
     echo "Generating Laravel application key..."

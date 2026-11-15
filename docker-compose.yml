@@ -68,6 +68,7 @@ services:
       - "${DOCKER_BE_PORT:-8000}:8000"
     volumes:
       - ./be:/var/www/html
+      - ./be/.env.docker:/var/www/html/.env
       - /var/www/html/vendor
     networks:
       - bws-network
