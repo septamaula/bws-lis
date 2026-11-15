@@ -16,6 +16,12 @@ if [ ! -f .env ]; then
     fi
 fi
 
+# 1b. Ensure composer vendor dependencies are present
+if [ ! -f vendor/autoload.php ]; then
+    echo "Composer dependencies missing in volume. Running composer install..."
+    composer install --no-interaction --prefer-dist
+fi
+
 # 2. Ensure application key exists
 if ! grep -q "^APP_KEY=base64:" .env 2>/dev/null; then
     echo "Generating Laravel application key..."
