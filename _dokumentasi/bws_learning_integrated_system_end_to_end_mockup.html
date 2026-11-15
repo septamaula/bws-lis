@@ -1,0 +1,2742 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BWS Learning Integrated System (LIS)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f4f6f5;
+    }
+
+    .bar-striped-light {
+      background-color: #8bbca4;
+      background-image: repeating-linear-gradient(-45deg,
+          rgba(255, 255, 255, 0.18) 0px,
+          rgba(255, 255, 255, 0.18) 6px,
+          transparent 6px,
+          transparent 12px);
+    }
+
+    .bar-striped-dark {
+      background-color: #157f4f;
+      background-image: repeating-linear-gradient(-45deg,
+          rgba(255, 255, 255, 0.12) 0px,
+          rgba(255, 255, 255, 0.12) 6px,
+          transparent 6px,
+          transparent 12px);
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f4f6f5;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen w-full text-gray-900 overflow-x-hidden">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-2.5 pointer-events-none"></div>
+
+  <!-- Full-Screen Layout Wrapper -->
+  <div class="w-full min-h-screen px-4 py-3 md:px-6 md:py-4 flex flex-col gap-5">
+
+    <!-- ========================================================== -->
+    <!-- CLEAN TOP NAVBAR (STREAMLINED & BALANCED)                  -->
+    <!-- ========================================================== -->
+    <header class="bg-white rounded-full px-5 py-2.5 flex items-center justify-between shadow-sm sticky top-2 z-40">
+      <!-- Left: Brand Logo -->
+      <div class="flex items-center gap-3 cursor-pointer shrink-0" onclick="switchView('dashboard')">
+        <div
+          class="w-9 h-9 rounded-full bg-[#157f4f] flex items-center justify-center text-white font-bold text-lg relative shrink-0 shadow-sm">
+          <span>W</span>
+          <span class="w-2 h-2 bg-emerald-300 rounded-full absolute bottom-1 right-1 border-2 border-white"></span>
+        </div>
+        <div class="leading-tight">
+          <span class="font-extrabold text-base tracking-tight text-gray-900 block">BWS <span
+              class="text-[#157f4f]">LIS</span></span>
+          <span class="text-[10px] text-gray-400 font-medium block -mt-0.5">Learning System</span>
+        </div>
+        <!-- Hidden breadcrumb anchor so script switchView() retains compatibility -->
+        <span id="nav-breadcrumb" class="hidden">Executive & Operational Dashboard</span>
+      </div>
+
+      <!-- Center: Global Search Bar -->
+      <div class="flex-1 max-w-md mx-4 lg:mx-8 relative hidden md:block">
+        <i data-lucide="search"
+          class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+        <input id="global-search" type="text" oninput="handleGlobalSearch(this.value)"
+          placeholder="Cari TNA, Program, Kelas, Peserta..."
+          class="w-full bg-[#f4f6f5] hover:bg-gray-100 focus:bg-white text-xs text-gray-800 rounded-full pl-9 pr-4 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none transition" />
+      </div>
+
+      <!-- Right: Role Switcher + Notification + Profile -->
+      <div class="flex items-center gap-2.5 shrink-0">
+        <!-- Role Switcher Pill -->
+        <div
+          class="flex items-center gap-1.5 bg-[#f4f6f5] hover:bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200/80 transition"
+          title="Ganti Peran Pengguna">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-[#157f4f] shrink-0"></i>
+          <select id="role-Select" onchange="changeActiveRole(this.value)"
+            class="bg-transparent text-xs font-semibold text-gray-700 focus:outline-none cursor-pointer pr-1">
+            <option value="MANAGER">Manager L&D</option>
+            <option value="KADIV">Kepala Divisi L&D</option>
+            <option value="SUPERVISOR">Supervisor L&D</option>
+            <option value="PIC">Class PIC L&D</option>
+            <option value="PARTICIPANT">Participants</option>
+            <option value="UNIT_KERJA">Unit Kerja / Cabang</option>
+            <option value="REPORT_USER">Report User</option>
+            <option value="REMUNERATION">Remuneration</option>
+          </select>
+        </div>
+
+        <!-- Notification Bell -->
+        <button
+          onclick="showToast('info', 'Notifikasi Sistem LIS', 'Terdapat 4 dokumen menunggu persetujuan pada antrean Role Anda.')"
+          class="w-8 h-8 rounded-full bg-[#f4f6f5] hover:bg-gray-200 flex items-center justify-center text-gray-600 transition relative"
+          title="Notifikasi">
+          <i data-lucide="bell" class="w-4 h-4"></i>
+          <span id="notif-badge" class="w-2 h-2 rounded-full bg-[#157f4f] absolute top-1.5 right-1.5"></span>
+        </button>
+
+        <!-- Profile -->
+        <div class="flex items-center gap-2 pl-1 cursor-pointer group" onclick="switchView('login')"
+          title="Lihat Profil & Matriks Role">
+          <img id="active-role-avatar" src="https://i.pravatar.cc/100?img=12" alt="Profile"
+            class="w-8 h-8 rounded-full object-cover ring-2 ring-[#157f4f]/30" />
+          <div class="hidden sm:block text-left leading-tight">
+            <p id="active-role-name" class="text-xs font-bold text-gray-900 group-hover:text-[#157f4f] transition">Budi
+              Santoso</p>
+            <p id="active-role-label" class="text-[10px] text-gray-400 font-medium">Manager L&D</p>
+          </div>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-gray-400 hidden sm:block"></i>
+        </div>
+      </div>
+    </header>
+
+    <!-- ========================================================== -->
+    <!-- MAIN BODY: LEFT FLOATING SIDEBAR + FULL WIDTH CONTENT      -->
+    <!-- ========================================================== -->
+    <div class="flex-1 flex gap-5 items-start">
+
+      <!-- Left Floating Pill Sidebar (10 Modul End-to-End + Hover Submenu) -->
+      <aside class="flex flex-col justify-between items-center sticky top-20 z-30">
+        <div class="flex flex-col gap-3">
+
+          <!-- Pill Group 1: Planning & Implementation (Modul 1 - 5) -->
+          <div class="bg-white rounded-full p-2 flex flex-col gap-2 shadow-sm items-center">
+
+            <!-- 1. Dashboard -->
+            <div class="relative group">
+              <button onclick="switchView('dashboard')" id="side-dashboard"
+                class="side-btn w-10 h-10 rounded-full bg-[#157f4f] text-white flex items-center justify-center shadow transition">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i>
+              </button>
+              <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
+                <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-60">
+                  <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-[#157f4f]">Dashboard LIS</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#157f4f]"></span>
+                  </div>
+                  <ul class="space-y-1 text-xs font-medium text-gray-600">
+                    <li>
+                      <a href="#" onclick="switchView('dashboard'); return false;"
+                        class="flex items-center justify-between px-3 py-2 rounded-xl bg-[#157f4f]/10 text-[#157f4f] font-semibold">
+                        <span class="flex items-center gap-2"><i data-lucide="pie-chart" class="w-3.5 h-3.5"></i>
+                          Executive & Process Flow</span>
+                        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#" onclick="switchView('reporting'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-gray-900 transition">
+                        <i data-lucide="file-Spreadsheet" class="w-3.5 h-3.5 text-gray-400"></i> All Training Report
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- TNA / Training Plan -->
+            <div class="relative group">
+              <button onclick="switchView('tna')" id="side-tna"
+                class="side-btn w-10 h-10 rounded-full text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white flex items-center justify-center transition">
+                <i data-lucide="compass" class="w-4 h-4"></i>
+              </button>
+              <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
+                <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
+                  <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">2. TNA / Training
+                      Plan</span>
+                    
+                  </div>
+                  <ul class="space-y-1 text-xs font-medium text-gray-600">
+                    <li>
+                      <a href="#" onclick="switchView('tna'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="folder-kanban" class="w-3.5 h-3.5 text-gray-400"></i> Daftar TNA & Pagu Budget
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#" onclick="openModal('modal-tna'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="file-up" class="w-3.5 h-3.5 text-gray-400"></i> Upload Approval & Input Budget
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Program L&D -->
+            <div class="relative group">
+              <button onclick="switchView('program')" id="side-program"
+                class="side-btn w-10 h-10 rounded-full text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white flex items-center justify-center transition">
+                <i data-lucide="layers" class="w-4 h-4"></i>
+              </button>
+              <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
+                <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
+                  <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">3. Program
+                      Pelatihan</span>
+                    
+                  </div>
+                  <ul class="space-y-1 text-xs font-medium text-gray-600">
+                    <li>
+                      <a href="#" onclick="switchView('program'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="book-open-check" class="w-3.5 h-3.5 text-gray-400"></i> Approved Program &
+                        Budget
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#"
+                        onclick="switchView('program'); showToast('info', 'Program Pelatihan', 'Menampilkan program pelatihan yang telah disetujui.'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="send" class="w-3.5 h-3.5 text-gray-400"></i> Siap Dibuatkan Kelas
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Class Implementation -->
+            <div class="relative group">
+              <button onclick="switchView('class')" id="side-class"
+                class="side-btn w-10 h-10 rounded-full text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white flex items-center justify-center transition">
+                <i data-lucide="presentation" class="w-4 h-4"></i>
+              </button>
+              <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
+                <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
+                  <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">4. Class &
+                      Implementation</span>
+                    
+                  </div>
+                  <ul class="space-y-1 text-xs font-medium text-gray-600">
+                    <li>
+                      <a href="#" onclick="switchView('class'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="calendar-clock" class="w-3.5 h-3.5 text-gray-400"></i> Jadwal Kelas & 6 Upload
+                        PIC
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#" onclick="openModal('modal-class'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="mail-check" class="w-3.5 h-3.5 text-gray-400"></i> Buat Kelas & Send Invitation
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5. Participants, Evaluation & ELAPSE -->
+            <div class="relative group">
+              <button onclick="switchView('participants')" id="side-participants"
+                class="side-btn w-10 h-10 rounded-full text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white flex items-center justify-center transition">
+                <i data-lucide="users" class="w-4 h-4"></i>
+              </button>
+              <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
+                <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
+                  <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">5. Participants &
+                      Eval</span>
+                    
+                  </div>
+                  <ul class="space-y-1 text-xs font-medium text-gray-600">
+                    <li>
+                      <a href="#" onclick="switchView('participants'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="user-check" class="w-3.5 h-3.5 text-gray-400"></i> Peserta, Pre/Post Test & Eval
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#" onclick="switchView('participants'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="activity" class="w-3.5 h-3.5 text-gray-400"></i> Activity (ELAPSE) Review Spv
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Pill Group 2: Task, Transaction, Certification, Reporting (Modul 6 - 9) -->
+          <div class="bg-white rounded-full p-2 flex flex-col gap-2 shadow-sm items-center">
+
+            <!-- 6. Task Management -->
+            <div class="relative group">
+              <button onclick="switchView('task')" id="side-task"
+                class="side-btn w-10 h-10 rounded-full text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white flex items-center justify-center transition">
+                <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+              </button>
+              <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
+                <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
+                  <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">6. Task
+                      (Class/Indep.)</span>
+                    
+                  </div>
+                  <ul class="space-y-1 text-xs font-medium text-gray-600">
+                    <li>
+                      <a href="#" onclick="switchView('task'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="list-todo" class="w-3.5 h-3.5 text-gray-400"></i> Monitoring & Approval Task
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#" onclick="openModal('modal-task'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-gray-400"></i> Buat Task / Upload Tugas
+                        Peserta
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- 7. Transaction & Reimbursement -->
+            <div class="relative group">
+              <button onclick="switchView('transaction')" id="side-transaction"
+                class="side-btn w-10 h-10 rounded-full text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white flex items-center justify-center transition relative">
+                <i data-lucide="wallet" class="w-4 h-4"></i>
+                <span class="w-2 h-2 rounded-full bg-amber-500 absolute top-2 right-2 ring-2 ring-white"></span>
+              </button>
+              <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
+                <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
+                  <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">7. Transaction &
+                      Payment</span>
+                    
+                  </div>
+                  <ul class="space-y-1 text-xs font-medium text-gray-600">
+                    <li>
+                      <a href="#" onclick="switchView('transaction'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="receipt" class="w-3.5 h-3.5 text-gray-400"></i> Reimburse & Vendor Payment
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#" onclick="openModal('modal-transaction'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="file-plus-2" class="w-3.5 h-3.5 text-gray-400"></i> Ajukan Klaim / Reimburse
+                        Baru
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- 8. Certification (Risk, SKSP, Tresuri) -->
+            <div class="relative group">
+              <button onclick="switchView('certification')" id="side-certification"
+                class="side-btn w-10 h-10 rounded-full text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white flex items-center justify-center transition">
+                <i data-lucide="award" class="w-4 h-4"></i>
+              </button>
+              <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
+                <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
+                  <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">8. Certification &
+                      Exam</span>
+                    
+                  </div>
+                  <ul class="space-y-1 text-xs font-medium text-gray-600">
+                    <li>
+                      <a href="#" onclick="switchView('certification'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-gray-400"></i> Target vs Realisasi (Risk,
+                        SKSP, Tresuri)
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#" onclick="openModal('modal-certification'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="calendar-plus" class="w-3.5 h-3.5 text-gray-400"></i> Update Realisasi Bulanan &
+                        Ujian
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reporting Center -->
+            <div class="relative group">
+              <button onclick="switchView('reporting')" id="side-reporting"
+                class="side-btn w-10 h-10 rounded-full text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white flex items-center justify-center transition">
+                <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+              </button>
+              <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
+                <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
+                  <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">9. Reporting
+                      Center</span>
+                    
+                  </div>
+                  <ul class="space-y-1 text-xs font-medium text-gray-600">
+                    <li>
+                      <a href="#" onclick="switchView('reporting'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="file-check-2" class="w-3.5 h-3.5 text-gray-400"></i> All Training Info (Each
+                        Class/Yearly/Overall)
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#" onclick="openModal('modal-report'); return false;"
+                        class="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition">
+                        <i data-lucide="stamp" class="w-3.5 h-3.5 text-gray-400"></i> Sign-Off Approved (1) & (2)
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Pill Group 3: Auth & Role Matrix -->
+        <div class="bg-white rounded-full p-2 flex flex-col gap-2 shadow-sm items-center mt-3">
+          <div class="relative group">
+            <button onclick="switchView('login')" id="side-login"
+              class="side-btn w-10 h-10 rounded-full text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white flex items-center justify-center transition">
+              <i data-lucide="key-round" class="w-4 h-4"></i>
+            </button>
+            <div class="absolute left-full top-1/2 -translate-y-1/2 pl-3 hidden group-hover:block z-50">
+              <div
+                class="bg-gray-900 text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow-lg whitespace-nowrap">
+                SSO Login & Profil Peran</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ========================================================== -->
+      <!-- RIGHT CONTENT AREA (FULL WIDTH, DYNAMIC VIEWS)             -->
+      <!-- ========================================================== -->
+      <div class="flex-1 min-w-0 flex flex-col gap-5">
+
+        <!-- Page Sub-header -->
+        <div id="page-subheader" class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 px-1">
+          <div>
+            <h1 id="page-title" class="text-2xl md:text-3xl font-bold tracking-tight">
+              Dashboard
+            </h1>
+            <p id="page-subtitle" class="text-xs text-gray-400 mt-0.5">Portal Operasional Terpadu Learning & Development
+              — Bank Woori Saudara</p>
+          </div>
+
+          <!-- Contextual Quick Buttons -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="switchView('tna')"
+              class="bg-white px-3.5 py-2 rounded-full text-xs font-semibold text-gray-700 flex items-center gap-1.5 shadow-sm hover:bg-gray-50">
+              <i data-lucide="calendar" class="w-3.5 h-3.5 text-[#157f4f]"></i>
+              <span>Tahun Buku: 2026</span>
+            </button>
+            <button onclick="openModal('modal-class')"
+              class="bg-white px-3.5 py-2 rounded-full text-xs font-semibold text-gray-800 flex items-center gap-1.5 shadow-sm hover:bg-gray-50">
+              <i data-lucide="send" class="w-3.5 h-3.5 text-[#157f4f]"></i>
+              <span>Send Class Invitation</span>
+            </button>
+            <button onclick="openModal('modal-transaction')"
+              class="bg-[#157f4f] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-emerald-800 transition">
+              <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
+              <span>+ Klaim / Reimburse</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 1: EXECUTIVE & OPERATIONAL DASHBOARD                -->
+        <!-- ======================================================== -->
+        <section id="view-dashboard" class="view-section flex flex-col gap-5">
+
+          <!-- Main Dashboard 12-Col Grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <!-- Left 8 Cols -->
+            <div class="lg:col-span-8 flex flex-col gap-5">
+              <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+
+                <!-- BWS Training Budget Card (Quixotic Visa Card Style) -->
+                <div class="md:col-span-5 flex flex-col gap-5">
+                  <div class="bg-white rounded-3xl p-5 shadow-sm flex-1 flex flex-col justify-between">
+                    <div class="flex items-start justify-between mb-3">
+                      <div>
+                        <h2 class="font-bold text-base text-gray-900">Pagu Anggaran L&D 2026</h2>
+                        <p class="text-xs text-gray-400">Approved TNA Budget vs Realisasi</p>
+                      </div>
+                      <button onclick="switchView('tna')"
+                        class="w-8 h-8 rounded-full bg-[#f4f6f5] flex items-center justify-center text-gray-600 hover:bg-[#157f4f] hover:text-white transition">
+                        <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+                      </button>
+                    </div>
+                    <div
+                      class="bg-[#157f4f] text-white rounded-2xl p-5 flex flex-col justify-between min-h-[165px] shadow-md">
+                      <div class="flex items-center justify-between">
+                        <span class="font-bold text-sm tracking-wider uppercase">BANK WOORI SAUDARA</span>
+                        <span class="text-[10px] bg-white/20 px-2.5 py-0.5 rounded-full font-semibold">FY 2026</span>
+                      </div>
+                      <div class="my-3">
+                        <p class="text-[11px] text-emerald-100/80 mb-0.5">Total Approved Training Budget</p>
+                        <p class="text-2xl font-bold tracking-tight">Rp 8.450.000.000</p>
+                      </div>
+                      <div
+                        class="flex items-center justify-between text-xs text-emerald-100/90 pt-2 border-t border-white/15">
+                        <span>Terserap: <strong>Rp 5,18 M (61.3%)</strong></span>
+                        <span>34 Program</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="bg-white rounded-3xl px-5 py-4 shadow-sm flex items-center justify-between">
+                    <div>
+                      <p class="text-xs text-gray-400 mb-0.5">Realisasi Sertifikasi Wajib (YTD)</p>
+                      <p class="text-xl font-bold text-gray-900">412 / 450 Lulus</p>
+                    </div>
+                    <span class="bg-[#157f4f] text-white text-xs font-semibold px-3 py-1 rounded-full">91.5%
+                      Target</span>
+                  </div>
+                </div>
+
+                <!-- Monthly Training Implementation & Budget Absorption Bar Chart -->
+                <div class="md:col-span-7 bg-white rounded-3xl p-5 shadow-sm flex flex-col justify-between">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-9 h-9 rounded-full bg-[#f4f6f5] flex items-center justify-center text-gray-600"><i
+                          data-lucide="bar-chart-2" class="w-4 h-4"></i></div>
+                      <div>
+                        <h2 class="font-bold text-base text-gray-900">Realisasi Kelas & Serapan Anggaran</h2>
+                        <p class="text-[11px] text-gray-400">Monitoring Bulanan Training Operation 2026</p>
+                      </div>
+                    </div>
+                    <div class="bg-[#f4f6f5] p-1 rounded-full flex items-center text-xs font-medium">
+                      <button onclick="showToast('info', 'Filter Grafik', 'Menampilkan data Semester 1 - 2026')"
+                        class="px-3 py-1 rounded-full bg-[#157f4f] text-white font-semibold shadow-sm">S1 2026</button>
+                      <button onclick="showToast('info', 'Filter Grafik', 'Menampilkan proyeksi penuh 2026')"
+                        class="px-3 py-1 rounded-full text-gray-500">Full Year</button>
+                    </div>
+                  </div>
+
+                  <div class="mt-6 flex gap-4 items-end h-52 relative">
+                    <div class="flex flex-col justify-between h-full text-[11px] text-gray-400 pb-6 pr-1">
+                      <span>1.5M</span><span>1.2M</span><span>900jt</span><span>600jt</span><span>300jt</span><span>0</span>
+                    </div>
+                    <div class="flex-1 h-full grid grid-cols-6 gap-3 items-end pt-8">
+                      <!-- JAN -->
+                      <div class="flex flex-col items-center gap-2 h-full justify-end relative group cursor-pointer">
+                        <div class="absolute -top-7 bg-gray-900 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-10">
+                          8 Kelas
+                          <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
+                        </div>
+                        <div class="w-full max-w-[42px] h-[44%] rounded-full bar-striped-light transition hover:brightness-95"></div>
+                        <span class="text-[11px] text-gray-400 group-hover:text-gray-700">JAN</span>
+                      </div>
+
+                      <!-- FEB -->
+                      <div class="flex flex-col items-center gap-2 h-full justify-end relative group cursor-pointer">
+                        <div class="absolute -top-7 bg-gray-900 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-10">
+                          12 Kelas
+                          <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
+                        </div>
+                        <div class="w-full max-w-[42px] h-[68%] rounded-full bar-striped-light transition hover:brightness-95"></div>
+                        <span class="text-[11px] text-gray-400 group-hover:text-gray-700">FEB</span>
+                      </div>
+
+                      <!-- MAR -->
+                      <div class="flex flex-col items-center gap-2 h-full justify-end relative group cursor-pointer">
+                        <div class="absolute -top-7 bg-gray-900 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-10">
+                          10 Kelas
+                          <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
+                        </div>
+                        <div class="w-full max-w-[42px] h-[58%] rounded-full bar-striped-light transition hover:brightness-95"></div>
+                        <span class="text-[11px] text-gray-400 group-hover:text-gray-700">MAR</span>
+                      </div>
+
+                      <!-- APR -->
+                      <div class="flex flex-col items-center gap-2 h-full justify-end relative group cursor-pointer">
+                        <div class="absolute -top-7 bg-gray-900 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-10">
+                          14 Kelas
+                          <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
+                        </div>
+                        <div class="w-full max-w-[42px] h-[75%] rounded-full bar-striped-light transition hover:brightness-95"></div>
+                        <span class="text-[11px] text-gray-400 group-hover:text-gray-700">APR</span>
+                      </div>
+
+                      <!-- MEI (Puncak Pelatihan) -->
+                      <div class="flex flex-col items-center gap-2 h-full justify-end relative group cursor-pointer">
+                        <div class="absolute -top-8 bg-gray-900 text-white text-[10px] font-bold px-2.5 py-1 rounded-md shadow-lg flex items-center gap-1.5 whitespace-nowrap z-10 border border-gray-800">
+                          <span>18 Kelas</span>
+                          <span class="text-emerald-400 text-[9px] font-mono">Puncak</span>
+                          <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45 border-r border-b border-gray-800"></div>
+                        </div>
+                        <div class="w-full max-w-[42px] h-[90%] rounded-full bar-striped-dark transition-transform group-hover:scale-[1.02]"></div>
+                        <span class="text-[11px] text-[#157f4f] font-bold">MEI</span>
+                      </div>
+
+                      <!-- JUN -->
+                      <div class="flex flex-col items-center gap-2 h-full justify-end relative group cursor-pointer">
+                        <div class="absolute -top-7 bg-gray-900 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-10">
+                          15 Kelas
+                          <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
+                        </div>
+                        <div class="w-full max-w-[42px] h-[80%] rounded-full bar-striped-light transition hover:brightness-95"></div>
+                        <span class="text-[11px] text-gray-400 group-hover:text-gray-700">JUN</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Antrean Persetujuan Lintas Modul (Sesuai Role Switcher) -->
+              <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100/60">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-100">
+                  <div>
+                    <h2 class="font-bold text-base text-gray-900">Antrean Review & Approval Prioritas</h2>
+                    <p class="text-xs text-gray-400 mt-0.5">Dokumen lintas modul (Program, Kelas, Task, Transaction, Report) yang membutuhkan tindakan</p>
+                  </div>
+                  <button onclick="switchView('transaction')"
+                    class="shrink-0 text-xs font-semibold text-[#157f4f] hover:text-[#0f5c38] hover:underline flex items-center gap-1.5 transition">
+                    Lihat Semua Transaksi & Approval <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+
+                <div class="overflow-x-auto -mx-2 px-2">
+                  <table class="w-full min-w-[760px] text-left border-collapse text-xs">
+                    <thead>
+                      <tr class="text-xs font-semibold text-gray-400 border-b border-gray-100">
+                        <th class="pb-3 pr-4 font-semibold text-gray-500 whitespace-nowrap w-[150px]">Modul & ID</th>
+                        <th class="pb-3 px-4 font-semibold text-gray-500 min-w-[240px]">Deskripsi Aktivitas</th>
+                        <th class="pb-3 px-4 font-semibold text-gray-500 whitespace-nowrap w-[130px]">Pengaju / PIC</th>
+                        <th class="pb-3 px-4 font-semibold text-gray-500 whitespace-nowrap w-[190px]">Posisi Approval</th>
+                        <th class="pb-3 pl-4 font-semibold text-gray-500 text-right whitespace-nowrap w-[130px]">Aksi Cepat</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                      <tr class="hover:bg-gray-50/70 transition-colors">
+                        <td class="py-3.5 pr-4 whitespace-nowrap align-middle">
+                          <span class="font-mono text-xs font-bold text-[#157f4f] block">#TRX-2026-089</span>
+                          <span class="text-[11px] text-gray-400">Transaction (Reimburse)</span>
+                        </td>
+                        <td class="py-3.5 px-4 align-middle">
+                          <p class="font-semibold text-gray-900 leading-tight">Reimburse Ujian Sertifikasi SMR Level 2 (12 Peserta)</p>
+                          <p class="text-[11px] text-gray-400 mt-0.5">Rp 42.000.000 • Bukti Kwitansi LSPP Terlampir</p>
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap align-middle">
+                          <p class="font-medium text-gray-800">Nadia Putri</p>
+                          <p class="text-[11px] text-gray-400">Class PIC</p>
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap align-middle">
+                          <span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>Menunggu Manager L&D
+                          </span>
+                        </td>
+                        <td class="py-3.5 pl-4 text-right whitespace-nowrap align-middle">
+                          <button onclick="openModal('modal-transaction')"
+                            class="inline-flex items-center justify-center bg-[#157f4f] text-white text-xs font-semibold px-4 py-1.5 rounded-full hover:bg-emerald-800 transition whitespace-nowrap shadow-sm">
+                            Review & Approve
+                          </button>
+                        </td>
+                      </tr>
+                      <tr class="hover:bg-gray-50/70 transition-colors">
+                        <td class="py-3.5 pr-4 whitespace-nowrap align-middle">
+                          <span class="font-mono text-xs font-bold text-blue-600 block">#RPT-2026-Q2</span>
+                          <span class="text-[11px] text-gray-400">All Training Report</span>
+                        </td>
+                        <td class="py-3.5 px-4 align-middle">
+                          <p class="font-semibold text-gray-900 leading-tight">Laporan Evaluasi & Realisasi Pelatihan Kuartal II 2026</p>
+                          <p class="text-[11px] text-gray-400 mt-0.5">Sudah Direview Supervisor L&D • Butuh Approved (1) & (2)</p>
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap align-middle">
+                          <p class="font-medium text-gray-800">Hendra Wijaya</p>
+                          <p class="text-[11px] text-gray-400">Spv L&D</p>
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap align-middle">
+                          <span class="inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0"></span>Approved Report (1) Mgr
+                          </span>
+                        </td>
+                        <td class="py-3.5 pl-4 text-right whitespace-nowrap align-middle">
+                          <button onclick="openModal('modal-report')"
+                            class="inline-flex items-center justify-center bg-[#157f4f] text-white text-xs font-semibold px-4 py-1.5 rounded-full hover:bg-emerald-800 transition whitespace-nowrap shadow-sm">
+                            Sign-Off Report
+                          </button>
+                        </td>
+                      </tr>
+                      <tr class="hover:bg-gray-50/70 transition-colors">
+                        <td class="py-3.5 pr-4 whitespace-nowrap align-middle">
+                          <span class="font-mono text-xs font-bold text-emerald-700 block">#TSK-2026-041</span>
+                          <span class="text-[11px] text-gray-400">Task (Class Activity)</span>
+                        </td>
+                        <td class="py-3.5 px-4 align-middle">
+                          <p class="font-semibold text-gray-900 leading-tight">Action Learning Project: Credit Analyst Batch IV</p>
+                          <p class="text-[11px] text-gray-400 mt-0.5">25/25 Peserta telah Upload File • Direview oleh PIC</p>
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap align-middle">
+                          <p class="font-medium text-gray-800">Rina Melati</p>
+                          <p class="text-[11px] text-gray-400">Class PIC</p>
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap align-middle">
+                          <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-[#157f4f] text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#157f4f] shrink-0"></span>Menunggu Spv, Mgr & Kadiv
+                          </span>
+                        </td>
+                        <td class="py-3.5 pl-4 text-right whitespace-nowrap align-middle">
+                          <button onclick="switchView('task')"
+                            class="inline-flex items-center justify-center bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold px-4 py-1.5 rounded-full transition whitespace-nowrap">
+                            Buka Modul Task
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right 4 Cols -->
+            <div class="lg:col-span-4 flex flex-col gap-5">
+              <!-- Learning Hours & ELAPSE Activity Card -->
+              <div class="bg-white rounded-3xl p-5 shadow-sm flex flex-col justify-between">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <h2 class="font-bold text-base text-gray-900">Total Jam Pelatihan (ELAPSE)</h2>
+                    <p class="text-xs text-gray-400">Akumulasi Learning Hours Karyawan BWS</p>
+                  </div>
+                  <button onclick="switchView('participants')"
+                    class="w-8 h-8 rounded-full bg-[#f4f6f5] flex items-center justify-center text-gray-600"><i
+                      data-lucide="arrow-up-right" class="w-4 h-4"></i></button>
+                </div>
+                <div class="text-center my-3">
+                  <p class="text-3xl font-bold text-gray-900">28,450 <span
+                      class="text-sm text-gray-400 font-normal">Jam</span></p>
+                  <p class="text-[11px] text-[#157f4f] font-semibold mt-0.5">+19.4% dibanding periode 2025</p>
+                </div>
+                <div class="h-20 -mx-5 my-1">
+                  <svg viewBox="0 0 300 90" class="w-full h-full" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="greenGradBws" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#157f4f" stop-opacity="0.25" />
+                        <stop offset="100%" stop-color="#157f4f" stop-opacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M0,65 Q25,55 45,45 T90,25 T135,48 T175,20 T220,40 T260,30 T300,15 L300,90 L0,90 Z"
+                      fill="url(#greenGradBws)" />
+                    <path d="M0,65 Q25,55 45,45 T90,25 T135,48 T175,20 T220,40 T260,30 T300,15" fill="none"
+                      stroke="#157f4f" stroke-width="2.5" />
+                  </svg>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mt-2">
+                  <button onclick="switchView('class')"
+                    class="bg-[#157f4f] text-white text-xs font-semibold py-2.5 px-4 rounded-full flex items-center justify-center gap-1.5">
+                    <span>Jadwal Kelas</span><i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <button onclick="switchView('certification')"
+                    class="bg-[#f4f6f5] text-gray-700 text-xs font-semibold py-2.5 px-4 rounded-full flex items-center justify-center gap-1.5">
+                    <span>Sertifikasi</span><i data-lucide="award" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Ringkasan Sertifikasi Wajib Perbankan & Stakeholder -->
+              <div class="bg-white rounded-3xl p-5 shadow-sm flex-1 flex flex-col justify-between gap-4">
+                <div>
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-full bg-[#f4f6f5] flex items-center justify-center text-[#157f4f]"><i
+                          data-lucide="shield-check" class="w-4 h-4"></i></div>
+                      <div>
+                        <h2 class="font-bold text-sm text-gray-900">Mandatory Certification</h2>
+                        <p class="text-[11px] text-gray-400">Target vs Realisasi Bulanan</p>
+                      </div>
+                    </div>
+                    <button onclick="switchView('certification')"
+                      class="text-xs font-bold text-[#157f4f] hover:underline">Detail</button>
+                  </div>
+
+                  <div class="space-y-3 mt-3">
+                    <div>
+                      <div class="flex justify-between text-xs mb-1">
+                        <span class="font-semibold text-gray-700">SMR / Risk Management (Jenjang 1-5)</span>
+                        <span class="font-bold text-[#157f4f]">198 / 210 (94%)</span>
+                      </div>
+                      <div class="w-full h-2 bg-[#f4f6f5] rounded-full overflow-hidden">
+                        <div class="bg-[#157f4f] h-full w-[94%] rounded-full"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="flex justify-between text-xs mb-1">
+                        <span class="font-semibold text-gray-700">SKSP (Sertifikasi Kredit Perbankan)</span>
+                        <span class="font-bold text-[#157f4f]">124 / 140 (88%)</span>
+                      </div>
+                      <div class="w-full h-2 bg-[#f4f6f5] rounded-full overflow-hidden">
+                        <div class="bg-[#157f4f] h-full w-[88%] rounded-full"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="flex justify-between text-xs mb-1">
+                        <span class="font-semibold text-gray-700">Tresuri / Treasury Dealer Certificate</span>
+                        <span class="font-bold text-amber-600">90 / 100 (90%)</span>
+                      </div>
+                      <div class="w-full h-2 bg-[#f4f6f5] rounded-full overflow-hidden">
+                        <div class="bg-[#8bbca4] h-full w-[90%] rounded-full"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 8 Stakeholder Active Box -->
+                <div class="bg-[#f4f6f5] rounded-2xl p-4">
+                  <div class="flex items-start justify-between mb-2.5">
+                    <div>
+                      <h3 class="font-bold text-xs text-gray-900">8 Stakeholder Terhubung</h3>
+                      <p class="text-[11px] text-gray-400">Kadiv, Mgr, Spv, PIC, Peserta, Unit Kerja, Report, Remun</p>
+                    </div>
+                    <button onclick="switchView('login')"
+                      class="w-7 h-7 rounded-full bg-white flex items-center justify-center text-gray-600 shadow-sm"><i
+                        data-lucide="users" class="w-3.5 h-3.5"></i></button>
+                  </div>
+                  <div class="flex items-center -space-x-2 overflow-hidden">
+                    <img class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover"
+                      src="https://i.pravatar.cc/100?img=33" title="Kepala Divisi L&D" />
+                    <img class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover"
+                      src="https://i.pravatar.cc/100?img=12" title="Manager L&D" />
+                    <img class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover"
+                      src="https://i.pravatar.cc/100?img=15" title="Supervisor L&D" />
+                    <img class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover"
+                      src="https://i.pravatar.cc/100?img=47" title="Class PIC L&D" />
+                    <img class="inline-block h-8 w-8 rounded-full ring-2 ring-white object-cover"
+                      src="https://i.pravatar.cc/100?img=68" title="Unit Kerja" />
+                    <div
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#157f4f] text-[11px] font-bold text-white ring-2 ring-white">
+                      +3</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 2: TNA / TRAINING NEED ANALYSIS & TRAINING PLAN     -->
+        <!-- ======================================================== -->
+        <section id="view-tna" class="view-section hidden flex-col gap-5">
+          <!-- Module Header -->
+          <div
+            class="bg-white rounded-3xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+              <div
+                class="w-10 h-10 rounded-2xl bg-[#157f4f]/10 text-[#157f4f] flex items-center justify-center shrink-0 font-bold">
+                <i data-lucide="compass" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h2 class="font-bold text-lg text-gray-900">Rencana Kebutuhan Pelatihan (TNA 2026)</h2>
+                <p class="text-xs text-gray-400">Pagu anggaran pelatihan, kategori, dan dokumen otorisasi tahunan</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button onclick="openModal('modal-tna')"
+                class="bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2.5 rounded-full flex items-center gap-1.5 shadow-sm transition">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Input TNA & Pagu Budget</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Summary Cards TNA -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white rounded-3xl p-5 shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-xs text-gray-400">Total Kategori TNA 2026</p>
+                <p class="text-2xl font-bold mt-1">5 Kategori Utama</p>
+                <p class="text-[11px] text-[#157f4f] font-medium mt-0.5">18 Sub-Kategori Pelatihan</p>
+              </div>
+              <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-[#157f4f] flex items-center justify-center"><i
+                  data-lucide="folder-tree" class="w-5 h-5"></i></div>
+            </div>
+            <div class="bg-white rounded-3xl p-5 shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-xs text-gray-400">Total Pagu TNA Disetujui</p>
+                <p class="text-2xl font-bold mt-1 text-[#157f4f]">Rp 8,45 Miliar</p>
+                <p class="text-[11px] text-gray-400 mt-0.5">SK Direksi #012/BWS-DIR/I/2026</p>
+              </div>
+              <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-[#157f4f] flex items-center justify-center"><i
+                  data-lucide="landmark" class="w-5 h-5"></i></div>
+            </div>
+            <div class="bg-white rounded-3xl p-5 shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-xs text-gray-400">Dialokasikan ke Program</p>
+                <p class="text-2xl font-bold mt-1">Rp 6,92 Miliar</p>
+                <p class="text-[11px] text-gray-500 mt-0.5">81.8% dari Pagu TNA</p>
+              </div>
+              <div class="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center"><i
+                  data-lucide="pie-chart" class="w-5 h-5"></i></div>
+            </div>
+            <div class="bg-white rounded-3xl p-5 shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-xs text-gray-400">Sisa Pagu Cadangan TNA</p>
+                <p class="text-2xl font-bold mt-1 text-amber-600">Rp 1,53 Miliar</p>
+                <p class="text-[11px] text-gray-400 mt-0.5">Siap untuk Program Ad-Hoc</p>
+              </div>
+              <div class="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center"><i
+                  data-lucide="wallet-cards" class="w-5 h-5"></i></div>
+            </div>
+          </div>
+
+          <!-- Tabel Daftar TNA, Kategori, Sub-Kategori & Dokumen Approval -->
+          <div class="bg-white rounded-3xl p-6 shadow-sm">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-gray-100">
+              <div>
+                <h3 class="font-bold text-base text-gray-900">Daftar Rencana Pelatihan Tahunan & Alokasi Pagu</h3>
+                <p class="text-xs text-gray-400">Rekapitulasi kategori pelatihan terdaftar dan pagu anggaran yang
+                  disetujui</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2.5">
+                <select onchange="showToast('info', 'Filter Kategori TNA', 'Menampilkan kategori: ' + this.value)"
+                  class="bg-[#f4f6f5] text-xs font-semibold rounded-full px-4 py-2.5 focus:outline-none">
+                  <option value="Semua">Semua Training Category (5)</option>
+                  <option value="Risk & Compliance">Risk Management & Compliance</option>
+                  <option value="Credit & Commercial">Credit, SME & Commercial Banking</option>
+                  <option value="Treasury & FX">Treasury, Global Market & FX</option>
+                  <option value="Leadership">Leadership & Management Dev.</option>
+                  <option value="IT & Digital">IT, Cyber Security & Digital Banking</option>
+                </select>
+                <button onclick="openModal('modal-tna')"
+                  class="bg-[#157f4f] text-white text-xs font-semibold px-4 py-2.5 rounded-full flex items-center gap-1.5">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah Kategori & Budget
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto mt-3">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="text-[11px] uppercase tracking-wider text-gray-400 border-b border-gray-100">
+                    <th class="py-3.5 px-3">Kode TNA</th>
+                    <th class="py-3.5 px-3">Training Category</th>
+                    <th class="py-3.5 px-3">Sub Training Category</th>
+                    <th class="py-3.5 px-3">Dokumen Approval</th>
+                    <th class="py-3.5 px-3">Diinput Oleh</th>
+                    <th class="py-3.5 px-3 text-right">Budget Pelatihan (Rp)</th>
+                    <th class="py-3.5 px-3 text-center">Status & Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="tna-table-body" class="divide-y divide-gray-100 text-xs md:text-sm">
+                  <tr class="hover:bg-[#f4f6f5]/60 transition">
+                    <td class="py-3.5 px-3 font-mono text-xs font-bold text-[#157f4f]">#TNA-2026-01</td>
+                    <td class="py-3.5 px-3 font-bold text-gray-900">Risk Management & Compliance</td>
+                    <td class="py-3.5 px-3"><span class="bg-[#f4f6f5] px-3 py-1 rounded-full text-xs">SMR Level 1-5,
+                        APU-PPT & Anti-Fraud</span></td>
+                    <td class="py-3.5 px-3">
+                      <span onclick="showToast('info', 'Membuka Dokumen', 'SK_Approval_TNA_Risk_2026.pdf')"
+                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#157f4f] bg-emerald-50 px-3 py-1 rounded-full cursor-pointer hover:underline">
+                        <i data-lucide="file-check" class="w-3.5 h-3.5"></i> SK_Approval_TNA_Risk.pdf
+                      </span>
+                    </td>
+                    <td class="py-3.5 px-3 text-gray-600">Kepala Divisi L&D</td>
+                    <td class="py-3.5 px-3 text-right font-bold text-gray-900">Rp 2.450.000.000</td>
+                    <td class="py-3.5 px-3 text-center">
+                      <button onclick="switchView('program')"
+                        class="bg-[#157f4f] text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-emerald-800 transition">Buat
+                        Program →</button>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-[#f4f6f5]/60 transition">
+                    <td class="py-3.5 px-3 font-mono text-xs font-bold text-[#157f4f]">#TNA-2026-02</td>
+                    <td class="py-3.5 px-3 font-bold text-gray-900">Credit & Commercial Banking</td>
+                    <td class="py-3.5 px-3"><span class="bg-[#f4f6f5] px-3 py-1 rounded-full text-xs">SKSP Kredit,
+                        Analisa Kredit Korporasi & UMKM</span></td>
+                    <td class="py-3.5 px-3">
+                      <span onclick="showToast('info', 'Membuka Dokumen', 'Memo_Komite_Kredit_TNA2026.pdf')"
+                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#157f4f] bg-emerald-50 px-3 py-1 rounded-full cursor-pointer hover:underline">
+                        <i data-lucide="file-check" class="w-3.5 h-3.5"></i> Memo_Komite_Kredit.pdf
+                      </span>
+                    </td>
+                    <td class="py-3.5 px-3 text-gray-600">Manager L&D</td>
+                    <td class="py-3.5 px-3 text-right font-bold text-gray-900">Rp 2.100.000.000</td>
+                    <td class="py-3.5 px-3 text-center">
+                      <button onclick="switchView('program')"
+                        class="bg-[#157f4f] text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-emerald-800 transition">Buat
+                        Program →</button>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-[#f4f6f5]/60 transition">
+                    <td class="py-3.5 px-3 font-mono text-xs font-bold text-[#157f4f]">#TNA-2026-03</td>
+                    <td class="py-3.5 px-3 font-bold text-gray-900">Treasury, Global Market & FX</td>
+                    <td class="py-3.5 px-3"><span class="bg-[#f4f6f5] px-3 py-1 rounded-full text-xs">Sertifikasi
+                        Tresuri Dealer, Hedging & Money Market</span></td>
+                    <td class="py-3.5 px-3">
+                      <span
+                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#157f4f] bg-emerald-50 px-3 py-1 rounded-full">
+                        <i data-lucide="file-check" class="w-3.5 h-3.5"></i> Approval_Treasury_2026.pdf
+                      </span>
+                    </td>
+                    <td class="py-3.5 px-3 text-gray-600">Manager L&D</td>
+                    <td class="py-3.5 px-3 text-right font-bold text-gray-900">Rp 1.350.000.000</td>
+                    <td class="py-3.5 px-3 text-center">
+                      <button onclick="switchView('program')"
+                        class="bg-[#157f4f] text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-emerald-800 transition">Buat
+                        Program →</button>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-[#f4f6f5]/60 transition">
+                    <td class="py-3.5 px-3 font-mono text-xs font-bold text-[#157f4f]">#TNA-2026-04</td>
+                    <td class="py-3.5 px-3 font-bold text-gray-900">Leadership & Korea-Indo Culture</td>
+                    <td class="py-3.5 px-3"><span class="bg-[#f4f6f5] px-3 py-1 rounded-full text-xs">BWS Future Leader,
+                        Branch Manager Academy</span></td>
+                    <td class="py-3.5 px-3">
+                      <span
+                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#157f4f] bg-emerald-50 px-3 py-1 rounded-full">
+                        <i data-lucide="file-check" class="w-3.5 h-3.5"></i> Approval_Leadership_BWS.pdf
+                      </span>
+                    </td>
+                    <td class="py-3.5 px-3 text-gray-600">Kepala Divisi L&D</td>
+                    <td class="py-3.5 px-3 text-right font-bold text-gray-900">Rp 1.500.000.000</td>
+                    <td class="py-3.5 px-3 text-center">
+                      <button onclick="switchView('program')"
+                        class="bg-[#157f4f] text-white text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-emerald-800 transition">Buat
+                        Program →</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 3: PROGRAM MANAGEMENT (MGR -> SUPERVISOR L&D)       -->
+        <!-- ======================================================== -->
+        <section id="view-program" class="view-section hidden flex-col gap-5">
+          <!-- Module Header -->
+          <div
+            class="bg-white rounded-3xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+              <div
+                class="w-10 h-10 rounded-2xl bg-[#157f4f]/10 text-[#157f4f] flex items-center justify-center shrink-0 font-bold">
+                <i data-lucide="layers" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h2 class="font-bold text-lg text-gray-900">Program Pelatihan L&D</h2>
+                <p class="text-xs text-gray-400">Daftar program pelatihan aktif dan pembagian alokasi anggaran turunan
+                  TNA</p>
+              </div>
+            </div>
+            <button onclick="showToast('success', 'Program Baru', 'Draft program pelatihan baru siap dibuat.')"
+              class="bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2.5 rounded-full shrink-0 shadow-sm flex items-center gap-1.5 transition">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Buat Program Baru</span>
+            </button>
+          </div>
+
+          <!-- Grid Kartu Program L&D -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <!-- Program 1 -->
+            <div class="bg-white rounded-3xl p-5 shadow-sm flex flex-col justify-between border border-gray-100">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <span
+                    class="text-[11px] font-mono font-bold text-[#157f4f] bg-emerald-50 px-3 py-1 rounded-full">#PRG-2026-101</span>
+                  <span class="text-[11px] font-semibold bg-emerald-50 text-[#157f4f] px-3 py-1 rounded-full">Approved •
+                    Di-assign ke Spv</span>
+                </div>
+                <h3 class="font-bold text-base text-gray-900">Program Sertifikasi & Refreshment SMR Jenjang 1 - 3</h3>
+                <p class="text-xs text-gray-400 mt-1">Induk TNA: #TNA-2026-01 (Risk Management & Compliance)</p>
+                <div class="bg-[#f4f6f5] rounded-2xl p-3.5 my-4 space-y-2 text-xs">
+                  <div class="flex justify-between"><span class="text-gray-500">Alokasi Budget Program:</span><span
+                      class="font-bold text-gray-900">Rp 680.000.000</span></div>
+                  <div class="flex justify-between"><span class="text-gray-500">Target Batch / Kelas:</span><span
+                      class="font-semibold">6 Batch (180 Peserta)</span></div>
+                  <div class="flex justify-between"><span class="text-gray-500">Supervisor Penerima:</span><span
+                      class="font-semibold text-[#157f4f]">Hendra Wijaya (Spv L&D)</span></div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 pt-2">
+                <button onclick="switchView('class')"
+                  class="flex-1 bg-[#157f4f] text-white text-xs font-semibold py-2.5 rounded-full hover:bg-emerald-800 transition">Buat
+                  Kelas (Spv L&D) →</button>
+                <button onclick="showToast('info', 'Dokumen TOR Program', 'TOR_Program_SMR_2026.pdf berhasil diunduh.')"
+                  class="w-9 h-9 rounded-full bg-[#f4f6f5] flex items-center justify-center text-gray-600"><i
+                    data-lucide="download" class="w-4 h-4"></i></button>
+              </div>
+            </div>
+
+            <!-- Program 2 -->
+            <div class="bg-white rounded-3xl p-5 shadow-sm flex flex-col justify-between border border-gray-100">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <span
+                    class="text-[11px] font-mono font-bold text-[#157f4f] bg-emerald-50 px-3 py-1 rounded-full">#PRG-2026-102</span>
+                  <span class="text-[11px] font-semibold bg-emerald-50 text-[#157f4f] px-3 py-1 rounded-full">Approved •
+                    Di-assign ke Spv</span>
+                </div>
+                <h3 class="font-bold text-base text-gray-900">Commercial Credit Analyst & SKSP Intensive Bootcamp</h3>
+                <p class="text-xs text-gray-400 mt-1">Induk TNA: #TNA-2026-02 (Credit & Commercial Banking)</p>
+                <div class="bg-[#f4f6f5] rounded-2xl p-3.5 my-4 space-y-2 text-xs">
+                  <div class="flex justify-between"><span class="text-gray-500">Alokasi Budget Program:</span><span
+                      class="font-bold text-gray-900">Rp 540.000.000</span></div>
+                  <div class="flex justify-between"><span class="text-gray-500">Target Batch / Kelas:</span><span
+                      class="font-semibold">4 Batch (120 Peserta)</span></div>
+                  <div class="flex justify-between"><span class="text-gray-500">Supervisor Penerima:</span><span
+                      class="font-semibold text-[#157f4f]">Hendra Wijaya (Spv L&D)</span></div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 pt-2">
+                <button onclick="switchView('class')"
+                  class="flex-1 bg-[#157f4f] text-white text-xs font-semibold py-2.5 rounded-full hover:bg-emerald-800 transition">Buat
+                  Kelas (Spv L&D) →</button>
+                <button
+                  onclick="showToast('info', 'Dokumen TOR Program', 'TOR_Credit_Bootcamp_2026.pdf berhasil diunduh.')"
+                  class="w-9 h-9 rounded-full bg-[#f4f6f5] flex items-center justify-center text-gray-600"><i
+                    data-lucide="download" class="w-4 h-4"></i></button>
+              </div>
+            </div>
+
+            <!-- Program 3 (Waiting Approval Manajerial) -->
+            <div class="bg-white rounded-3xl p-5 shadow-sm flex flex-col justify-between border-2 border-amber-200">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <span
+                    class="text-[11px] font-mono font-bold text-amber-700 bg-amber-50 px-3 py-1 rounded-full">#PRG-2026-103</span>
+                  <span id="prg-103-badge"
+                    class="text-[11px] font-semibold bg-amber-50 text-amber-700 px-3 py-1 rounded-full">Waiting
+                    Managerial Approval</span>
+                </div>
+                <h3 class="font-bold text-base text-gray-900">Treasury Dealer & Foreign Exchange Market</h3>
+                <p class="text-xs text-gray-400 mt-1">Induk TNA: #TNA-2026-03 (Treasury, Global Market & FX)</p>
+                <div class="bg-[#f4f6f5] rounded-2xl p-3.5 my-4 space-y-2 text-xs">
+                  <div class="flex justify-between"><span class="text-gray-500">Usulan Budget Program:</span><span
+                      class="font-bold text-gray-900">Rp 420.000.000</span></div>
+                  <div class="flex justify-between"><span class="text-gray-500">Target Batch / Kelas:</span><span
+                      class="font-semibold">3 Batch (60 Dealer)</span></div>
+                  <div class="flex justify-between"><span class="text-gray-500">Status Otorisasi:</span><span
+                      id="prg-103-handoff" class="font-semibold text-amber-600">Menunggu Persetujuan Manager</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 pt-2">
+                <button onclick="approveProgram103()"
+                  class="flex-1 bg-[#157f4f] text-white text-xs font-semibold py-2.5 rounded-full hover:bg-emerald-800 transition">Approve
+                  & Kirim ke Spv</button>
+                <button onclick="showToast('error', 'Revisi Diminta', 'Catatan revisi anggaran dikirim ke pengaju.')"
+                  class="px-4 py-2.5 rounded-full bg-red-50 text-red-600 text-xs font-semibold">Revisi</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 4: CLASS & TRAINING IMPLEMENTATION (SPV & PIC)      -->
+        <!-- ======================================================== -->
+        <section id="view-class" class="view-section hidden flex-col gap-5">
+          <!-- Module Header -->
+          <div
+            class="bg-white rounded-3xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+              <div
+                class="w-10 h-10 rounded-2xl bg-[#157f4f]/10 text-[#157f4f] flex items-center justify-center shrink-0 font-bold">
+                <i data-lucide="presentation" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h2 class="font-bold text-lg text-gray-900">Implementasi & Jadwal Kelas</h2>
+                <p class="text-xs text-gray-400">Pengelolaan agenda kelas, berkas pelaksanaan PIC, dan pengiriman
+                  undangan</p>
+              </div>
+            </div>
+            <button onclick="openModal('modal-class')"
+              class="bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2.5 rounded-full shrink-0 flex items-center gap-1.5 shadow-sm transition">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Buat Kelas Baru</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <!-- Left 7 Cols: Daftar Kelas & Status Kelengkapan 6 Upload -->
+            <div class="lg:col-span-7 bg-white rounded-3xl p-6 shadow-sm flex flex-col gap-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="font-bold text-base text-gray-900">Daftar Kelas Aktif</h3>
+                  <p class="text-xs text-gray-400">Pilih kelas untuk memantau status persiapan dan berkas materi</p>
+                </div>
+                <span class="text-xs font-bold text-[#157f4f] bg-emerald-50 px-3 py-1 rounded-full">12 Kelas
+                  Berjalan</span>
+              </div>
+
+              <div class="space-y-3">
+                <!-- Class Item 1 -->
+                <div class="p-4 rounded-2xl border-2 border-[#157f4f] bg-emerald-50/20 flex flex-col gap-3">
+                  <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="font-mono text-xs font-bold text-[#157f4f]">#CLS-2026-014</span>
+                        <span class="bg-[#157f4f] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">6/6
+                          Dokumen Lengkap</span>
+                        <span
+                          class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full">Invitation
+                          Sent</span>
+                      </div>
+                      <h4 class="font-bold text-sm text-gray-900 mt-1">Batch IV - Commercial Credit Analyst & SKSP
+                        Preparation</h4>
+                      <p class="text-xs text-gray-500">22 - 24 Juni 2026 • Hybrid (BWS Training Center Lt. 5 & Zoom) •
+                        25 Peserta</p>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-[11px] text-gray-400">Class PIC L&D:</p>
+                      <p class="text-xs font-bold text-gray-800">Rina Melati</p>
+                    </div>
+                  </div>
+                  <!-- 6 Checklist Badges -->
+                  <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-[10px] font-semibold">
+                    <span
+                      class="bg-white border border-emerald-200 text-[#157f4f] px-2 py-1 rounded-lg flex items-center gap-1"><i
+                        data-lucide="check" class="w-3 h-3"></i> 1. Document</span>
+                    <span
+                      class="bg-white border border-emerald-200 text-[#157f4f] px-2 py-1 rounded-lg flex items-center gap-1"><i
+                        data-lucide="check" class="w-3 h-3"></i> 2. Participants</span>
+                    <span
+                      class="bg-white border border-emerald-200 text-[#157f4f] px-2 py-1 rounded-lg flex items-center gap-1"><i
+                        data-lucide="check" class="w-3 h-3"></i> 3. Materi</span>
+                    <span
+                      class="bg-white border border-emerald-200 text-[#157f4f] px-2 py-1 rounded-lg flex items-center gap-1"><i
+                        data-lucide="check" class="w-3 h-3"></i> 4. Test</span>
+                    <span
+                      class="bg-white border border-emerald-200 text-[#157f4f] px-2 py-1 rounded-lg flex items-center gap-1"><i
+                        data-lucide="check" class="w-3 h-3"></i> 5. Evaluation</span>
+                    <span
+                      class="bg-white border border-emerald-200 text-[#157f4f] px-2 py-1 rounded-lg flex items-center gap-1"><i
+                        data-lucide="check" class="w-3 h-3"></i> 6. E-Statement</span>
+                  </div>
+                </div>
+
+                <!-- Class Item 2 -->
+                <div
+                  class="p-4 rounded-2xl border border-gray-200 hover:border-[#157f4f] transition flex flex-col gap-3">
+                  <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="font-mono text-xs font-bold text-gray-600">#CLS-2026-015</span>
+                        <span class="bg-amber-50 text-amber-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full">4/6
+                          Dokumen Terunggah</span>
+                      </div>
+                      <h4 class="font-bold text-sm text-gray-900 mt-1">Batch II - Refreshment Sertifikasi Manajemen
+                        Risiko (SMR)</h4>
+                      <p class="text-xs text-gray-500">28 - 29 Juni 2026 • BWS Head Office Jakarta • 30 Peserta</p>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-[11px] text-gray-400">Class PIC L&D:</p>
+                      <p class="text-xs font-bold text-gray-800">Nadia Putri</p>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-100">
+                    <span class="text-xs text-amber-700 font-medium">Kurang: Upload Evaluation & Upload
+                      E-Statement</span>
+                    <div class="flex gap-2">
+                      <button onclick="openModal('modal-class')"
+                        class="bg-[#f4f6f5] hover:bg-gray-200 text-gray-800 text-xs font-semibold px-3 py-1.5 rounded-full">Lengkapi
+                        Dokumen</button>
+                      <button
+                        onclick="showToast('success', 'Undangan Kelas Terkirim!', 'Email undangan dikirim To: 30 Participants & Cc: Kepala Unit Kerja masing-masing.')"
+                        class="bg-[#157f4f] text-white text-xs font-semibold px-3.5 py-1.5 rounded-full flex items-center gap-1">
+                        <i data-lucide="send" class="w-3 h-3"></i> Send Invitation
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right 5 Cols: Panel 6 Upload Workstation Class PIC + Send Invitation -->
+            <div class="lg:col-span-5 bg-white rounded-3xl p-6 shadow-sm flex flex-col justify-between gap-4">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <h3 class="font-bold text-base text-gray-900">Workstation Class PIC L&D</h3>
+                  <span
+                    class="text-[11px] font-bold text-[#157f4f] bg-emerald-50 px-2.5 py-0.5 rounded-full">#CLS-2026-014</span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">Berkas kelengkapan persiapan dan modul pelatihan:</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <label
+                    class="p-3 rounded-2xl bg-[#f4f6f5] hover:bg-emerald-50/70 border border-transparent hover:border-[#157f4f] cursor-pointer transition flex items-center justify-between">
+                    <input type="file" class="hidden"
+                      onchange="showToast('success', '1. Upload Document Berhasil', 'TOR & Surat Tugas Kelas telah diperbarui.')" />
+                    <div class="flex items-center gap-2.5">
+                      <div
+                        class="w-8 h-8 rounded-xl bg-white text-[#157f4f] flex items-center justify-center shadow-sm"><i
+                          data-lucide="file-text" class="w-4 h-4"></i></div>
+                      <div>
+                        <p class="text-xs font-bold text-gray-900">1. Upload Document</p>
+                        <p class="text-[10px] text-gray-500">TOR_SuratTugas.pdf</p>
+                      </div>
+                    </div>
+                    <i data-lucide="upload" class="w-3.5 h-3.5 text-gray-400"></i>
+                  </label>
+
+                  <label
+                    class="p-3 rounded-2xl bg-[#f4f6f5] hover:bg-emerald-50/70 border border-transparent hover:border-[#157f4f] cursor-pointer transition flex items-center justify-between">
+                    <input type="file" class="hidden"
+                      onchange="showToast('success', '2. Upload Participants Berhasil', '25 Data NIK Peserta & Unit Kerja berhasil diimpor.')" />
+                    <div class="flex items-center gap-2.5">
+                      <div
+                        class="w-8 h-8 rounded-xl bg-white text-[#157f4f] flex items-center justify-center shadow-sm"><i
+                          data-lucide="users" class="w-4 h-4"></i></div>
+                      <div>
+                        <p class="text-xs font-bold text-gray-900">2. Upload Participants</p>
+                        <p class="text-[10px] text-gray-500">25_Peserta_Batch4.xlsx</p>
+                      </div>
+                    </div>
+                    <i data-lucide="upload" class="w-3.5 h-3.5 text-gray-400"></i>
+                  </label>
+
+                  <label
+                    class="p-3 rounded-2xl bg-[#f4f6f5] hover:bg-emerald-50/70 border border-transparent hover:border-[#157f4f] cursor-pointer transition flex items-center justify-between">
+                    <input type="file" class="hidden"
+                      onchange="showToast('success', '3. Upload Materi Berhasil', 'Modul PDF & Slide Presentasi berhasil diunggah.')" />
+                    <div class="flex items-center gap-2.5">
+                      <div
+                        class="w-8 h-8 rounded-xl bg-white text-[#157f4f] flex items-center justify-center shadow-sm"><i
+                          data-lucide="book-open" class="w-4 h-4"></i></div>
+                      <div>
+                        <p class="text-xs font-bold text-gray-900">3. Upload Materi</p>
+                        <p class="text-[10px] text-gray-500">Modul_Credit_SKSP.pdf</p>
+                      </div>
+                    </div>
+                    <i data-lucide="upload" class="w-3.5 h-3.5 text-gray-400"></i>
+                  </label>
+
+                  <label
+                    class="p-3 rounded-2xl bg-[#f4f6f5] hover:bg-emerald-50/70 border border-transparent hover:border-[#157f4f] cursor-pointer transition flex items-center justify-between">
+                    <input type="file" class="hidden"
+                      onchange="showToast('success', '4. Upload Test Berhasil', 'Bank Soal Pre-Test & Post-Test siap digunakan.')" />
+                    <div class="flex items-center gap-2.5">
+                      <div
+                        class="w-8 h-8 rounded-xl bg-white text-[#157f4f] flex items-center justify-center shadow-sm"><i
+                          data-lucide="file-question" class="w-4 h-4"></i></div>
+                      <div>
+                        <p class="text-xs font-bold text-gray-900">4. Upload Test</p>
+                        <p class="text-[10px] text-gray-500">Soal_PrePostTest.xlsx</p>
+                      </div>
+                    </div>
+                    <i data-lucide="upload" class="w-3.5 h-3.5 text-gray-400"></i>
+                  </label>
+
+                  <label
+                    class="p-3 rounded-2xl bg-[#f4f6f5] hover:bg-emerald-50/70 border border-transparent hover:border-[#157f4f] cursor-pointer transition flex items-center justify-between">
+                    <input type="file" class="hidden"
+                      onchange="showToast('success', '5. Upload Evaluation Berhasil', 'Template Evaluasi Penyelenggaraan & Trainer aktif.')" />
+                    <div class="flex items-center gap-2.5">
+                      <div
+                        class="w-8 h-8 rounded-xl bg-white text-[#157f4f] flex items-center justify-center shadow-sm"><i
+                          data-lucide="star" class="w-4 h-4"></i></div>
+                      <div>
+                        <p class="text-xs font-bold text-gray-900">5. Upload Evaluation</p>
+                        <p class="text-[10px] text-gray-500">Form_Feedback_L1.json</p>
+                      </div>
+                    </div>
+                    <i data-lucide="upload" class="w-3.5 h-3.5 text-gray-400"></i>
+                  </label>
+
+                  <label
+                    class="p-3 rounded-2xl bg-[#f4f6f5] hover:bg-emerald-50/70 border border-transparent hover:border-[#157f4f] cursor-pointer transition flex items-center justify-between">
+                    <input type="file" class="hidden"
+                      onchange="showToast('success', '6. Upload E-Statement Berhasil', 'Pakta Komitmen Ikatan Dinas & E-Cert siap.')" />
+                    <div class="flex items-center gap-2.5">
+                      <div
+                        class="w-8 h-8 rounded-xl bg-white text-[#157f4f] flex items-center justify-center shadow-sm"><i
+                          data-lucide="file-signature" class="w-4 h-4"></i></div>
+                      <div>
+                        <p class="text-xs font-bold text-gray-900">6. Upload E-Statement</p>
+                        <p class="text-[10px] text-gray-500">Pakta_Komitmen_BWS.pdf</p>
+                      </div>
+                    </div>
+                    <i data-lucide="upload" class="w-3.5 h-3.5 text-gray-400"></i>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Box Send Invitation (To: Participants, Cc: Unit Kerja) -->
+              <div class="bg-[#f4f6f5] rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-gray-900">Distribusi Undangan Pelatihan</span>
+                  <span class="text-[10px] bg-emerald-100 text-[#157f4f] font-bold px-2 py-0.5 rounded-full">Notifikasi
+                    Otomatis</span>
+                </div>
+                <div class="text-xs space-y-1 text-gray-600">
+                  <p><strong>To (Penerima Utama):</strong> 25 Participants (Karyawan Terdaftar)</p>
+                  <p><strong>Cc (Tembusan):</strong> 14 Kepala Unit Kerja / Pemimpin Cabang BWS</p>
+                </div>
+                <button
+                  onclick="showToast('success', 'Undangan Terkirim!', 'Notifikasi email & kalender dikirim ke To: Participants dan Cc: Unit Kerja.')"
+                  class="w-full py-2.5 rounded-full bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition">
+                  <i data-lucide="send" class="w-3.5 h-3.5"></i> Kirim Undangan ke Peserta & Unit Kerja
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 5: PARTICIPANTS, EVALUATION & ELAPSE ACTIVITY       -->
+        <!-- ======================================================== -->
+        <section id="view-participants" class="view-section hidden flex-col gap-5">
+          <!-- Module Header -->
+          <div
+            class="bg-white rounded-3xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+              <div
+                class="w-10 h-10 rounded-2xl bg-[#157f4f]/10 text-[#157f4f] flex items-center justify-center shrink-0 font-bold">
+                <i data-lucide="users" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h2 class="font-bold text-lg text-gray-900">Peserta, Evaluasi & Jam Pelatihan (ELAPSE)</h2>
+                <p class="text-xs text-gray-400">Monitoring kehadiran peserta, nilai evaluasi, komitmen ikatan dinas,
+                  dan log jam pelatihan</p>
+              </div>
+            </div>
+            <button
+              onclick="showToast('success', 'Aktivitas Disetujui', 'Data evaluasi dan kehadiran telah divalidasi ke modul Report.')"
+              class="bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2.5 rounded-full shrink-0 shadow-sm flex items-center gap-1.5 transition">
+              <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+              <span>Validasi & Sinkronisasi Report</span>
+            </button>
+          </div>
+
+          <div class="bg-white rounded-3xl p-6 shadow-sm">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-gray-100">
+              <div class="flex flex-wrap items-center gap-3">
+                <select
+                  class="bg-[#f4f6f5] text-xs font-bold text-gray-800 rounded-full px-4 py-2.5 focus:outline-none">
+                  <option>#CLS-2026-014 • Commercial Credit Analyst Batch IV (25 Peserta)</option>
+                  <option>#CLS-2026-015 • Refreshment SMR Jenjang 2 (30 Peserta)</option>
+                </select>
+                <span class="text-xs text-gray-500">Rata-rata Post-Test: <strong class="text-[#157f4f]">86.4 /
+                    100</strong> • Skor Evaluasi Trainer: <strong class="text-[#157f4f]">4.85 / 5.0</strong></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="openModal('modal-transaction')"
+                  class="bg-[#f4f6f5] hover:bg-gray-200 text-gray-800 text-xs font-semibold px-4 py-2 rounded-full flex items-center gap-1.5">
+                  <i data-lucide="receipt" class="w-3.5 h-3.5 text-[#157f4f]"></i> Ajukan Reimburse Peserta
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto mt-3">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="text-[11px] uppercase tracking-wider text-gray-400 border-b border-gray-100">
+                    <th class="py-3.5 px-3">NIK & Nama Peserta</th>
+                    <th class="py-3.5 px-3">Unit Kerja (Cc)</th>
+                    <th class="py-3.5 px-3">E-Statement</th>
+                    <th class="py-3.5 px-3">Pre / Post Test</th>
+                    <th class="py-3.5 px-3">Evaluation (Feedback)</th>
+                    <th class="py-3.5 px-3">ELAPSE Activity</th>
+                    <th class="py-3.5 px-3 text-center">Review Spv L&D</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-xs md:text-sm">
+                  <tr class="hover:bg-[#f4f6f5]/60">
+                    <td class="py-3.5 px-3">
+                      <p class="font-bold text-gray-900">Andi Pratama</p>
+                      <p class="text-[11px] text-gray-400">NIK: BWS-20190442</p>
+                    </td>
+                    <td class="py-3.5 px-3"><span class="bg-[#f4f6f5] px-3 py-1 rounded-full text-xs">KC Bandung
+                        Dago</span></td>
+                    <td class="py-3.5 px-3"><span class="text-[#157f4f] font-semibold text-xs">Signed ✓</span></td>
+                    <td class="py-3.5 px-3"><span class="text-gray-400">62</span> → <span
+                        class="font-bold text-[#157f4f]">88 (Lulus)</span></td>
+                    <td class="py-3.5 px-3"><span
+                        class="bg-emerald-50 text-[#157f4f] text-xs font-semibold px-2.5 py-0.5 rounded-full">Submitted
+                        (4.9★)</span></td>
+                    <td class="py-3.5 px-3 font-semibold text-gray-700">24 Jam (100% Hadir)</td>
+                    <td class="py-3.5 px-3 text-center">
+                      <span class="bg-emerald-50 text-[#157f4f] text-xs font-bold px-3 py-1 rounded-full">Approved Spv
+                        ✓</span>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-[#f4f6f5]/60">
+                    <td class="py-3.5 px-3">
+                      <p class="font-bold text-gray-900">Siti Rahmawati</p>
+                      <p class="text-[11px] text-gray-400">NIK: BWS-20210819</p>
+                    </td>
+                    <td class="py-3.5 px-3"><span class="bg-[#f4f6f5] px-3 py-1 rounded-full text-xs">Divisi Commercial
+                        Kredit HO</span></td>
+                    <td class="py-3.5 px-3"><span class="text-[#157f4f] font-semibold text-xs">Signed ✓</span></td>
+                    <td class="py-3.5 px-3"><span class="text-gray-400">70</span> → <span
+                        class="font-bold text-[#157f4f]">92 (Lulus)</span></td>
+                    <td class="py-3.5 px-3"><span
+                        class="bg-emerald-50 text-[#157f4f] text-xs font-semibold px-2.5 py-0.5 rounded-full">Submitted
+                        (4.8★)</span></td>
+                    <td class="py-3.5 px-3 font-semibold text-gray-700">24 Jam (100% Hadir)</td>
+                    <td class="py-3.5 px-3 text-center">
+                      <span class="bg-emerald-50 text-[#157f4f] text-xs font-bold px-3 py-1 rounded-full">Approved Spv
+                        ✓</span>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-[#f4f6f5]/60">
+                    <td class="py-3.5 px-3">
+                      <p class="font-bold text-gray-900">Dimas Anggara</p>
+                      <p class="text-[11px] text-gray-400">NIK: BWS-20221105</p>
+                    </td>
+                    <td class="py-3.5 px-3"><span class="bg-[#f4f6f5] px-3 py-1 rounded-full text-xs">KC Surabaya
+                        Darmo</span></td>
+                    <td class="py-3.5 px-3"><span class="text-[#157f4f] font-semibold text-xs">Signed ✓</span></td>
+                    <td class="py-3.5 px-3"><span class="text-gray-400">55</span> → <span
+                        class="font-bold text-[#157f4f]">80 (Lulus)</span></td>
+                    <td class="py-3.5 px-3"><span
+                        class="bg-amber-50 text-amber-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">Pending
+                        Feedback</span></td>
+                    <td class="py-3.5 px-3 font-semibold text-gray-700">22 Jam (92% Hadir)</td>
+                    <td class="py-3.5 px-3 text-center">
+                      <button
+                        onclick="this.outerHTML='<span class=\'bg-emerald-50 text-[#157f4f] text-xs font-bold px-3 py-1 rounded-full\'>Approved Spv ✓</span>'; showToast('success', 'Activity Disetujui', 'Data aktivitas Dimas Anggara telah di-approve oleh Supervisor L&D.')"
+                        class="bg-[#157f4f] text-white text-xs font-semibold px-3 py-1 rounded-full">Approve
+                        Activity</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 6: TASK MANAGEMENT (CLASS & INDEPENDENT TASK)       -->
+        <!-- ======================================================== -->
+        <section id="view-task" class="view-section hidden flex-col gap-5">
+          <!-- Module Header -->
+          <div
+            class="bg-white rounded-3xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+              <div
+                class="w-10 h-10 rounded-2xl bg-[#157f4f]/10 text-[#157f4f] flex items-center justify-center shrink-0 font-bold">
+                <i data-lucide="clipboard-check" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h2 class="font-bold text-lg text-gray-900">Manajemen Penugasan (Task)</h2>
+                <p class="text-xs text-gray-400">Pengumpulan tugas kelas maupun tugas mandiri serta otorisasi bertingkat
+                </p>
+              </div>
+            </div>
+            <button onclick="openModal('modal-task')"
+              class="bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2.5 rounded-full shrink-0 flex items-center gap-1.5 shadow-sm transition">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Buat Penugasan Baru</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div class="lg:col-span-8 bg-white rounded-3xl p-6 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="font-bold text-base text-gray-900">Daftar Penugasan</h3>
+                  <p class="text-xs text-gray-400">Monitoring pengumpulan berkas tugas peserta dan tahapan persetujuan
+                  </p>
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <!-- Task Card 1 -->
+                <div class="p-4 rounded-2xl bg-[#f4f6f5] flex flex-col gap-3">
+                  <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="font-mono text-xs font-bold text-[#157f4f]">#TSK-2026-041</span>
+                        <span class="bg-white text-gray-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">Class Task
+                          (#CLS-2026-014)</span>
+                      </div>
+                      <h4 class="font-bold text-sm text-gray-900 mt-1">Studi Kasus Analisa Laporan Keuangan & Struktur
+                        Kredit Korporasi</h4>
+                      <p class="text-xs text-gray-500">Dibuat oleh: Rina Melati (Class PIC L&D) • Pengumpulan Peserta:
+                        <strong>25 / 25 File Terunggah</strong>
+                      </p>
+                    </div>
+                    <button onclick="openModal('modal-task')"
+                      class="bg-white text-[#157f4f] border border-[#157f4f] text-xs font-semibold px-3.5 py-1.5 rounded-full hover:bg-[#157f4f] hover:text-white transition">
+                      Review & Approve Task
+                    </button>
+                  </div>
+
+                  <!-- Stepper Approval Task -->
+                  <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-gray-200/70 text-[11px]">
+                    <div class="bg-white p-2 rounded-xl flex items-center gap-2 text-[#157f4f] font-bold"><i
+                        data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> 1. Peserta Upload</div>
+                    <div class="bg-white p-2 rounded-xl flex items-center gap-2 text-[#157f4f] font-bold"><i
+                        data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> 2. Review Class PIC</div>
+                    <div class="bg-white p-2 rounded-xl flex items-center gap-2 text-[#157f4f] font-bold"><i
+                        data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> 3. Approved Spv</div>
+                    <div id="task-041-mgr"
+                      class="bg-amber-50 p-2 rounded-xl flex items-center gap-2 text-amber-700 font-bold"><i
+                        data-lucide="clock" class="w-3.5 h-3.5"></i> 4. Mgr & Kadiv</div>
+                    <div id="task-041-rpt"
+                      class="bg-gray-100 p-2 rounded-xl flex items-center gap-2 text-gray-400 font-semibold"><i
+                        data-lucide="send" class="w-3.5 h-3.5"></i> 5. Send to Report</div>
+                  </div>
+                </div>
+
+                <!-- Task Card 2 -->
+                <div class="p-4 rounded-2xl bg-[#f4f6f5] flex flex-col gap-3">
+                  <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="font-mono text-xs font-bold text-blue-700">#TSK-2026-042</span>
+                        <span
+                          class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full">Independent
+                          Task (Mandiri)</span>
+                      </div>
+                      <h4 class="font-bold text-sm text-gray-900 mt-1">Post-Training Sharing Knowledge: Penerapan
+                        Anti-Fraud di Cabang</h4>
+                      <p class="text-xs text-gray-500">Dibuat oleh: Nadia Putri (Class PIC L&D) • Pengumpulan Peserta:
+                        <strong>18 / 20 File Terunggah</strong>
+                      </p>
+                    </div>
+                    <button
+                      onclick="showToast('success', 'Data Task Dikirim ke Report!', 'Hasil Task #TSK-2026-042 telah disetujui Spv, Mgr, dan Kadiv L&D serta masuk ke modul Report.')"
+                      class="bg-[#157f4f] text-white text-xs font-semibold px-3.5 py-1.5 rounded-full">
+                      Approve & Send to Report
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right 4 Cols: Upload Tugas Peserta -->
+            <div class="lg:col-span-4 bg-white rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+              <div>
+                <h3 class="font-bold text-base text-gray-900 mb-1">Pengumpulan Berkas Tugas Peserta</h3>
+                <p class="text-xs text-gray-400 mb-4">Unggah dokumen pengerjaan dan ringkasan eksekutif tugas</p>
+                <div class="space-y-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Pilih Penugasan (Task)</label>
+                    <select class="w-full bg-[#f4f6f5] text-xs font-semibold rounded-2xl px-3.5 py-2.5">
+                      <option>#TSK-2026-041 - Studi Kasus Analisa Kredit</option>
+                      <option>#TSK-2026-042 - Independent Task Anti-Fraud</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Ringkasan Pengerjaan Tugas</label>
+                    <textarea rows="3" placeholder="Tuliskan ringkasan eksekutif atau catatan pengerjaan tugas..."
+                      class="w-full bg-[#f4f6f5] text-xs rounded-2xl p-3 focus:outline-none focus:ring-2 focus:ring-[#157f4f]">Analisa rasio DSCR dan struktur agunan debitur korporasi PT Maju Bersama telah selesai dihitung.</textarea>
+                  </div>
+                  <label
+                    class="border-2 border-dashed border-[#8bbca4] rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer bg-[#f4f6f5]/50 hover:border-[#157f4f]">
+                    <input type="file" class="hidden"
+                      onchange="showToast('success', 'File Tugas Terunggah', 'File tugas berhasil dilampirkan oleh peserta.')" />
+                    <i data-lucide="upload-cloud" class="w-5 h-5 text-[#157f4f] mb-1"></i>
+                    <span class="text-xs font-bold text-gray-800">Upload File Tugas (PDF/XLSX/PPTX)</span>
+                    <span class="text-[10px] text-gray-400">Maksimal 20 MB</span>
+                  </label>
+                </div>
+              </div>
+              <button
+                onclick="showToast('success', 'Tugas Berhasil Disubmit!', 'Class PIC L&D telah menerima notifikasi untuk melakukan Review & Monitoring.')"
+                class="w-full mt-4 py-2.5 rounded-full bg-[#157f4f] text-white text-xs font-bold shadow-sm">
+                Kirim Berkas Tugas
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 7: TRANSACTION, REIMBURSE & REMUNERATION DIVISION   -->
+        <!-- ======================================================== -->
+        <section id="view-transaction" class="view-section hidden flex-col gap-5">
+          <!-- Module Header -->
+          <div
+            class="bg-white rounded-3xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+              <div
+                class="w-10 h-10 rounded-2xl bg-[#157f4f]/10 text-[#157f4f] flex items-center justify-center shrink-0 font-bold">
+                <i data-lucide="wallet" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h2 class="font-bold text-lg text-gray-900">Transaksi & Reimbursement</h2>
+                <p class="text-xs text-gray-400">Pengajuan reimbursement peserta, tagihan vendor, dan settlement ke
+                  Divisi Remunerasi</p>
+              </div>
+            </div>
+            <button onclick="openModal('modal-transaction')"
+              class="bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2.5 rounded-full shrink-0 flex items-center gap-1.5 shadow-sm transition">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>Ajukan Penggantian Biaya</span>
+            </button>
+          </div>
+
+          <!-- Visual Stepper Pipeline 5 Tahap Transaction -->
+          <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            <div class="bg-white rounded-2xl p-4 shadow-sm border-t-4 border-[#157f4f]">
+              <p class="text-[10px] font-bold uppercase text-gray-400">Tahap 1 • Verifikasi Awal</p>
+              <p class="font-bold text-sm text-gray-900 mt-0.5">Class PIC L&D</p>
+              <p class="text-xs text-[#157f4f] font-semibold mt-1">Kelengkapan Berkas</p>
+            </div>
+            <div class="bg-white rounded-2xl p-4 shadow-sm border-t-4 border-[#157f4f]">
+              <p class="text-[10px] font-bold uppercase text-gray-400">Tahap 2 • Operasional</p>
+              <p class="font-bold text-sm text-gray-900 mt-0.5">Supervisor L&D</p>
+              <p class="text-xs text-[#157f4f] font-semibold mt-1">Validasi Pelatihan</p>
+            </div>
+            <div class="bg-white rounded-2xl p-4 shadow-sm border-t-4 border-[#157f4f]">
+              <p class="text-[10px] font-bold uppercase text-gray-400">Tahap 3 • Manajerial</p>
+              <p class="font-bold text-sm text-gray-900 mt-0.5">Manager L&D</p>
+              <p class="text-xs text-[#157f4f] font-semibold mt-1">Otorisasi Anggaran</p>
+            </div>
+            <div class="bg-white rounded-2xl p-4 shadow-sm border-t-4 border-[#157f4f]">
+              <p class="text-[10px] font-bold uppercase text-gray-400">Tahap 4 • Eksekutif</p>
+              <p class="font-bold text-sm text-gray-900 mt-0.5">Kepala Divisi L&D</p>
+              <p class="text-xs text-[#157f4f] font-semibold mt-1">Persetujuan Akhir L&D</p>
+            </div>
+            <div class="bg-[#157f4f] text-white rounded-2xl p-4 shadow-sm">
+              <p class="text-[10px] font-bold uppercase text-emerald-100">Tahap 5 • Settlement</p>
+              <p class="font-bold text-sm mt-0.5">Remuneration Division</p>
+              <p class="text-xs text-emerald-100 font-medium mt-1">Pencairan Dana</p>
+            </div>
+          </div>
+
+          <!-- Tabel Daftar Transaksi & Reimburse -->
+          <div class="bg-white rounded-3xl p-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
+              <div>
+                <h3 class="font-bold text-base text-gray-900">Daftar Pengajuan Reimbursement & Pembayaran</h3>
+                <p class="text-xs text-gray-400">Monitoring status otorisasi klaim biaya pelatihan sebelum proses
+                  settlement</p>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto mt-3">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="text-[11px] uppercase tracking-wider text-gray-400 border-b border-gray-100">
+                    <th class="py-3.5 px-3">ID Transaksi</th>
+                    <th class="py-3.5 px-3">Pengaju & Jenis</th>
+                    <th class="py-3.5 px-3">Rincian Informasi & Dokumen</th>
+                    <th class="py-3.5 px-3">Progress Approval (4 L&D → Remun)</th>
+                    <th class="py-3.5 px-3 text-right">Nominal (Rp)</th>
+                    <th class="py-3.5 px-3 text-center">Tindakan</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-xs md:text-sm">
+                  <tr class="hover:bg-[#f4f6f5]/60">
+                    <td class="py-3.5 px-3 font-mono text-xs font-bold text-[#157f4f]">#TRX-2026-089</td>
+                    <td class="py-3.5 px-3">
+                      <p class="font-bold text-gray-900">Kolektif 12 Peserta SMR</p>
+                      <span
+                        class="bg-emerald-50 text-[#157f4f] text-[10px] font-bold px-2 py-0.5 rounded-full">Reimburse
+                        Biaya Ujian</span>
+                    </td>
+                    <td class="py-3.5 px-3">
+                      <p class="text-gray-800 font-medium">Biaya Pendaftaran Ujian SMR Jenjang 2 LSPP</p>
+                      <span class="text-[11px] text-[#157f4f] underline cursor-pointer"
+                        onclick="showToast('info', 'Bukti Dokumen', 'Kwitansi_LSPP_Batch2.pdf ditampilkan.')">📎
+                        Kwitansi_LSPP_Batch2.pdf</span>
+                    </td>
+                    <td class="py-3.5 px-3">
+                      <div id="trx-089-status" class="flex flex-wrap items-center gap-1 text-[10px] font-bold">
+                        <span class="bg-emerald-100 text-[#157f4f] px-2 py-0.5 rounded-full">✓ PIC</span>
+                        <span class="bg-emerald-100 text-[#157f4f] px-2 py-0.5 rounded-full">✓ Spv</span>
+                        <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">⏳ Mgr & Kadiv</span>
+                        <span class="bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">Remun</span>
+                      </div>
+                    </td>
+                    <td class="py-3.5 px-3 text-right font-bold text-gray-900">Rp 42.000.000</td>
+                    <td class="py-3.5 px-3 text-center">
+                      <button onclick="advanceTransaction089()"
+                        class="bg-[#157f4f] text-white text-xs font-semibold px-3.5 py-1.5 rounded-full hover:bg-emerald-800 transition">Approve
+                        & Teruskan →</button>
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-[#f4f6f5]/60">
+                    <td class="py-3.5 px-3 font-mono text-xs font-bold text-[#157f4f]">#TRX-2026-088</td>
+                    <td class="py-3.5 px-3">
+                      <p class="font-bold text-gray-900">Andi Pratama (KC Bandung)</p>
+                      <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Reimburse
+                        Akomodasi & Transport</span>
+                    </td>
+                    <td class="py-3.5 px-3">
+                      <p class="text-gray-800 font-medium">Tiket Kereta & Hotel Kelas Credit Analyst Batch IV</p>
+                      <span class="text-[11px] text-[#157f4f] underline cursor-pointer">📎
+                        Bukti_Tiket_Hotel_Andi.pdf</span>
+                    </td>
+                    <td class="py-3.5 px-3">
+                      <div class="flex flex-wrap items-center gap-1 text-[10px] font-bold">
+                        <span class="bg-emerald-100 text-[#157f4f] px-2 py-0.5 rounded-full">✓ PIC</span>
+                        <span class="bg-emerald-100 text-[#157f4f] px-2 py-0.5 rounded-full">✓ Spv</span>
+                        <span class="bg-emerald-100 text-[#157f4f] px-2 py-0.5 rounded-full">✓ Mgr</span>
+                        <span class="bg-emerald-100 text-[#157f4f] px-2 py-0.5 rounded-full">✓ Kadiv</span>
+                        <span class="bg-[#157f4f] text-white px-2.5 py-0.5 rounded-full">✓ Di Remuneration Div.</span>
+                      </div>
+                    </td>
+                    <td class="py-3.5 px-3 text-right font-bold text-gray-900">Rp 3.850.000</td>
+                    <td class="py-3.5 px-3 text-center">
+                      <span class="text-xs font-bold text-[#157f4f]">Siap Cair (Payroll)</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 8: CERTIFICATION (RISK, SKSP, TRESURI, EXAM)        -->
+        <!-- ======================================================== -->
+        <section id="view-certification" class="view-section hidden flex-col gap-5">
+          <!-- Module Header -->
+          <div
+            class="bg-white rounded-3xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+              <div
+                class="w-10 h-10 rounded-2xl bg-[#157f4f]/10 text-[#157f4f] flex items-center justify-center shrink-0 font-bold">
+                <i data-lucide="award" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h2 class="font-bold text-lg text-gray-900">Sertifikasi Profesi Perbankan</h2>
+                <p class="text-xs text-gray-400">Pemantauan target dan realisasi sertifikasi wajib berkala (SMR, SKSP,
+                  Tresuri)</p>
+              </div>
+            </div>
+            <button onclick="openModal('modal-certification')"
+              class="bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2.5 rounded-full shrink-0 flex items-center gap-1.5 shadow-sm transition">
+              <i data-lucide="calendar-check" class="w-3.5 h-3.5"></i>
+              <span>Update Realisasi Bulanan</span>
+            </button>
+          </div>
+
+          <!-- 3 Pilar Sertifikasi -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div class="bg-white rounded-3xl p-5 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-[#157f4f]">1. Pembekalan (Class)</span>
+                <div class="w-9 h-9 rounded-full bg-emerald-50 text-[#157f4f] flex items-center justify-center"><i
+                    data-lucide="book-open" class="w-4 h-4"></i></div>
+              </div>
+              <p class="text-2xl font-bold text-gray-900">18 Batch Kelas</p>
+              <p class="text-xs text-gray-500 mt-1">Kelas persiapan ujian SMR, SKSP, dan Treasury Dealer aktif.</p>
+            </div>
+            <div class="bg-white rounded-3xl p-5 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-blue-600">2. Ujian Profesi (Exam)</span>
+                <div class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center"><i
+                    data-lucide="file-check-2" class="w-4 h-4"></i></div>
+              </div>
+              <p class="text-2xl font-bold text-gray-900">450 Peserta Ujian</p>
+              <p class="text-xs text-gray-500 mt-1">Terjadwal di LSPP, BSMR, dan ACI Indonesia dengan kelulusan 91.5%.
+              </p>
+            </div>
+            <div class="bg-white rounded-3xl p-5 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-600">3. Masa Berlaku
+                  (Certificate)</span>
+                <div class="w-9 h-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center"><i
+                    data-lucide="award" class="w-4 h-4"></i></div>
+              </div>
+              <p class="text-2xl font-bold text-gray-900">412 Sertifikat Aktif</p>
+              <p class="text-xs text-amber-600 font-semibold mt-1">⚠️ 14 Sertifikat akan kedaluwarsa dalam 90 hari.</p>
+            </div>
+          </div>
+
+          <!-- Matriks Monitoring Target vs Realization (Update Monthly) -->
+          <div class="bg-white rounded-3xl p-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
+              <div>
+                <h3 class="font-bold text-base text-gray-900">Matriks Realisasi Sertifikasi Wajib 2026</h3>
+                <p class="text-xs text-gray-400">Pemantauan pencapaian kelulusan ujian profesi pegawai Bank Woori
+                  Saudara</p>
+              </div>
+              <span class="text-xs font-bold text-[#157f4f] bg-emerald-50 px-3 py-1 rounded-full">Update Terakhir: Juni
+                2026</span>
+            </div>
+
+            <div class="overflow-x-auto mt-3">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="text-[11px] uppercase tracking-wider text-gray-400 border-b border-gray-100">
+                    <th class="py-3.5 px-3">Jenis Sertifikasi Wajib</th>
+                    <th class="py-3.5 px-3">PIC Implementasi</th>
+                    <th class="py-3.5 px-3 text-center">Target Tahunan 2026</th>
+                    <th class="py-3.5 px-3 text-center">Realisasi s/d Mei</th>
+                    <th class="py-3.5 px-3 text-center">Update Bulan Juni</th>
+                    <th class="py-3.5 px-3 text-center">% Pencapaian</th>
+                    <th class="py-3.5 px-3 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-xs md:text-sm">
+                  <tr class="hover:bg-[#f4f6f5]/60">
+                    <td class="py-3.5 px-3 font-bold text-gray-900">SMR (Sertifikasi Manajemen Risiko Jenjang 1-5)</td>
+                    <td class="py-3.5 px-3 text-gray-600">Nadia Putri (Class PIC)</td>
+                    <td class="py-3.5 px-3 text-center font-bold">210 Orang</td>
+                    <td class="py-3.5 px-3 text-center">170 Orang</td>
+                    <td class="py-3.5 px-3 text-center font-bold text-[#157f4f]">+28 Orang</td>
+                    <td class="py-3.5 px-3 text-center"><span
+                        class="bg-emerald-50 text-[#157f4f] font-bold px-3 py-1 rounded-full">94.2% (198/210)</span>
+                    </td>
+                    <td class="py-3.5 px-3 text-center"><button onclick="openModal('modal-certification')"
+                        class="text-xs font-bold text-[#157f4f] hover:underline">Update Bulanan</button></td>
+                  </tr>
+                  <tr class="hover:bg-[#f4f6f5]/60">
+                    <td class="py-3.5 px-3 font-bold text-gray-900">SKSP (Sertifikasi Kompetensi Staf Perkreditan)</td>
+                    <td class="py-3.5 px-3 text-gray-600">Rina Melati (Class PIC)</td>
+                    <td class="py-3.5 px-3 text-center font-bold">140 Orang</td>
+                    <td class="py-3.5 px-3 text-center">102 Orang</td>
+                    <td class="py-3.5 px-3 text-center font-bold text-[#157f4f]">+22 Orang</td>
+                    <td class="py-3.5 px-3 text-center"><span
+                        class="bg-emerald-50 text-[#157f4f] font-bold px-3 py-1 rounded-full">88.5% (124/140)</span>
+                    </td>
+                    <td class="py-3.5 px-3 text-center"><button onclick="openModal('modal-certification')"
+                        class="text-xs font-bold text-[#157f4f] hover:underline">Update Bulanan</button></td>
+                  </tr>
+                  <tr class="hover:bg-[#f4f6f5]/60">
+                    <td class="py-3.5 px-3 font-bold text-gray-900">Tresuri ( Sertifikasi Treasury Dealer & Market )
+                    </td>
+                    <td class="py-3.5 px-3 text-gray-600">Nadia Putri (Class PIC)</td>
+                    <td class="py-3.5 px-3 text-center font-bold">100 Orang</td>
+                    <td class="py-3.5 px-3 text-center">75 Orang</td>
+                    <td class="py-3.5 px-3 text-center font-bold text-[#157f4f]">+15 Orang</td>
+                    <td class="py-3.5 px-3 text-center"><span
+                        class="bg-emerald-50 text-[#157f4f] font-bold px-3 py-1 rounded-full">90.0% (90/100)</span></td>
+                    <td class="py-3.5 px-3 text-center"><button onclick="openModal('modal-certification')"
+                        class="text-xs font-bold text-[#157f4f] hover:underline">Update Bulanan</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 9: MULTI-TIER REPORTING CENTER                      -->
+        <!-- ======================================================== -->
+        <section id="view-reporting" class="view-section hidden flex-col gap-5">
+          <!-- Module Header -->
+          <div
+            class="bg-white rounded-3xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+              <div
+                class="w-10 h-10 rounded-2xl bg-[#157f4f]/10 text-[#157f4f] flex items-center justify-center shrink-0 font-bold">
+                <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h2 class="font-bold text-lg text-gray-900">Pusat Laporan Pelatihan (Report Center)</h2>
+                <p class="text-xs text-gray-400">Konsolidasi data evaluasi pelatihan, realisasi anggaran, dan sign-off
+                  laporan resmi</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button onclick="openModal('modal-report')"
+                class="bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2.5 rounded-full flex items-center gap-1.5 shadow-sm transition">
+                <i data-lucide="stamp" class="w-3.5 h-3.5"></i> Sign-Off Laporan Eksekutif
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Mode Selected Report (Each Class / Yearly / Overall) + Status Approval -->
+          <div class="bg-white rounded-3xl p-6 shadow-sm flex flex-col gap-5">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-gray-100">
+              <div class="flex flex-wrap items-center gap-3">
+                <span class="text-xs font-bold text-gray-500 uppercase">Cakupan Laporan:</span>
+                <div class="bg-[#f4f6f5] p-1 rounded-full flex items-center text-xs font-semibold">
+                  <button onclick="switchReportScope('each_class', this)"
+                    class="rpt-scope-btn px-4 py-1.5 rounded-full bg-[#157f4f] text-white shadow-sm">1. Per Kelas (Each
+                    Class)</button>
+                  <button onclick="switchReportScope('yearly', this)"
+                    class="rpt-scope-btn px-4 py-1.5 rounded-full text-gray-600 hover:text-gray-900">2. Tahunan 2026
+                    (Yearly)</button>
+                  <button onclick="switchReportScope('overall', this)"
+                    class="rpt-scope-btn px-4 py-1.5 rounded-full text-gray-600 hover:text-gray-900">3. Komprehensif
+                    (Overall)</button>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2.5">
+                <span id="report-sign-status"
+                  class="bg-emerald-50 text-[#157f4f] text-xs font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5">
+                  <i data-lucide="shield-check" class="w-4 h-4"></i> Approved (1) Manager ✓ • Approved (2) Kadiv ✓
+                </span>
+                <button
+                  onclick="showToast('info', 'Export PDF', 'Laporan resmi BWS Learning Integrated System siap diunduh.')"
+                  class="bg-[#f4f6f5] hover:bg-gray-200 text-gray-800 text-xs font-semibold px-4 py-2 rounded-full flex items-center gap-1.5">
+                  <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak / Export PDF
+                </button>
+              </div>
+            </div>
+
+            <!-- Dynamic Report Content Container -->
+            <div id="report-scope-title" class="flex items-center justify-between bg-[#f4f6f5] px-4 py-3 rounded-2xl">
+              <div>
+                <h4 class="font-bold text-sm text-gray-900">Laporan Rinci Per Kelas Pelatihan</h4>
+                <p class="text-xs text-gray-500">Rekapitulasi kehadiran, skor evaluasi, penugasan, dan serapan anggaran
+                  kelas</p>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="text-[11px] uppercase tracking-wider text-gray-400 border-b border-gray-100">
+                    <th class="py-3.5 px-3">Kode Laporan & Kelas</th>
+                    <th class="py-3.5 px-3">Kategori TNA & Program</th>
+                    <th class="py-3.5 px-3">Peserta & Kehadiran</th>
+                    <th class="py-3.5 px-3">Rata-Rata Post Test & Eval</th>
+                    <th class="py-3.5 px-3">Status Approval Berjenjang</th>
+                    <th class="py-3.5 px-3 text-right">Realisasi Biaya</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-xs md:text-sm">
+                  <tr class="hover:bg-[#f4f6f5]/60">
+                    <td class="py-3.5 px-3">
+                      <p class="font-bold text-gray-900">#RPT-CLS-014 • Credit Analyst Batch IV</p>
+                      <p class="text-[11px] text-gray-400">PIC: Rina Melati • Spv: Hendra Wijaya</p>
+                    </td>
+                    <td class="py-3.5 px-3">Credit & Commercial Banking</td>
+                    <td class="py-3.5 px-3 font-semibold">25 / 25 Peserta (100%)</td>
+                    <td class="py-3.5 px-3"><span class="font-bold text-[#157f4f]">Skor 86.4</span> • Eval 4.85/5.0</td>
+                    <td class="py-3.5 px-3">
+                      <div class="flex items-center gap-1 text-[10px] font-bold">
+                        <span class="bg-emerald-50 text-[#157f4f] px-2.5 py-0.5 rounded-full">✓ Spv Reviewed</span>
+                        <span class="bg-emerald-50 text-[#157f4f] px-2.5 py-0.5 rounded-full">✓ Appr (1) Mgr</span>
+                        <span class="bg-[#157f4f] text-white px-2.5 py-0.5 rounded-full">✓ Appr (2) Kadiv</span>
+                      </div>
+                    </td>
+                    <td class="py-3.5 px-3 text-right font-bold text-gray-900">Rp 135.000.000</td>
+                  </tr>
+                  <tr class="hover:bg-[#f4f6f5]/60">
+                    <td class="py-3.5 px-3">
+                      <p class="font-bold text-gray-900">#RPT-CLS-012 • Sertifikasi SMR Batch I</p>
+                      <p class="text-[11px] text-gray-400">PIC: Nadia Putri • Spv: Hendra Wijaya</p>
+                    </td>
+                    <td class="py-3.5 px-3">Risk Management & Compliance</td>
+                    <td class="py-3.5 px-3 font-semibold">30 / 30 Peserta (100%)</td>
+                    <td class="py-3.5 px-3"><span class="font-bold text-[#157f4f]">Skor 89.1</span> • Eval 4.92/5.0</td>
+                    <td class="py-3.5 px-3">
+                      <div class="flex items-center gap-1 text-[10px] font-bold">
+                        <span class="bg-emerald-50 text-[#157f4f] px-2.5 py-0.5 rounded-full">✓ Spv Reviewed</span>
+                        <span class="bg-emerald-50 text-[#157f4f] px-2.5 py-0.5 rounded-full">✓ Appr (1) Mgr</span>
+                        <span class="bg-[#157f4f] text-white px-2.5 py-0.5 rounded-full">✓ Appr (2) Kadiv</span>
+                      </div>
+                    </td>
+                    <td class="py-3.5 px-3 text-right font-bold text-gray-900">Rp 112.500.000</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- VIEW 10: SSO LOGIN & 8 STAKEHOLDER ROLE MATRIX           -->
+        <!-- ======================================================== -->
+        <section id="view-login" class="view-section hidden flex-col gap-5">
+          <div
+            class="max-w-5xl mx-auto w-full bg-white rounded-[32px] shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12">
+            <!-- Left Branding Column -->
+            <div class="lg:col-span-5 bg-[#157f4f] text-white p-8 flex flex-col justify-between">
+              <div>
+                <div class="flex items-center gap-2.5 mb-6">
+                  <div
+                    class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#157f4f] font-extrabold text-xl">
+                    W</div>
+                  <div>
+                    <span class="font-bold text-xl block leading-none">Bank Woori Saudara</span>
+                    <span class="text-xs text-emerald-100">Learning Integrated System</span>
+                  </div>
+                </div>
+                <h2 class="text-2xl font-bold leading-snug">Satu Ekosistem Terpadu untuk Training Operation Department.
+                </h2>
+                <p class="text-xs text-emerald-100/90 mt-3 leading-relaxed">
+                  Menghubungkan perencanaan TNA, Program, Implementasi Kelas, Evaluasi ELAPSE, Penugasan, Reimburse ke
+                  Remuneration Division, Sertifikasi, hingga Pelaporan Eksekutif.
+                </p>
+              </div>
+              <div class="bg-white/10 rounded-2xl p-4 mt-6">
+                <p class="text-[11px] text-emerald-100">Portal Pengguna Terintegrasi:</p>
+                <p class="text-sm font-bold mt-0.5">8 Peran Pemangku Kepentingan</p>
+              </div>
+            </div>
+
+            <!-- Right Login + Instant Role Selector -->
+            <div class="lg:col-span-7 p-8 flex flex-col justify-between gap-6">
+              <div>
+                <h3 class="text-xl font-bold text-gray-900">Masuk dengan Single Sign-On (SSO BWS)</h3>
+                <p class="text-xs text-gray-400 mt-0.5">Pilih profil peran pengguna di bawah untuk akses langsung:</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-4">
+                  <input type="text" value="budi.santoso@bankwoorisaudara.com"
+                    class="w-full bg-[#f4f6f5] text-xs font-semibold rounded-full px-4 py-3" />
+                  <input type="password" value="••••••••••••"
+                    class="w-full bg-[#f4f6f5] text-xs rounded-full px-4 py-3" />
+                </div>
+                <button
+                  onclick="switchView('dashboard'); showToast('success', 'Autentikasi SSO Berhasil', 'Selamat datang di BWS Learning Integrated System 2026.')"
+                  class="w-full py-3 rounded-full bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-bold transition shadow-sm">
+                  Masuk ke Workspace LIS 2026
+                </button>
+              </div>
+
+              <!-- 8 Stakeholder Switch Matrix -->
+              <div class="pt-4 border-t border-gray-100">
+                <p class="text-xs font-bold text-gray-700 mb-2.5">Pilih Akses Peran Pengguna:</p>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-left">
+                  <button onclick="changeActiveRole('KADIV'); switchView('dashboard');"
+                    class="p-2.5 rounded-2xl bg-[#f4f6f5] hover:bg-[#157f4f] hover:text-white transition">
+                    <p class="text-xs font-bold">1. Kadiv L&D</p>
+                    <p class="text-[10px] opacity-75">Executive & Appr (2)</p>
+                  </button>
+                  <button onclick="changeActiveRole('MANAGER'); switchView('tna');"
+                    class="p-2.5 rounded-2xl bg-[#f4f6f5] hover:bg-[#157f4f] hover:text-white transition">
+                    <p class="text-xs font-bold">2. Manager L&D</p>
+                    <p class="text-[10px] opacity-75">TNA, Prog & Appr (1)</p>
+                  </button>
+                  <button onclick="changeActiveRole('SUPERVISOR'); switchView('class');"
+                    class="p-2.5 rounded-2xl bg-[#f4f6f5] hover:bg-[#157f4f] hover:text-white transition">
+                    <p class="text-xs font-bold">3. Supervisor L&D</p>
+                    <p class="text-[10px] opacity-75">Buat Kelas & Review</p>
+                  </button>
+                  <button onclick="changeActiveRole('PIC'); switchView('class');"
+                    class="p-2.5 rounded-2xl bg-[#f4f6f5] hover:bg-[#157f4f] hover:text-white transition">
+                    <p class="text-xs font-bold">4. Class PIC L&D</p>
+                    <p class="text-[10px] opacity-75">6 Upload & Undangan</p>
+                  </button>
+                  <button onclick="changeActiveRole('PARTICIPANT'); switchView('task');"
+                    class="p-2.5 rounded-2xl bg-[#f4f6f5] hover:bg-[#157f4f] hover:text-white transition">
+                    <p class="text-xs font-bold">5. Participants</p>
+                    <p class="text-[10px] opacity-75"> Kelas, Task & Reimburse</p>
+                  </button>
+                  <button onclick="changeActiveRole('UNIT_KERJA'); switchView('participants');"
+                    class="p-2.5 rounded-2xl bg-[#f4f6f5] hover:bg-[#157f4f] hover:text-white transition">
+                    <p class="text-xs font-bold">6. Unit Kerja</p>
+                    <p class="text-[10px] opacity-75">Cc Undangan & Pantau</p>
+                  </button>
+                  <button onclick="changeActiveRole('REPORT_USER'); switchView('reporting');"
+                    class="p-2.5 rounded-2xl bg-[#f4f6f5] hover:bg-[#157f4f] hover:text-white transition">
+                    <p class="text-xs font-bold">7. Report User</p>
+                    <p class="text-[10px] opacity-75">Selected Report View</p>
+                  </button>
+                  <button onclick="changeActiveRole('REMUNERATION'); switchView('transaction');"
+                    class="p-2.5 rounded-2xl bg-[#f4f6f5] hover:bg-[#157f4f] hover:text-white transition">
+                    <p class="text-xs font-bold">8. Remuneration</p>
+                    <p class="text-[10px] opacity-75">Settlement Reimburse</p>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- MODAL DIALOGS                                              -->
+  <!-- ========================================================== -->
+
+  <!-- 1. MODAL INPUT TNA & UPLOAD APPROVAL -->
+  <div id="modal-tna" class="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-[28px] max-w-lg w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+        <div>
+          <h3 class="font-bold text-base text-gray-900">Input TNA & Pagu Budget</h3>
+          <p class="text-xs text-gray-400">Form pengajuan kategori pelatihan baru dan alokasi pagu anggaran</p>
+        </div>
+        <button onclick="closeModal('modal-tna')"
+          class="w-8 h-8 rounded-full bg-[#f4f6f5] flex items-center justify-center"><i data-lucide="x"
+            class="w-4 h-4"></i></button>
+      </div>
+      <div class="space-y-3.5 my-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">1. Training Category</label>
+          <input id="input-tna-cat" type="text" value="IT, Cyber Security & Digital Banking"
+            class="w-full bg-[#f4f6f5] text-xs font-semibold rounded-2xl px-4 py-3" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">2. Sub Training Category</label>
+          <input id="input-tna-sub" type="text" value="ISO 27001, Cloud Security & Core Banking Dev"
+            class="w-full bg-[#f4f6f5] text-xs rounded-2xl px-4 py-3" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">3. Input Training Budget Pelatihan (Rp)</label>
+          <input id="input-tna-budget" type="text" value="Rp 1.050.000.000"
+            class="w-full bg-[#f4f6f5] text-xs font-bold rounded-2xl px-4 py-3" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">4. Upload Approval Document (SK Direksi / Memo
+            Kadiv)</label>
+          <label
+            class="border-2 border-dashed border-[#8bbca4] rounded-2xl p-3 flex items-center justify-between cursor-pointer bg-[#f4f6f5]/60">
+            <input type="file" class="hidden"
+              onchange="showToast('success', 'Dokumen Approval Terlampir', 'File SK_Approval_TNA_2026.pdf siap disimpan.')" />
+            <span class="text-xs font-semibold text-[#157f4f]">📎 Klik untuk pilih file PDF Approval...</span>
+            <span class="text-[10px] bg-white px-2.5 py-1 rounded-full font-bold">Browse</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeModal('modal-tna')"
+          class="px-5 py-2.5 rounded-full bg-[#f4f6f5] text-xs font-semibold">Batal</button>
+        <button onclick="addNewTnaRow()"
+          class="px-5 py-2.5 rounded-full bg-[#157f4f] text-white text-xs font-semibold">Simpan TNA & Pagu
+          Budget</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. MODAL CREATE CLASS & SEND INVITATION -->
+  <div id="modal-class"
+    class="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-[28px] max-w-lg w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+        <div>
+          <h3 class="font-bold text-base text-gray-900">Buat Kelas Baru & Penunjukan PIC</h3>
+          <p class="text-xs text-gray-400">Tentukan nama batch pelatihan dan penugasan PIC kelas</p>
+        </div>
+        <button onclick="closeModal('modal-class')"
+          class="w-8 h-8 rounded-full bg-[#f4f6f5] flex items-center justify-center"><i data-lucide="x"
+            class="w-4 h-4"></i></button>
+      </div>
+      <div class="space-y-3.5 my-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Program Induk (Approved Program)</label>
+          <select class="w-full bg-[#f4f6f5] text-xs font-semibold rounded-2xl px-4 py-3">
+            <option>#PRG-2026-101 - Program Sertifikasi & Refreshment SMR</option>
+            <option>#PRG-2026-102 - Commercial Credit Analyst & SKSP</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Nama Kelas / Batch</label>
+            <input type="text" value="Batch V - SMR Jenjang 2"
+              class="w-full bg-[#f4f6f5] text-xs rounded-2xl px-4 py-2.5" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Pilih Class PIC L&D</label>
+            <select class="w-full bg-[#f4f6f5] text-xs font-semibold rounded-2xl px-4 py-2.5">
+              <option>Nadia Putri (Class PIC 1)</option>
+              <option>Rina Melati (Class PIC 2)</option>
+            </select>
+          </div>
+        </div>
+        <div class="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-3.5 text-xs space-y-1">
+          <p class="font-bold text-[#157f4f]">Distribusi Undangan Otomatis:</p>
+          <p class="text-gray-600">• <strong>Penerima:</strong> Peserta terdaftar pada daftar hadir</p>
+          <p class="text-gray-600">• <strong>Tembusan:</strong> Kepala Unit Kerja / Pemimpin Cabang terkait</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeModal('modal-class')"
+          class="px-5 py-2.5 rounded-full bg-[#f4f6f5] text-xs font-semibold">Batal</button>
+        <button
+          onclick="closeModal('modal-class'); switchView('class'); showToast('success', 'Kelas Dibuat & Undangan Terkirim', 'Class PIC L&D telah ditugaskan dan undangan dikirim To: Participants, Cc: Unit Kerja.')"
+          class="px-5 py-2.5 rounded-full bg-[#157f4f] text-white text-xs font-semibold">Simpan & Send
+          Invitation</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. MODAL TASK REVIEW & APPROVAL -->
+  <div id="modal-task"
+    class="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-[28px] max-w-lg w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+        <div>
+          <h3 class="font-bold text-base text-gray-900">Validasi & Persetujuan Penugasan</h3>
+          <p class="text-xs text-gray-400">Persetujuan berjenjang penugasan sebelum dikirim ke laporan akhir</p>
+        </div>
+        <button onclick="closeModal('modal-task')"
+          class="w-8 h-8 rounded-full bg-[#f4f6f5] flex items-center justify-center"><i data-lucide="x"
+            class="w-4 h-4"></i></button>
+      </div>
+      <div class="my-4 space-y-3 text-xs">
+        <div class="p-3.5 rounded-2xl bg-[#f4f6f5] space-y-1.5">
+          <div class="flex justify-between"><span>Judul Penugasan:</span><span class="font-bold">Studi Kasus Analisa
+              Kredit Korporasi</span></div>
+          <div class="flex justify-between"><span>File Terkumpul:</span><span class="font-bold text-[#157f4f]">25 / 25
+              Peserta (100% Lengkap)</span></div>
+          <div class="flex justify-between"><span>Hasil Review Class PIC:</span><span class="font-semibold">Layak
+              diajukan ke Manajerial</span></div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeModal('modal-task')"
+          class="px-5 py-2.5 rounded-full bg-[#f4f6f5] text-xs font-semibold">Tutup</button>
+        <button onclick="approveTaskModal()"
+          class="px-5 py-2.5 rounded-full bg-[#157f4f] text-white text-xs font-semibold">Otorisasi & Kirim ke
+          Report</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MODAL TRANSACTION / REIMBURSE KE REMUNERATION DIVISION -->
+  <div id="modal-transaction"
+    class="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-[28px] max-w-lg w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+        <div>
+          <h3 class="font-bold text-base text-gray-900">Pengajuan & Otorisasi Reimbursement</h3>
+          <p class="text-xs text-gray-400">Verifikasi dokumen bukti pengeluaran dan otorisasi reimbursement</p>
+        </div>
+        <button onclick="closeModal('modal-transaction')"
+          class="w-8 h-8 rounded-full bg-[#f4f6f5] flex items-center justify-center"><i data-lucide="x"
+            class="w-4 h-4"></i></button>
+      </div>
+      <div class="space-y-3.5 my-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Jenis Klaim / Transaksi</label>
+            <select class="w-full bg-[#f4f6f5] text-xs font-semibold rounded-2xl px-3.5 py-2.5">
+              <option>Reimburse Biaya Sertifikasi Peserta</option>
+              <option>Reimburse Transport & Akomodasi Kelas</option>
+              <option>Invoice Vendor / Lembaga Pelatihan</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Nominal Klaim (Rp)</label>
+            <input type="text" value="Rp 42.000.000"
+              class="w-full bg-[#f4f6f5] text-xs font-bold rounded-2xl px-3.5 py-2.5" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Keterangan Pengeluaran</label>
+          <input type="text" value="Klaim Kolektif Pendaftaran Ujian SMR Level 2 (12 Peserta Batch II)"
+            class="w-full bg-[#f4f6f5] text-xs rounded-2xl px-3.5 py-2.5" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-700 mb-1">Upload Bukti Transaksi (Kwitansi / Invoice /
+            Transfer)</label>
+          <label
+            class="border-2 border-dashed border-[#8bbca4] rounded-2xl p-3 flex items-center justify-between cursor-pointer bg-[#f4f6f5]/60">
+            <input type="file" class="hidden"
+              onchange="showToast('success', 'Bukti Bayar Terlampir', 'Kwitansi_Reimburse_BWS.pdf berhasil diunggah.')" />
+            <span class="text-xs font-semibold text-[#157f4f]">📎 Upload Bukti Pembayaran (PDF/JPG)...</span>
+            <span class="text-[10px] bg-white px-2.5 py-1 rounded-full font-bold">Pilih File</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeModal('modal-transaction')"
+          class="px-5 py-2.5 rounded-full bg-[#f4f6f5] text-xs font-semibold">Batal</button>
+        <button onclick="closeModal('modal-transaction'); advanceTransaction089();"
+          class="px-5 py-2.5 rounded-full bg-[#157f4f] text-white text-xs font-semibold">Setujui & Teruskan ke
+          Remunerasi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. MODAL UPDATE REALISASI BULANAN SERTIFIKASI -->
+  <div id="modal-certification"
+    class="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-[28px] max-w-md w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+        <div>
+          <h3 class="font-bold text-base text-gray-900">Update Realisasi Sertifikasi</h3>
+          <p class="text-xs text-gray-400">Pembaruan data kelulusan ujian profesi perbankan</p>
+        </div>
+        <button onclick="closeModal('modal-certification')"
+          class="w-8 h-8 rounded-full bg-[#f4f6f5] flex items-center justify-center"><i data-lucide="x"
+            class="w-4 h-4"></i></button>
+      </div>
+      <div class="space-y-3.5 my-4 text-xs">
+        <div>
+          <label class="block font-semibold text-gray-700 mb-1">Pilih Sertifikasi</label>
+          <select class="w-full bg-[#f4f6f5] font-semibold rounded-2xl px-3.5 py-2.5">
+            <option>SMR (Risk Management)</option>
+            <option>SKSP (Perkreditan)</option>
+            <option>Tresuri (Treasury Dealer)</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Bulan Pelaporan</label>
+            <input type="text" value="Juni 2026" class="w-full bg-[#f4f6f5] rounded-2xl px-3.5 py-2.5" />
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-700 mb-1">Tambahan Lulus (Orang)</label>
+            <input type="number" value="28" class="w-full bg-[#f4f6f5] font-bold rounded-2xl px-3.5 py-2.5" />
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeModal('modal-certification')"
+          class="px-5 py-2.5 rounded-full bg-[#f4f6f5] text-xs font-semibold">Batal</button>
+        <button
+          onclick="closeModal('modal-certification'); showToast('success', 'Realisasi Bulanan Diperbarui', 'Data Target vs Realization bulan Juni 2026 berhasil disimpan.')"
+          class="px-5 py-2.5 rounded-full bg-[#157f4f] text-white text-xs font-semibold">Simpan Update Bulanan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. MODAL DUAL SIGN-OFF REPORT (APPROVED 1 MANAGER & APPROVED 2 KADIV) -->
+  <div id="modal-report"
+    class="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-[28px] max-w-md w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+        <div>
+          <h3 class="font-bold text-base text-gray-900">Otorisasi Laporan Resmi</h3>
+          <p class="text-xs text-gray-400">Pengesahan dokumen laporan pelatihan oleh Manager dan Kepala Divisi</p>
+        </div>
+        <button onclick="closeModal('modal-report')"
+          class="w-8 h-8 rounded-full bg-[#f4f6f5] flex items-center justify-center"><i data-lucide="x"
+            class="w-4 h-4"></i></button>
+      </div>
+      <div class="my-4 space-y-2.5 text-xs">
+        <div class="p-3 rounded-2xl bg-emerald-50 text-[#157f4f] flex items-center justify-between font-semibold">
+          <span>1. Validasi Aktivitas & Kehadiran (Supervisor L&D)</span>
+          <span>Selesai ✓</span>
+        </div>
+        <div class="p-3 rounded-2xl bg-emerald-50 text-[#157f4f] flex items-center justify-between font-semibold">
+          <span>2. Pengesahan Tingkat 1 (Manager L&D)</span>
+          <span>Signed ✓</span>
+        </div>
+        <div class="p-3 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-between font-semibold">
+          <span>3. Pengesahan Tingkat 2 (Kepala Divisi L&D)</span>
+          <span>Siap Di-Approve</span>
+        </div>
+        <p class="text-[11px] text-gray-500 pt-1">Setelah pengesahan tingkat 2 selesai, laporan resmi dapat diakses dan
+          diunduh oleh seluruh pemangku kepentingan.</p>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeModal('modal-report')"
+          class="px-5 py-2.5 rounded-full bg-[#f4f6f5] text-xs font-semibold">Tutup</button>
+        <button
+          onclick="closeModal('modal-report'); switchView('reporting'); showToast('success', 'Laporan Berhasil Disahkan!', 'Laporan telah disahkan dan siap diakses.');"
+          class="px-5 py-2.5 rounded-full bg-[#157f4f] text-white text-xs font-semibold">Sahkan Laporan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- JAVASCRIPT CONTROLLER (NAVIGATION, ROLES, STATE, TOASTS)   -->
+  <!-- ========================================================== -->
+  <script>
+    lucide.createIcons();
+
+    // Metadata 10 Views
+    const viewMeta = {
+      dashboard: {
+        bc: 'Executive & Operational Dashboard',
+        title: 'Learning Integrated System',
+        subtitle: 'Portal Operasional Terpadu Learning & Development — Bank Woori Saudara'
+      },
+      tna: {
+        bc: '2. TNA / Training Need Analysis',
+        title: 'TNA & Training Plan <span class="text-gray-400 font-normal">2026</span>',
+        subtitle: 'Perencanaan kebutuhan pelatihan dan alokasi pagu anggaran tahunan'
+      },
+      program: {
+        bc: 'Program Pelatihan L&D',
+        title: 'Program Pelatihan <span class="text-gray-400 font-normal">& Alokasi Anggaran</span>',
+        subtitle: 'Daftar program pelatihan terotorisasi dan penugasan supervisor'
+      },
+      class: {
+        bc: '4. Class & Prepare Implementation',
+        title: 'Jadwal & Agenda Kelas <span class="text-gray-400 font-normal">Pelatihan</span>',
+        subtitle: 'Pengelolaan kelas aktif, kelengkapan berkas, dan pengiriman undangan'
+      },
+      participants: {
+        bc: '5. Participants, Evaluation & ELAPSE',
+        title: 'Peserta & Evaluasi <span class="text-gray-400 font-normal">Pembelajaran</span>',
+        subtitle: 'Monitoring kehadiran, pre/post test, evaluasi instruktur, dan jam pelatihan'
+      },
+      task: {
+        bc: '6. Task Management (Class & Independent)',
+        title: 'Manajemen Penugasan <span class="text-gray-400 font-normal">Pelatihan</span>',
+        subtitle: 'Monitoring pengumpulan tugas peserta dan otorisasi bertingkat'
+      },
+      transaction: {
+        bc: '7. Transaction, Payment & Reimburse',
+        title: 'Transaksi & Reimbursement <span class="text-gray-400 font-normal">Biaya</span>',
+        subtitle: 'Otorisasi klaim penggantian biaya dan settlement ke Divisi Remunerasi'
+      },
+      certification: {
+        bc: '8. Certification (Risk, SKSP, Tresuri)',
+        title: 'Sertifikasi Wajib <span class="text-gray-400 font-normal">Perbankan</span>',
+        subtitle: 'Pencapaian target dan realisasi sertifikasi profesi SMR, SKSP, dan Tresuri'
+      },
+      reporting: {
+        bc: '9. Multi-Tier Reporting Center',
+        title: 'Pusat Laporan <span class="text-gray-400 font-normal">Pelatihan</span>',
+        subtitle: 'Laporan komprehensif pelatihan per kelas, tahunan, dan rekapitulasi umum'
+      },
+      login: {
+        bc: '10. SSO Login & Stakeholder Matrix',
+        title: 'Autentikasi SSO <span class="text-gray-400 font-normal">& Profil Peran</span>',
+        subtitle: 'Pilih profil pengguna untuk navigasi peran Bank Woori Saudara'
+      }
+    };
+
+    // Metadata 8 Stakeholder Roles
+    const roleMeta = {
+      KADIV: {
+        name: 'dr. Ratna Wijaya, M.M.',
+        label: 'Kepala Divisi L&D',
+        desc: 'Final approval TNA, penugasan, settlement, dan laporan akhir.',
+        avatar: 'https://i.pravatar.cc/100?img=33'
+      },
+      MANAGER: {
+        name: 'Budi Santoso',
+        label: 'Manager L&D',
+        desc: 'Pengelolaan TNA, program, verifikasi klaim, dan sign-off laporan.',
+        avatar: 'https://i.pravatar.cc/100?img=12'
+      },
+      SUPERVISOR: {
+        name: 'Hendra Wijaya',
+        label: 'Supervisor L&D',
+        desc: 'Perencanaan kelas, penunjukan PIC, rekap evaluasi, dan pembaruan sertifikasi.',
+        avatar: 'https://i.pravatar.cc/100?img=15'
+      },
+      PIC: {
+        name: 'Rina Melati',
+        label: 'Class PIC L&D',
+        desc: 'Penyiapan berkas kelas, distribusi undangan, dan verifikasi awal klaim.',
+        avatar: 'https://i.pravatar.cc/100?img=47'
+      },
+      PARTICIPANT: {
+        name: 'Andi Pratama',
+        label: 'Participants (Karyawan)',
+        desc: 'Akses materi, pengisian pre/post test, pengumpulan tugas, dan pengajuan klaim.',
+        avatar: 'https://i.pravatar.cc/100?img=53'
+      },
+      UNIT_KERJA: {
+        name: 'Pimpinan KC Bandung',
+        label: 'Unit Kerja (Stakeholder)',
+        desc: 'Menerima tembusan undangan, memantau kehadiran dan sertifikasi staf cabang.',
+        avatar: 'https://i.pravatar.cc/100?img=68'
+      },
+      REPORT_USER: {
+        name: 'Auditor / Manajemen',
+        label: 'Report User (View Only)',
+        desc: 'Akses baca laporan pelatihan dan realisasi anggaran yang telah disahkan.',
+        avatar: 'https://i.pravatar.cc/100?img=60'
+      },
+      REMUNERATION: {
+        name: 'Dewi Kartika',
+        label: 'Remuneration Division',
+        desc: 'Pemrosesan pencairan penggantian biaya pelatihan yang disetujui.',
+        avatar: 'https://i.pravatar.cc/100?img=44'
+      }
+    };
+
+    function switchView(viewName) {
+      document.querySelectorAll('.view-section').forEach(el => {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      });
+
+      const target = document.getElementById('view-' + viewName);
+      if (target) {
+        target.classList.remove('hidden');
+        target.classList.add('flex');
+      }
+
+      // Highlight tombol sidebar yang aktif
+      document.querySelectorAll('.side-btn').forEach(btn => {
+        btn.className = 'side-btn w-10 h-10 rounded-full text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white flex items-center justify-center transition relative';
+      });
+      const activeSide = document.getElementById('side-' + viewName);
+      if (activeSide) {
+        activeSide.className = 'side-btn w-10 h-10 rounded-full bg-[#157f4f] text-white flex items-center justify-center shadow transition relative';
+      }
+
+      if (viewMeta[viewName]) {
+        document.getElementById('nav-breadcrumb').textContent = viewMeta[viewName].bc;
+        document.getElementById('page-title').innerHTML = viewMeta[viewName].title;
+        document.getElementById('page-subtitle').textContent = viewMeta[viewName].subtitle;
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function changeActiveRole(roleKey) {
+      const r = roleMeta[roleKey];
+      if (!r) return;
+      document.getElementById('role-Select').value = roleKey;
+      document.getElementById('active-role-name').textContent = r.name;
+      document.getElementById('active-role-label').textContent = r.label;
+      document.getElementById('active-role-avatar').src = r.avatar;
+      lucide.createIcons();
+      showToast('success', 'Peran: ' + r.label, r.name);
+    }
+
+    function openModal(id) {
+      const m = document.getElementById(id);
+      if (m) {
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+      }
+    }
+
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      if (m) {
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+      }
+    }
+
+    function showToast(type, title, message) {
+      const container = document.getElementById('toast-container');
+      const colors = {
+        success: 'bg-[#157f4f] text-white',
+        error: 'bg-red-500 text-white',
+        info: 'bg-gray-900 text-white'
+      };
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl ${colors[type] || colors.info} text-xs max-w-sm transition-all duration-300`;
+      toast.innerHTML = `<div><p class="font-bold">${title}</p><p class="opacity-90 text-[11px] mt-0.5 leading-relaxed">${message}</p></div>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3600);
+    }
+
+    // Interaksi Dinamis Tambah TNA
+    function addNewTnaRow() {
+      const cat = document.getElementById('input-tna-cat').value;
+      const sub = document.getElementById('input-tna-sub').value;
+      const budget = document.getElementById('input-tna-budget').value;
+      const tbody = document.getElementById('tna-table-body');
+
+      const tr = document.createElement('tr');
+      tr.className = 'bg-emerald-50/40 hover:bg-[#f4f6f5]/60 transition';
+      tr.innerHTML = `
+        <td class="py-3.5 px-3 font-mono text-xs font-bold text-[#157f4f]">#TNA-2026-05</td>
+        <td class="py-3.5 px-3 font-bold text-gray-900">${cat}</td>
+        <td class="py-3.5 px-3"><span class="bg-white px-3 py-1 rounded-full text-xs">${sub}</span></td>
+        <td class="py-3.5 px-3">
+          <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#157f4f] bg-emerald-50 px-3 py-1 rounded-full">
+            ✓ SK_Approval_TNA_Baru.pdf
+          </span>
+        </td>
+        <td class="py-3.5 px-3 text-gray-600">${document.getElementById('active-role-label').textContent}</td>
+        <td class="py-3.5 px-3 text-right font-bold text-gray-900">${budget}</td>
+        <td class="py-3.5 px-3 text-center">
+          <button onclick="switchView('program')" class="bg-[#157f4f] text-white text-xs font-semibold px-3 py-1.5 rounded-full">Buat Program →</button>
+        </td>
+      `;
+      tbody.prepend(tr);
+      closeModal('modal-tna');
+      switchView('tna');
+      showToast('success', 'TNA & Budget Berhasil Ditambahkan', `Kategori "${cat}" dengan pagu ${budget} telah masuk ke daftar TNA 2026.`);
+    }
+
+    // Interaksi Approve Program #PRG-2026-103
+    function approveProgram103() {
+      document.getElementById('prg-103-badge').className = 'text-[11px] font-semibold bg-emerald-50 text-[#157f4f] px-3 py-1 rounded-full';
+      document.getElementById('prg-103-badge').textContent = 'Approved • Di-assign ke Spv';
+      document.getElementById('prg-103-handoff').className = 'font-semibold text-[#157f4f]';
+      document.getElementById('prg-103-handoff').textContent = 'Diterima Hendra Wijaya (Spv L&D)';
+      showToast('success', 'Program Disetujui & Dikirim ke Supervisor L&D', 'Program #PRG-2026-103 kini siap dibuatkan jadwal Kelas oleh Supervisor L&D.');
+    }
+
+    // Interaksi Approve Task Modal
+    function approveTaskModal() {
+      const mgrEl = document.getElementById('task-041-mgr');
+      const rptEl = document.getElementById('task-041-rpt');
+      if (mgrEl && rptEl) {
+        mgrEl.className = 'bg-white p-2 rounded-xl flex items-center gap-2 text-[#157f4f] font-bold';
+        mgrEl.innerHTML = '✓ 4. Approved Mgr & Kadiv';
+        rptEl.className = 'bg-[#157f4f] p-2 rounded-xl flex items-center gap-2 text-white font-bold';
+        rptEl.innerHTML = '✓ 5. Sent to Report';
+      }
+      closeModal('modal-task');
+      switchView('task');
+      showToast('success', 'Task Disetujui & Dikirim ke Report!', 'Penugasan #TSK-2026-041 telah di-approve oleh Spv, Mgr, dan Kadiv L&D serta masuk ke modul Report.');
+    }
+
+    // Interaksi Advance Transaction ke Remuneration Division
+    function advanceTransaction089() {
+      const st = document.getElementById('trx-089-status');
+      if (st) {
+        st.innerHTML = `
+          <span class="bg-emerald-100 text-[#157f4f] px-2 py-0.5 rounded-full">✓ PIC</span>
+          <span class="bg-emerald-100 text-[#157f4f] px-2 py-0.5 rounded-full">✓ Spv</span>
+          <span class="bg-emerald-100 text-[#157f4f] px-2 py-0.5 rounded-full">✓ Mgr</span>
+          <span class="bg-emerald-100 text-[#157f4f] px-2 py-0.5 rounded-full">✓ Kadiv</span>
+          <span class="bg-[#157f4f] text-white px-2.5 py-0.5 rounded-full">✓ Diteruskan ke Remuneration Div.</span>
+        `;
+      }
+      switchView('transaction');
+      showToast('success', '4 Approval L&D Selesai → Remuneration Division', 'Transaksi #TRX-2026-089 (Rp 42.000.000) telah disetujui PIC, Spv, Mgr, dan Kadiv L&D serta dikirim ke Remuneration Division untuk pencairan.');
+    }
+
+    // Interaksi Filter Cakupan Laporan (Each Class / Yearly / Overall)
+    function switchReportScope(scope, btnEl) {
+      document.querySelectorAll('.rpt-scope-btn').forEach(b => {
+        b.className = 'rpt-scope-btn px-4 py-1.5 rounded-full text-gray-600 hover:text-gray-900';
+      });
+      btnEl.className = 'rpt-scope-btn px-4 py-1.5 rounded-full bg-[#157f4f] text-white shadow-sm';
+
+      const box = document.getElementById('report-scope-title');
+      if (scope === 'each_class') {
+        box.innerHTML = `
+          <div>
+            <h4 class="font-bold text-sm text-gray-900">Laporan Rinci Per Kelas Pelatihan</h4>
+            <p class="text-xs text-gray-500">Rekapitulasi kehadiran, nilai Pre/Post Test, skor evaluasi, penugasan, dan serapan anggaran kelas.</p>
+          </div>
+        `;
+      } else if (scope === 'yearly') {
+        box.innerHTML = `
+          <div>
+            <h4 class="font-bold text-sm text-gray-900">Rekapitulasi Tahunan (FY 2026)</h4>
+            <p class="text-xs text-gray-500">Total serapan anggaran tahunan, akumulasi jam belajar (ELAPSE), dan pencapaian sertifikasi tahunan.</p>
+          </div>
+        `;
+      } else {
+        box.innerHTML = `
+          <div>
+            <h4 class="font-bold text-sm text-gray-900">Laporan Komprehensif (Multi-Tahun)</h4>
+            <p class="text-xs text-gray-500">Matriks kompetensi seluruh pegawai Bank Woori Saudara, pemetaan sertifikasi wajib, dan histori pelatihan.</p>
+          </div>
+        `;
+      }
+      showToast('info', 'Cakupan Laporan Diubah', 'Menampilkan laporan: ' + scope.toUpperCase());
+    }
+
+    function handleGlobalSearch(val) {
+      if (val && val.length > 3) {
+        showToast('info', 'Pencarian Global LIS', `Mencari "${val}" di modul TNA, Program, Kelas, Peserta, dan Transaksi...`);
+      }
+    }
+  </script>
+</body>
+
+</html>
