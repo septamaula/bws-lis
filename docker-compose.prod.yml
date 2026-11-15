@@ -1,0 +1,95 @@
+# ==============================================================================
+# BANK WOORI SAUDARA (BWS) - LEARNING INTEGRATED SYSTEM (LIS)
+# DOCKER COMPOSE CONFIGURATION (PRODUCTION STACK)
+# ==============================================================================
+# Builds optimized static assets served via high-performance Nginx web servers.
+# ==============================================================================
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: bws-lis-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-bws_lis_db}
+      POSTGRES_USER: ${DB_USERNAME:-bws_admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-bws_secret_pass}
+    ports:
+      - "${DOCKER_PGSQL_PORT:-5432}:5432"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    networks:
+      - bws-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-bws_admin} -d ${DB_DATABASE:-bws_lis_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./be
+      dockerfile: Dockerfile
+      target: development
+    container_name: bws-lis-backend-prod
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_NAME: "Bank Woori Saudara - LIS"
+      APP_ENV: production
+      APP_KEY: ${APP_KEY:-base64:BcVxVCmEIe2YRxRFvRLjrkM7yngaeQQKEhxe5nzoe+g=}
+      APP_DEBUG: "false"
+      APP_URL: ${APP_URL:-http://localhost:8000}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-bws_lis_db}
+      DB_USERNAME: ${DB_USERNAME:-bws_admin}
+      DB_PASSWORD: ${DB_PASSWORD:-bws_secret_pass}
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+    ports:
+      - "${DOCKER_BE_PORT:-8000}:8000"
+    networks:
+      - bws-network
+
+  frontend:
+    build:
+      context: ./fe
+      dockerfile: Dockerfile
+      target: production
+    container_name: bws-lis-frontend-prod
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "${DOCKER_FE_PROD_PORT:-8080}:80"
+    networks:
+      - bws-network
+
+  pwa-portal:
+    build:
+      context: ./pwa-portal
+      dockerfile: Dockerfile
+      target: production
+    container_name: bws-lis-pwa-prod
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "${DOCKER_PWA_PROD_PORT:-8081}:80"
+    networks:
+      - bws-network
+
+networks:
+  bws-network:
+    driver: bridge
+    name: bws-lis-prod-network
+
+volumes:
+  postgres_prod_data:
+    driver: local
+    name: bws-lis-postgres-prod-data

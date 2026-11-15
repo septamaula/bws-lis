@@ -1,0 +1,128 @@
+# ==============================================================================
+# BANK WOORI SAUDARA (BWS) - LEARNING INTEGRATED SYSTEM (LIS)
+# DOCKER COMPOSE CONFIGURATION (DEVELOPMENT STACK)
+# ==============================================================================
+# Services:
+#   1. postgres   - PostgreSQL 17 Relational Database (Port 5432)
+#   2. backend    - Laravel 13 REST API & Security Engine (Port 8000)
+#   3. frontend   - Vue 3.5 LTS Admin Portal with Live Hot Reload (Port 5173)
+#   4. pwa-portal - React 19 TS Mobile PWA with Live Hot Reload (Port 5174)
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. PostgreSQL Database Service
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:17-alpine
+    container_name: bws-lis-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-bws_lis_db}
+      POSTGRES_USER: ${DB_USERNAME:-bws_admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-bws_secret_pass}
+    ports:
+      - "${DOCKER_PGSQL_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - bws-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-bws_admin} -d ${DB_DATABASE:-bws_lis_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 6
+
+  # ----------------------------------------------------------------------------
+  # 2. Laravel 13 API Backend
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./be
+      dockerfile: Dockerfile
+      target: development
+    container_name: bws-lis-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_NAME: "Bank Woori Saudara - LIS"
+      APP_ENV: local
+      APP_KEY: ${APP_KEY:-base64:BcVxVCmEIe2YRxRFvRLjrkM7yngaeQQKEhxe5nzoe+g=}
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-bws_lis_db}
+      DB_USERNAME: ${DB_USERNAME:-bws_admin}
+      DB_PASSWORD: ${DB_PASSWORD:-bws_secret_pass}
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+      SEED_ON_START: "false"
+    ports:
+      - "${DOCKER_BE_PORT:-8000}:8000"
+    volumes:
+      - ./be:/var/www/html
+      - /var/www/html/vendor
+    networks:
+      - bws-network
+
+  # ----------------------------------------------------------------------------
+  # 3. Vue 3.5 LTS Admin Portal (Frontend)
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./fe
+      dockerfile: Dockerfile
+      target: development
+    container_name: bws-lis-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      VITE_BACKEND_URL: http://backend:8000
+    ports:
+      - "${DOCKER_FE_PORT:-5173}:5173"
+    volumes:
+      - ./fe:/app
+      - /app/node_modules
+    networks:
+      - bws-network
+
+  # ----------------------------------------------------------------------------
+  # 4. React 19 TS Mobile PWA Portal
+  # ----------------------------------------------------------------------------
+  pwa-portal:
+    build:
+      context: ./pwa-portal
+      dockerfile: Dockerfile
+      target: development
+    container_name: bws-lis-pwa-portal
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      VITE_BACKEND_URL: http://backend:8000
+    ports:
+      - "${DOCKER_PWA_PORT:-5174}:5174"
+    volumes:
+      - ./pwa-portal:/app
+      - /app/node_modules
+    networks:
+      - bws-network
+
+# ------------------------------------------------------------------------------
+# Persistent Networks & Storage Volumes
+# ------------------------------------------------------------------------------
+networks:
+  bws-network:
+    driver: bridge
+    name: bws-lis-network
+
+volumes:
+  postgres_data:
+    driver: local
+    name: bws-lis-postgres-data

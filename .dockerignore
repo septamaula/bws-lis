@@ -1,0 +1,17 @@
+.git
+.github
+node_modules/
+*/node_modules/
+vendor/
+*/vendor/
+dist/
+*/dist/
+build/
+*/build/
+.env
+*/.env
+.env.*.local
+*.log
+.phpunit.cache
+.phpunit.result.cache
+_dokumentasi/
