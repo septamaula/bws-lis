@@ -18,7 +18,7 @@ Dokumen ini merupakan panduan resmi penyerahan arsitektur teknis terpisah (*Deco
 ### 2. Struktur Direktori Proyek Terpisah
 
 ```
-bws-lim/
+bws-lis/
 ├── be/                  # Backend Enterprise REST API (Laravel 13 LTS + PHP 8.5 + PostgreSQL 18 + Sanctum)
 ├── fe/                  # Frontend Portal Operasional & Admin (Vue.js 3 LTS + Vite + Pinia + Vue Router + Smart DataTable)
 ├── pwa-portal/          # Frontend Portal Belajar Karyawan Mobile PWA (React 19 + TypeScript + TanStack Query + Vite PWA)

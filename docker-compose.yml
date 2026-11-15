@@ -9,6 +9,8 @@
 #   4. pwa-portal - React 19 TS Mobile PWA with Live Hot Reload (Port 5174)
 # ==============================================================================
 
+name: bws-lis
+
 services:
   # ----------------------------------------------------------------------------
   # 1. PostgreSQL Database Service

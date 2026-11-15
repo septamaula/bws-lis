@@ -5,6 +5,8 @@
 # Builds optimized static assets served via high-performance Nginx web servers.
 # ==============================================================================
 
+name: bws-lis
+
 services:
   postgres:
     image: postgres:17-alpine
