@@ -24,6 +24,12 @@ class TrainingClass extends Model
         'checker_id',
         'checker_notes',
         'approved_at',
+        'daily_schedule',
+        'trainer_name',
+        'passing_grade',
+        'description',
+        'notes',
+        'is_attendance_open',
     ];
 
     protected $casts = [
@@ -32,6 +38,8 @@ class TrainingClass extends Model
         'approved_at' => 'datetime',
         'max_quota' => 'integer',
         'enrolled_count' => 'integer',
+        'passing_grade' => 'integer',
+        'is_attendance_open' => 'boolean',
     ];
 
     public function program(): BelongsTo
@@ -57,5 +65,20 @@ class TrainingClass extends Model
     public function enrollments(): HasMany
     {
         return $this->hasMany(ClassEnrollment::class);
+    }
+
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(ClassSession::class)->orderBy('session_number');
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(ClassAttendance::class);
+    }
+
+    public function evaluations(): HasMany
+    {
+        return $this->hasMany(ClassEvaluation::class);
     }
 }

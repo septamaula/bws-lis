@@ -81,7 +81,7 @@ return new class extends Migration
         Schema::create('class_enrollments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('training_class_id')->constrained('training_classes')->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('attendance_status', 30)->default('REGISTERED'); // REGISTERED, PRESENT, ABSENT, PERMISSION
             $table->decimal('pre_test_score', 5, 2)->nullable();
             $table->decimal('post_test_score', 5, 2)->nullable();
@@ -95,8 +95,6 @@ return new class extends Migration
             $table->string('certificate_id', 100)->nullable()->unique();
             $table->string('certificate_url')->nullable();
             $table->timestamps();
-
-            $table->unique(['training_class_id', 'user_id']);
         });
 
         // 6. Financial Transactions (Dual Control Maker-Checker for Training Budgets)

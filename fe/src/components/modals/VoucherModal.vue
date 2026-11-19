@@ -45,7 +45,7 @@ async function submit() {
     <div class="relative bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 flex flex-col gap-5 z-10 animate-scaleIn">
       <div class="flex items-center justify-between pb-3 border-b border-gray-100">
         <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-full bg-emerald-50 text-[#157f4f] flex items-center justify-center font-bold">
+          <div class="w-9 h-9 rounded-full bg-emerald-50 text-[#0067AC] flex items-center justify-center font-bold">
             <Receipt class="w-4 h-4" />
           </div>
           <div>
@@ -65,7 +65,7 @@ async function submit() {
       <form @submit.prevent="submit" class="space-y-4 text-xs">
         <div>
           <label class="block font-semibold text-gray-700 mb-1">Pilih Kelas Terkait</label>
-          <select v-model="form.training_class_id" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none">
+          <select v-model="form.training_class_id" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none">
             <option :value="null">-- Biaya Operasional Umum L&D --</option>
             <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.batch_name }} - {{ c.program?.title }}</option>
           </select>
@@ -74,7 +74,7 @@ async function submit() {
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Kategori Biaya</label>
-            <select v-model="form.category" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none" required>
+            <select v-model="form.category" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required>
               <option value="Certification Fee">Ujian Sertifikasi Resmi</option>
               <option value="Vendor Fee">Biaya Lembaga / Vendor</option>
               <option value="Facilitator Honorarium">Honorarium Instruktur</option>
@@ -84,25 +84,25 @@ async function submit() {
           </div>
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Nominal Biaya (IDR)</label>
-            <input type="number" v-model.number="form.amount" min="10000" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none" required />
+            <input type="number" v-model.number="form.amount" min="10000" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required />
           </div>
         </div>
 
         <div>
           <label class="block font-semibold text-gray-700 mb-1">Rincian Transaksi / Keperluan</label>
-          <textarea v-model="form.description" rows="2" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none" required></textarea>
+          <textarea v-model="form.description" rows="2" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required></textarea>
         </div>
 
         <div>
           <label class="block font-semibold text-gray-700 mb-1">Berkas Bukti Kwitansi (PDF/JPG)</label>
           <div class="flex items-center gap-2">
-            <Paperclip class="w-4 h-4 text-[#157f4f]" />
-            <input type="text" v-model="form.receipt_attachment_url" class="flex-1 bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none" />
+            <Paperclip class="w-4 h-4 text-[#0067AC]" />
+            <input type="text" v-model="form.receipt_attachment_url" class="flex-1 bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" />
           </div>
         </div>
 
         <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-900 flex items-start gap-2.5">
-          <Scale class="w-4 h-4 text-[#157f4f] shrink-0 mt-0.5" />
+          <Scale class="w-4 h-4 text-[#0067AC] shrink-0 mt-0.5" />
           <p class="text-[11px] leading-tight">
             <strong>Kepatuhan Standar Perbankan:</strong> Maker dilarang menyetujui transaksi miliknya sendiri. Voucher akan diteruskan ke antrean Checker.
           </p>
@@ -112,7 +112,7 @@ async function submit() {
           <button type="button" @click="emit('close')" class="px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition">
             Batal
           </button>
-          <button type="submit" :disabled="loading" class="px-5 py-2 rounded-full bg-[#157f4f] hover:bg-emerald-800 text-white font-semibold transition shadow-sm disabled:opacity-50">
+          <button type="submit" :disabled="loading" class="px-5 py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white font-semibold transition shadow-sm disabled:opacity-50">
             {{ loading ? 'Mengirim...' : 'Kirim Voucher ke Checker' }}
           </button>
         </div>

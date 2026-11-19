@@ -27,7 +27,7 @@ class AuthApiController extends Controller
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
@@ -44,13 +44,17 @@ class AuthApiController extends Controller
             ], 429);
         }
 
-        $user = User::where('email', $credentials['email'])->first();
+        $loginInput = trim($credentials['email']);
+        $user = User::with('level')
+            ->where('email', $loginInput)
+            ->orWhere('nik', $loginInput)
+            ->first();
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             RateLimiter::hit($throttleKey, 180);
 
             AuditLog::record('API_LOGIN_FAILED', null, null, [
-                'attempted_email' => $credentials['email'],
+                'attempted_input' => $loginInput,
                 'ip' => $request->ip(),
             ]);
 
@@ -60,6 +64,15 @@ class AuthApiController extends Controller
                     'email' => ['Kredensial NIK/Email atau Password yang dimasukkan tidak sesuai.'],
                 ],
             ], 422);
+        }
+
+        if (! $user->is_active) {
+            return response()->json([
+                'message' => 'Akun pengguna dinonaktifkan. Silakan hubungi Administrator Human Capital.',
+                'errors' => [
+                    'email' => ['Akun pengguna sedang dalam status tidak aktif.'],
+                ],
+            ], 403);
         }
 
         RateLimiter::clear($throttleKey);
@@ -79,7 +92,7 @@ class AuthApiController extends Controller
 
         return response()->json([
             'message' => 'Otentikasi perbankan berhasil.',
-            'user' => $user->only(['id', 'nik', 'name', 'email', 'role_name', 'department', 'branch']),
+            'user' => $user->only(['id', 'nik', 'name', 'email', 'role_name', 'department', 'branch', 'level_id']),
             'token' => $token,
         ]);
     }

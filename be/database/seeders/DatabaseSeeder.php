@@ -10,6 +10,7 @@ use App\Models\TnaProposal;
 use App\Models\TrainingClass;
 use App\Models\TrainingProgram;
 use App\Models\User;
+use App\Models\Karyawan;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
@@ -153,6 +154,26 @@ class DatabaseSeeder extends Seeder
             );
             $user->assignRole($u['role_name']);
             $createdUsers[$u['role_name']] = $user;
+
+            Karyawan::firstOrCreate(
+                ['nik' => $u['nik']],
+                [
+                    'nama' => $u['name'],
+                    'nama_panggilan' => explode(' ', $u['name'])[0],
+                    'jk' => str_contains($u['name'], 'Siti') || str_contains($u['name'], 'Maya') ? 'P' : 'L',
+                    'email' => $u['email'],
+                    'hp' => $u['phone'],
+                    'departemen' => $u['department'],
+                    'jabatan' => $u['role_name'],
+                    'kantor_cabang' => $u['branch'],
+                    'golongan' => str_contains($u['role_name'], 'Executive') ? 'Executive' : (str_contains($u['role_name'], 'Head') ? 'Senior Manager' : 'Officer'),
+                    'st_kerja' => 'AKTIF',
+                    'tgl_masuk' => now()->subYears(3)->format('Y-m-d'),
+                    'role_name' => $u['role_name'],
+                    'target_jam_pelatihan' => 20,
+                    'is_active' => true,
+                ]
+            );
         }
 
         // 4. Seed Training Programs

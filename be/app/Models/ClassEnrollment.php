@@ -22,6 +22,19 @@ class ClassEnrollment extends Model
         'task_feedback',
         'certificate_id',
         'certificate_url',
+        'nik',
+        'participant_name',
+        'department',
+        'branch',
+        'position',
+        'attendance_percentage',
+        'eval_instructor_rating',
+        'eval_material_rating',
+        'eval_facility_rating',
+        'eval_notes',
+        'grade',
+        'certificate_number',
+        'certificate_issued_at',
     ];
 
     protected $casts = [
@@ -29,17 +42,32 @@ class ClassEnrollment extends Model
         'post_test_score' => 'decimal:2',
         'task_score' => 'decimal:2',
         'final_score' => 'decimal:2',
+        'attendance_percentage' => 'decimal:2',
         'elapse_progress_pct' => 'integer',
+        'eval_instructor_rating' => 'integer',
+        'eval_material_rating' => 'integer',
+        'eval_facility_rating' => 'integer',
         'task_submitted_at' => 'datetime',
+        'certificate_issued_at' => 'datetime',
     ];
 
     public function trainingClass(): BelongsTo
     {
-        return $this->belongsTo(TrainingClass::class);
+        return $this->belongsTo(TrainingClass::class, 'training_class_id');
     }
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function attendances()
+    {
+        return $this->hasMany(ClassAttendance::class, 'class_enrollment_id');
+    }
+
+    public function evaluation()
+    {
+        return $this->hasOne(ClassEvaluation::class, 'class_enrollment_id');
     }
 }

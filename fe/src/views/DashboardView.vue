@@ -42,7 +42,12 @@ import {
   CheckCircle,
   AlertTriangle,
   Scale,
-  Calendar
+  Calendar,
+  Sliders,
+  Plus,
+  Download,
+  FolderTree,
+  CalendarRange
 } from 'lucide-vue-next'
 
 // Import Modular Components
@@ -56,6 +61,12 @@ import TaskModule from '@/components/modules/TaskModule.vue'
 import TransactionModule from '@/components/modules/TransactionModule.vue'
 import CertificationModule from '@/components/modules/CertificationModule.vue'
 import ReportingModule from '@/components/modules/ReportingModule.vue'
+import UserRbacModule from '@/components/modules/UserRbacModule.vue'
+import TnaCreatePage from '@/components/modules/tna/TnaCreatePage.vue'
+import TnaDetailPage from '@/components/modules/tna/TnaDetailPage.vue'
+import MultiApprovalSettingModule from '@/components/modules/settings/MultiApprovalSettingModule.vue'
+import CategoryMasterModule from '@/components/modules/CategoryMasterModule.vue'
+import YearMasterModule from '@/components/modules/YearMasterModule.vue'
 
 // Import Modals
 import TnaModal from '@/components/modals/TnaModal.vue'
@@ -84,18 +95,54 @@ const globalSearch = ref('')
 
 // Navigation Tabs State (10 Modules matching Mockup)
 const activeTab = ref('dashboard')
+const rbacSubTab = ref('users')
+const activeFiscalYear = ref(2026)
+
+// TNA View State: 'list' | 'create' | 'detail' | 'edit'
+const tnaViewMode = ref('list')
+const selectedTnaProposalId = ref(null)
+const programModuleRef = ref(null)
+const classModuleRef = ref(null)
+
+function openTnaDetail(proposalId) {
+  selectedTnaProposalId.value = proposalId
+  tnaViewMode.value = 'detail'
+}
+
+function openTnaEdit(proposalId) {
+  selectedTnaProposalId.value = proposalId
+  tnaViewMode.value = 'edit'
+}
+
+function handleTnaCreated(message) {
+  flashSuccess.value = message
+  if (tnaViewMode.value === 'edit') {
+    tnaViewMode.value = 'detail'
+  } else {
+    tnaViewMode.value = 'list'
+  }
+  fetchDashboard()
+}
+
+function handleOpenClassCreateFromProgram(programId) {
+  activeTab.value = 'class'
+  setTimeout(() => {
+    classModuleRef.value?.openCreate(programId)
+  }, 100)
+}
 
 const navigationModules = [
   { id: 'dashboard', name: 'Dashboard LIS' },
   { id: 'tna', name: 'TNA & Plan' },
   { id: 'program', name: 'Program Kerja' },
   { id: 'class', name: 'Jadwal Kelas' },
-  { id: 'participants', name: 'Peserta ELAPSE' },
+  { id: 'participants', name: 'Peserta Diklat' },
   { id: 'eval', name: 'Evaluasi & Nilai' },
   { id: 'task', name: 'Penugasan' },
   { id: 'transaction', name: 'Transaksi & Reimburse' },
   { id: 'certification', name: 'Sertifikasi Wajib' },
-  { id: 'reporting', name: 'Laporan & Audit' }
+  { id: 'reporting', name: 'Laporan & Audit' },
+  { id: 'rbac', name: 'Kelola User & RBAC' }
 ]
 
 const currentTabTitle = computed(() => {
@@ -104,15 +151,49 @@ const currentTabTitle = computed(() => {
     case 'tna': return 'TNA & Annual Training Plan'
     case 'program': return 'Program Pelatihan & Work Plan'
     case 'class': return 'Class Implementation & Schedule'
-    case 'participants': return 'Peserta & Activity Tracking (ELAPSE)'
-    case 'eval': return 'Evaluasi & Nilai Peserta (ELAPSE)'
+    case 'participants': return 'Peserta & Activity Tracking'
+    case 'eval': return 'Evaluasi & Nilai Peserta'
     case 'task': return 'Penugasan & Task Management'
     case 'transaction': return 'Transaksi Keuangan & Reimbursement'
-    case 'certification': return 'Sertifikasi Wajib & Ujian (Risk, SKSP, Tresuri)'
+    case 'certification': return 'Sertifikasi Wajib & Lisensi Profesi'
     case 'reporting': return 'Reporting Center & Audit Trail'
+    case 'rbac': return 'Manajemen Pengguna & Matriks Hak Akses (RBAC)'
     default: return 'Dashboard'
   }
 })
+
+const currentTabSubtitle = computed(() => {
+  switch (activeTab.value) {
+    case 'dashboard': return 'Portal Operasional Terpadu Learning & Development — Bank Woori Saudara'
+    case 'tna': return 'Perencanaan Kebutuhan Diklat & Usulan Anggaran Kompetensi Divisi Bank Woori Saudara'
+    case 'program': return 'Katalog Program Kerja, Kurikulum Diklat, dan Sertifikasi Wajib Regulasi OJK / BI'
+    case 'class': return 'Manajemen Batch Pelatihan, Alokasi Ruangan, dan Otorisasi Maker-Checker'
+    case 'participants': return 'Database Peserta Diklat, Kehadiran, dan Monitoring Progres Pelatihan LIS'
+    case 'eval': return 'Rekapitulasi Skor Pre-Test & Post-Test, Efektivitas Peningkatan Kompetensi Pegawai'
+    case 'task': return 'Monitoring Pengumpulan Action Learning Project & Penilaian Tugas Mandiri Peserta'
+    case 'transaction': return 'Buku Transaksi Realisasi Anggaran, Klaim Biaya Diklat, dan Otorisasi Maker-Checker'
+    case 'certification': return 'Kepatuhan Lisensi Perbankan OJK & Bank Indonesia (Manajemen Risiko, SKSP, Tresuri)'
+    case 'reporting': return 'Pusat Unduh Laporan Realisasi Diklat, Sign-Off Berjenjang, dan Rekam Jejak Audit OJK'
+    case 'rbac': return 'Konfigurasi Akun Pegawai, Tingkat Peran Jabatan, dan Matriks Kontrol Hak Akses'
+    default: return 'Portal Operasional Terpadu Learning & Development — Bank Woori Saudara'
+  }
+})
+
+async function handleDownloadAuditCsv() {
+  try {
+    const response = await apiClient.get('/audit/export', { responseType: 'blob' })
+    const url = URL.createObjectURL(new Blob([response.data], { type: 'text/csv;charset=utf-8;' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `bws_audit_trail_${new Date().toISOString().slice(0, 10)}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    flashError.value = 'Gagal mengunduh file log audit trail.'
+  }
+}
 
 async function fetchDashboard() {
   loading.value = true
@@ -126,6 +207,14 @@ async function fetchDashboard() {
     financials.value = data.financials
     auditLogs.value = data.auditLogs
     availableRoles.value = data.availableRoles
+
+    // Fetch active fiscal year
+    try {
+      const { data: yearData } = await apiClient.get('/fiscal-years')
+      if (yearData.active_year) {
+        activeFiscalYear.value = yearData.active_year
+      }
+    } catch (_) {}
   } catch (err) {
     flashError.value = err.response?.data?.message || 'Gagal memuat data operasional.'
   } finally {
@@ -161,8 +250,10 @@ async function handleLogout() {
 
 // Notification handler
 function handleNotificationClick() {
-  if (kpis.value.pending_checker_approvals > 0) {
-    flashSuccess.value = `Terdapat ${kpis.value.pending_checker_approvals} pengajuan membutuhkan otorisasi Checker (Dual-Control).`
+  if (totalPendingApprovalsForUser.value > 0) {
+    flashSuccess.value = `Terdapat ${totalPendingApprovalsForUser.value} pengajuan operasional yang membutuhkan tindakan otorisasi Multi-Approval Anda.`
+  } else if (kpis.value.pending_checker_approvals > 0) {
+    flashSuccess.value = `Terdapat ${kpis.value.pending_checker_approvals} total antrean approval pada sistem.`
   } else {
     flashSuccess.value = 'Semua antrean operasional saat ini dalam status sinkron & aman (OJK Compliant).'
   }
@@ -239,30 +330,95 @@ const canCreateClass = computed(() => {
 const canManageTna = computed(() => {
   return auth.user?.role_name === 'Dept Head' || auth.user?.role_name === 'HCBP' || auth.user?.role_name === 'Super Admin'
 })
+
+// Dynamic Multi-Approval Queue breakdown by User Role
+const pendingTnaForUser = computed(() => {
+  const role = auth.user?.role_name
+  if (role === 'Super Admin') {
+    return tnaProposals.value.filter(t => ['SUBMITTED', 'CHECKER_REVIEW', 'APPROVER_REVIEW'].includes(t.status))
+  } else if (role === 'HCBP') {
+    return tnaProposals.value.filter(t => t.status === 'SUBMITTED')
+  } else if (role === 'HC Learning Head (Checker)') {
+    return tnaProposals.value.filter(t => t.status === 'CHECKER_REVIEW')
+  } else if (role === 'Executive') {
+    return tnaProposals.value.filter(t => t.status === 'APPROVER_REVIEW')
+  } else if (role === 'Dept Head') {
+    return tnaProposals.value.filter(t => t.status === 'REVISION')
+  }
+  return []
+})
+
+const pendingClassesForUser = computed(() => {
+  const role = auth.user?.role_name
+  if (role === 'Super Admin' || role === 'HC Learning Head (Checker)') {
+    return trainingClasses.value.filter(c => c.dual_control_status === 'PENDING_CHECKER')
+  }
+  return []
+})
+
+const pendingFinancialsForUser = computed(() => {
+  const role = auth.user?.role_name
+  if (role === 'Super Admin' || role === 'HC Learning Head (Checker)') {
+    return financials.value.filter(f => f.status === 'PENDING_APPROVAL')
+  }
+  return []
+})
+
+const totalPendingApprovalsForUser = computed(() => {
+  return pendingTnaForUser.value.length + pendingClassesForUser.value.length + pendingFinancialsForUser.value.length
+})
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f4f6f5] text-gray-900 flex flex-col font-sans selection:bg-[#157f4f] selection:text-white">
+  <div class="min-h-screen bg-[#f4f6f5] text-gray-900 flex flex-col font-sans selection:bg-[#00A0E9] selection:text-white">
 
-    <!-- Full-Screen Layout Wrapper (Identical to Mockup) -->
+    <!-- Full-Screen Layout Wrapper -->
     <div class="w-full min-h-screen px-4 py-3 md:px-6 md:py-4 flex flex-col gap-5">
 
       <!-- ========================================================== -->
-      <!-- CLEAN TOP NAVBAR (STREAMLINED & BALANCED - FROM MOCKUP)    -->
+      <!-- CLEAN TOP NAVBAR (BWS CORPORATE BRANDING)                   -->
       <!-- ========================================================== -->
       <header class="bg-white rounded-full px-5 py-2.5 flex items-center justify-between shadow-sm sticky top-2 z-40 border border-gray-100">
         
-        <!-- Left: Brand Logo -->
-        <div class="flex items-center gap-3 cursor-pointer shrink-0" @click="activeTab = 'dashboard'">
-          <div class="w-9 h-9 rounded-full bg-[#157f4f] flex items-center justify-center text-white font-bold text-lg relative shrink-0 shadow-sm">
-            <span>W</span>
-            <span class="w-2 h-2 bg-emerald-300 rounded-full absolute bottom-1 right-1 border-2 border-white"></span>
-          </div>
+        <!-- Left: Official BWS Logo + LIS Information -->
+        <div class="flex items-center gap-3.5 cursor-pointer shrink-0 group" @click="activeTab = 'dashboard'">
+          <!-- Official Bank Woori Saudara Vector Logo -->
+          <svg class="h-8 sm:h-9 w-auto" viewBox="0 0 290 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="bwsGlobeHeader" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#00A0E9"/>
+                <stop offset="65%" stop-color="#0067AC"/>
+                <stop offset="100%" stop-color="#002855"/>
+              </radialGradient>
+              <linearGradient id="horizonGlowHeader" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#00A0E9" stop-opacity="0.3"/>
+                <stop offset="20%" stop-color="#FFFFFF"/>
+                <stop offset="80%" stop-color="#FFFFFF"/>
+                <stop offset="100%" stop-color="#00A0E9" stop-opacity="0.3"/>
+              </linearGradient>
+            </defs>
+            <circle cx="40" cy="40" r="36" fill="url(#bwsGlobeHeader)"/>
+            <path d="M 6 40 A 34 34 0 0 1 74 40 Z" fill="#0067AC"/>
+            <path d="M 6 40 Q 40 18 74 40 Q 40 30 6 40 Z" fill="url(#horizonGlowHeader)"/>
+            <path d="M 6 40 Q 40 30 74 40 A 34 34 0 0 1 6 40 Z" fill="#0055A5"/>
+            <text x="86" y="47" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-style="italic" font-size="44" fill="#0067AC" letter-spacing="-1">BWS</text>
+            <text x="88" y="65" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-style="italic" font-size="11.5" fill="#0067AC" letter-spacing="0.5">BANK WOORI SAUDARA</text>
+          </svg>
+
+          <!-- Divider -->
+          <div class="h-7 w-px bg-slate-200 hidden sm:block"></div>
+
+          <!-- Right: LIS Information -->
           <div class="leading-tight">
-            <span class="font-extrabold text-base tracking-tight text-gray-900 block">
-              BWS <span class="text-[#157f4f]">LIS</span>
-            </span>
-            <span class="text-[10px] text-gray-400 font-medium block -mt-0.5">Learning System</span>
+            <div class="flex items-center gap-1.5">
+              <span class="font-extrabold text-sm sm:text-base tracking-tight text-[#002855] group-hover:text-[#0067AC] transition">
+                LIS
+              </span>
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC] border border-[#00A0E9]/30 uppercase tracking-wider hidden sm:inline-block">
+                PORTAL
+              </span>
+            </div>
+            <span class="text-[10px] text-slate-500 font-medium block">Learning Integrated System</span>
           </div>
         </div>
 
@@ -273,7 +429,7 @@ const canManageTna = computed(() => {
             v-model="globalSearch"
             type="text"
             placeholder="Cari TNA, Program, Kelas, Peserta..."
-            class="w-full bg-[#f4f6f5] hover:bg-gray-100 focus:bg-white text-xs text-gray-800 rounded-full pl-9 pr-4 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none transition"
+            class="w-full bg-[#f4f6f5] hover:bg-gray-100 focus:bg-white text-xs text-gray-800 rounded-full pl-9 pr-4 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none transition"
           />
         </div>
 
@@ -283,7 +439,7 @@ const canManageTna = computed(() => {
           <!-- Refresh Button -->
           <button
             @click="fetchDashboard"
-            class="w-8 h-8 rounded-full bg-[#f4f6f5] hover:bg-emerald-50 hover:text-[#157f4f] text-gray-500 flex items-center justify-center transition"
+            class="w-8 h-8 rounded-full bg-[#f4f6f5] hover:bg-blue-50 hover:text-[#0067AC] text-gray-500 flex items-center justify-center transition"
             title="Segarkan Data"
           >
             <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" />
@@ -296,7 +452,7 @@ const canManageTna = computed(() => {
               class="flex items-center gap-1.5 bg-[#f4f6f5] hover:bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200/80 transition text-xs font-semibold text-gray-700"
               title="Ganti Peran Pengguna"
             >
-              <ShieldCheck class="w-3.5 h-3.5 text-[#157f4f] shrink-0" />
+              <ShieldCheck class="w-3.5 h-3.5 text-[#0067AC] shrink-0" />
               <span class="truncate max-w-[130px]">{{ auth.user?.role_name || 'Manager L&D' }}</span>
               <ChevronDown class="w-3 h-3 text-gray-400" />
             </button>
@@ -314,10 +470,10 @@ const canManageTna = computed(() => {
                 :key="r"
                 @click="handleSwitchRole(r)"
                 class="w-full text-left px-3 py-2 rounded-xl text-xs transition flex items-center justify-between"
-                :class="auth.user?.role_name === r ? 'bg-emerald-50 text-[#157f4f] font-bold' : 'text-gray-700 hover:bg-gray-50'"
+                :class="auth.user?.role_name === r ? 'bg-[#EBF4FC] text-[#0067AC] font-bold' : 'text-gray-700 hover:bg-gray-50'"
               >
                 <span>{{ r }}</span>
-                <span v-if="auth.user?.role_name === r" class="w-1.5 h-1.5 rounded-full bg-[#157f4f]"></span>
+                <span v-if="auth.user?.role_name === r" class="w-1.5 h-1.5 rounded-full bg-[#0067AC]"></span>
               </button>
             </div>
           </div>
@@ -331,7 +487,7 @@ const canManageTna = computed(() => {
             <Bell class="w-4 h-4" />
             <span
               v-if="kpis.pending_checker_approvals > 0"
-              class="w-2 h-2 rounded-full bg-[#157f4f] absolute top-1.5 right-1.5"
+              class="w-2 h-2 rounded-full bg-[#0067AC] absolute top-1.5 right-1.5"
             ></span>
           </button>
 
@@ -342,11 +498,11 @@ const canManageTna = computed(() => {
               class="flex items-center gap-2 pl-1 cursor-pointer group"
               title="Lihat Profil & Matriks Role"
             >
-              <div class="w-8 h-8 rounded-full bg-emerald-100 text-[#157f4f] font-bold text-xs flex items-center justify-center ring-2 ring-[#157f4f]/30">
+              <div class="w-8 h-8 rounded-full bg-[#EBF4FC] text-[#0067AC] font-bold text-xs flex items-center justify-center ring-2 ring-[#0067AC]/30">
                 {{ getInitials(auth.user?.name) }}
               </div>
               <div class="hidden sm:block text-left leading-tight">
-                <p class="text-xs font-bold text-gray-900 group-hover:text-[#157f4f] transition">
+                <p class="text-xs font-bold text-gray-900 group-hover:text-[#0067AC] transition">
                   {{ auth.user?.name || 'Budi Santoso' }}
                 </p>
                 <p class="text-[10px] text-gray-400 font-medium">
@@ -364,7 +520,7 @@ const canManageTna = computed(() => {
               <div class="px-3 py-2 border-b border-gray-100">
                 <p class="text-xs font-bold text-gray-900">{{ auth.user?.name }}</p>
                 <p class="text-[11px] text-gray-500 font-mono">{{ auth.user?.email }}</p>
-                <p class="text-[10px] text-emerald-700 font-semibold mt-1">NIK: {{ auth.user?.nik || 'BWS-2026-001' }}</p>
+                <p class="text-[10px] text-[#0067AC] font-semibold mt-1">NIK: {{ auth.user?.nik || 'BWS-2026-001' }}</p>
               </div>
               <button
                 @click="handleLogout"
@@ -395,7 +551,7 @@ const canManageTna = computed(() => {
           :key="m.id"
           @click="activeTab = m.id"
           class="px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition shrink-0"
-          :class="activeTab === m.id ? 'bg-[#157f4f] text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'"
+          :class="activeTab === m.id ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'"
         >
           {{ m.name }}
         </button>
@@ -419,7 +575,7 @@ const canManageTna = computed(() => {
                   @click="activeTab = 'dashboard'"
                   id="side-dashboard"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition shadow-xs"
-                  :class="activeTab === 'dashboard' ? 'bg-[#157f4f] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white'"
+                  :class="activeTab === 'dashboard' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
                   title="Executive & Operational Dashboard"
                 >
                   <LayoutGrid class="w-4 h-4" />
@@ -427,14 +583,14 @@ const canManageTna = computed(() => {
                 <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-60">
                     <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#157f4f]">Dashboard LIS</span>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">Dashboard LIS</span>
                     </div>
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
                         <button
                           @click="activeTab = 'dashboard'"
                           class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'dashboard' ? 'bg-[#157f4f]/10 text-[#157f4f] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#157f4f]'"
+                          :class="activeTab === 'dashboard' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <span class="flex items-center gap-2">
                             <PieChart class="w-3.5 h-3.5" />
@@ -463,7 +619,7 @@ const canManageTna = computed(() => {
                   @click="activeTab = 'tna'"
                   id="side-tna"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
-                  :class="activeTab === 'tna' ? 'bg-[#157f4f] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white'"
+                  :class="activeTab === 'tna' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
                   title="TNA / Training Plan"
                 >
                   <Compass class="w-4 h-4" />
@@ -476,9 +632,9 @@ const canManageTna = computed(() => {
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
                         <button
-                          @click="activeTab = 'tna'"
+                          @click="activeTab = 'tna'; tnaViewMode = 'list'"
                           class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'tna' ? 'bg-[#157f4f]/10 text-[#157f4f] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#157f4f]'"
+                          :class="activeTab === 'tna' && tnaViewMode === 'list' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <FolderKanban class="w-3.5 h-3.5 text-gray-400" />
                           Daftar TNA & Pagu Budget
@@ -486,11 +642,12 @@ const canManageTna = computed(() => {
                       </li>
                       <li>
                         <button
-                          @click="openModal('modal-tna')"
-                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition"
+                          @click="activeTab = 'tna'; tnaViewMode = 'create'"
+                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
+                          :class="activeTab === 'tna' && tnaViewMode === 'create' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
-                          <FileUp class="w-3.5 h-3.5 text-gray-400" />
-                          Upload Approval & Input Budget
+                          <Plus class="w-3.5 h-3.5 text-gray-400" />
+                          + Buat Usulan TNA Baru
                         </button>
                       </li>
                     </ul>
@@ -504,7 +661,7 @@ const canManageTna = computed(() => {
                   @click="activeTab = 'program'"
                   id="side-program"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
-                  :class="activeTab === 'program' ? 'bg-[#157f4f] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white'"
+                  :class="activeTab === 'program' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
                   title="Program Pelatihan"
                 >
                   <Layers class="w-4 h-4" />
@@ -519,7 +676,7 @@ const canManageTna = computed(() => {
                         <button
                           @click="activeTab = 'program'"
                           class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'program' ? 'bg-[#157f4f]/10 text-[#157f4f] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#157f4f]'"
+                          :class="activeTab === 'program' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <BookOpenCheck class="w-3.5 h-3.5 text-gray-400" />
                           Approved Program & Budget
@@ -528,7 +685,7 @@ const canManageTna = computed(() => {
                       <li>
                         <button
                           @click="openModal('modal-class')"
-                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition"
+                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#0067AC] transition"
                         >
                           <Send class="w-3.5 h-3.5 text-gray-400" />
                           Siap Dibuatkan Kelas
@@ -545,7 +702,7 @@ const canManageTna = computed(() => {
                   @click="activeTab = 'class'"
                   id="side-class"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
-                  :class="activeTab === 'class' ? 'bg-[#157f4f] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white'"
+                  :class="activeTab === 'class' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
                   title="Class & Implementation"
                 >
                   <Presentation class="w-4 h-4" />
@@ -560,7 +717,7 @@ const canManageTna = computed(() => {
                         <button
                           @click="activeTab = 'class'"
                           class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'class' ? 'bg-[#157f4f]/10 text-[#157f4f] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#157f4f]'"
+                          :class="activeTab === 'class' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <CalendarClock class="w-3.5 h-3.5 text-gray-400" />
                           Jadwal Kelas & 6 Upload PIC
@@ -569,7 +726,7 @@ const canManageTna = computed(() => {
                       <li>
                         <button
                           @click="openModal('modal-class')"
-                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition"
+                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#0067AC] transition"
                         >
                           <MailCheck class="w-3.5 h-3.5 text-gray-400" />
                           Buat Kelas & Send Invitation
@@ -580,14 +737,14 @@ const canManageTna = computed(() => {
                 </div>
               </div>
 
-              <!-- Participants, Evaluation & ELAPSE -->
+              <!-- Participants, Evaluation & Tracking -->
               <div class="relative group">
                 <button
                   @click="activeTab = 'participants'"
                   id="side-participants"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
-                  :class="(activeTab === 'participants' || activeTab === 'eval') ? 'bg-[#157f4f] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white'"
-                  title="Participants & Evaluation (ELAPSE)"
+                  :class="(activeTab === 'participants' || activeTab === 'eval') ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
+                  title="Participants & Evaluation"
                 >
                   <Users class="w-4 h-4" />
                 </button>
@@ -601,7 +758,7 @@ const canManageTna = computed(() => {
                         <button
                           @click="activeTab = 'participants'"
                           class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'participants' ? 'bg-[#157f4f]/10 text-[#157f4f] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#157f4f]'"
+                          :class="activeTab === 'participants' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <UserCheck class="w-3.5 h-3.5 text-gray-400" />
                           Peserta, Pre/Post Test & Eval
@@ -611,10 +768,10 @@ const canManageTna = computed(() => {
                         <button
                           @click="activeTab = 'eval'"
                           class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'eval' ? 'bg-[#157f4f]/10 text-[#157f4f] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#157f4f]'"
+                          :class="activeTab === 'eval' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <Activity class="w-3.5 h-3.5 text-gray-400" />
-                          Activity (ELAPSE) Review & Nilai
+                          Activity Review & Evaluasi Nilai
                         </button>
                       </li>
                     </ul>
@@ -633,7 +790,7 @@ const canManageTna = computed(() => {
                   @click="activeTab = 'task'"
                   id="side-task"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
-                  :class="activeTab === 'task' ? 'bg-[#157f4f] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white'"
+                  :class="activeTab === 'task' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
                   title="Task (Class/Independent)"
                 >
                   <ClipboardCheck class="w-4 h-4" />
@@ -648,7 +805,7 @@ const canManageTna = computed(() => {
                         <button
                           @click="activeTab = 'task'"
                           class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'task' ? 'bg-[#157f4f]/10 text-[#157f4f] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#157f4f]'"
+                          :class="activeTab === 'task' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <ListTodo class="w-3.5 h-3.5 text-gray-400" />
                           Monitoring & Approval Task
@@ -657,7 +814,7 @@ const canManageTna = computed(() => {
                       <li>
                         <button
                           @click="activeTab = 'task'"
-                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition"
+                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#0067AC] transition"
                         >
                           <UploadCloud class="w-3.5 h-3.5 text-gray-400" />
                           Buat Task / Upload Tugas Peserta
@@ -674,7 +831,7 @@ const canManageTna = computed(() => {
                   @click="activeTab = 'transaction'"
                   id="side-transaction"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition relative"
-                  :class="activeTab === 'transaction' ? 'bg-[#157f4f] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white'"
+                  :class="activeTab === 'transaction' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
                   title="Transaction & Reimbursement"
                 >
                   <Wallet class="w-4 h-4" />
@@ -693,7 +850,7 @@ const canManageTna = computed(() => {
                         <button
                           @click="activeTab = 'transaction'"
                           class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'transaction' ? 'bg-[#157f4f]/10 text-[#157f4f] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#157f4f]'"
+                          :class="activeTab === 'transaction' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <Receipt class="w-3.5 h-3.5 text-gray-400" />
                           Reimburse & Vendor Payment
@@ -702,7 +859,7 @@ const canManageTna = computed(() => {
                       <li>
                         <button
                           @click="openModal('modal-transaction')"
-                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition"
+                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#0067AC] transition"
                         >
                           <FilePlus2 class="w-3.5 h-3.5 text-gray-400" />
                           Ajukan Klaim / Reimburse Baru
@@ -719,7 +876,7 @@ const canManageTna = computed(() => {
                   @click="activeTab = 'certification'"
                   id="side-certification"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
-                  :class="activeTab === 'certification' ? 'bg-[#157f4f] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white'"
+                  :class="activeTab === 'certification' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
                   title="Certification & Mandatory Exam"
                 >
                   <Award class="w-4 h-4" />
@@ -734,7 +891,7 @@ const canManageTna = computed(() => {
                         <button
                           @click="activeTab = 'certification'"
                           class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'certification' ? 'bg-[#157f4f]/10 text-[#157f4f] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#157f4f]'"
+                          :class="activeTab === 'certification' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <ShieldAlert class="w-3.5 h-3.5 text-gray-400" />
                           Target vs Realisasi (Risk, SKSP, Tresuri)
@@ -743,7 +900,7 @@ const canManageTna = computed(() => {
                       <li>
                         <button
                           @click="activeTab = 'certification'"
-                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition"
+                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#0067AC] transition"
                         >
                           <CalendarPlus class="w-3.5 h-3.5 text-gray-400" />
                           Update Realisasi Bulanan & Ujian
@@ -760,7 +917,7 @@ const canManageTna = computed(() => {
                   @click="activeTab = 'reporting'"
                   id="side-reporting"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
-                  :class="activeTab === 'reporting' ? 'bg-[#157f4f] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white'"
+                  :class="activeTab === 'reporting' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
                   title="Reporting Center & Sign-Off"
                 >
                   <BarChart3 class="w-4 h-4" />
@@ -775,7 +932,7 @@ const canManageTna = computed(() => {
                         <button
                           @click="activeTab = 'reporting'"
                           class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'reporting' ? 'bg-[#157f4f]/10 text-[#157f4f] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#157f4f]'"
+                          :class="activeTab === 'reporting' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <FileCheck2 class="w-3.5 h-3.5 text-gray-400" />
                           All Training Info (Class/Yearly/Overall)
@@ -784,7 +941,7 @@ const canManageTna = computed(() => {
                       <li>
                         <button
                           @click="activeTab = 'reporting'"
-                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#157f4f] transition"
+                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#0067AC] transition"
                         >
                           <Stamp class="w-3.5 h-3.5 text-gray-400" />
                           Sign-Off Approved (1) & (2)
@@ -799,20 +956,91 @@ const canManageTna = computed(() => {
 
           </div>
 
-          <!-- Pill Group 3: Auth & Role Matrix -->
+          <!-- Pill Group 3: User & RBAC Management -->
           <div class="bg-white rounded-full p-2 flex flex-col gap-2 shadow-sm items-center mt-3 border border-gray-100">
             <div class="relative group">
               <button
-                @click="showRoleDropdown = !showRoleDropdown"
-                id="side-login"
-                class="side-btn w-10 h-10 rounded-full text-gray-500 group-hover:bg-[#157f4f] group-hover:text-white flex items-center justify-center transition"
-                title="SSO Login & Profil Peran"
+                @click="activeTab = 'rbac'"
+                id="side-rbac"
+                class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
+                :class="activeTab === 'rbac' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
+                title="Kelola Pengguna & Matriks RBAC"
               >
                 <KeyRound class="w-4 h-4" />
               </button>
-              <div class="absolute left-full top-1/2 -translate-y-1/2 pl-3 hidden group-hover:block z-50">
-                <div class="bg-gray-900 text-white text-xs font-semibold px-3 py-1.5 rounded-xl shadow-lg whitespace-nowrap">
-                  SSO Login & Profil Peran
+              <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
+                <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
+                  <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5 flex items-center justify-between">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">Kelola User & RBAC</span>
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">LDMS</span>
+                  </div>
+                  <ul class="space-y-1 text-xs font-medium text-gray-600">
+                    <li>
+                      <button
+                        @click="activeTab = 'rbac'; rbacSubTab = 'users'"
+                        class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                        :class="activeTab === 'rbac' && rbacSubTab === 'users' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                      >
+                        <span class="flex items-center gap-2">
+                          <Users class="w-3.5 h-3.5" />
+                          Daftar Pengguna (User)
+                        </span>
+                        <ChevronRight class="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        @click="activeTab = 'rbac'; rbacSubTab = 'karyawan'"
+                        class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                        :class="activeTab === 'rbac' && rbacSubTab === 'karyawan' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                      >
+                        <span class="flex items-center gap-2">
+                          <UserCheck class="w-3.5 h-3.5" />
+                          Master Karyawan (SDM)
+                        </span>
+                        <ChevronRight class="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        @click="activeTab = 'rbac'; rbacSubTab = 'categories'"
+                        class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                        :class="activeTab === 'rbac' && rbacSubTab === 'categories' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                      >
+                        <span class="flex items-center gap-2">
+                          <FolderTree class="w-3.5 h-3.5" />
+                          Master Kategori & Sub
+                        </span>
+                        <ChevronRight class="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        @click="activeTab = 'rbac'; rbacSubTab = 'years'"
+                        class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                        :class="activeTab === 'rbac' && rbacSubTab === 'years' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                      >
+                        <span class="flex items-center gap-2">
+                          <CalendarRange class="w-3.5 h-3.5" />
+                          Master Tahun Anggaran
+                        </span>
+                        <ChevronRight class="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        @click="activeTab = 'rbac'; rbacSubTab = 'approvals'"
+                        class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                        :class="activeTab === 'rbac' && rbacSubTab === 'approvals' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                      >
+                        <span class="flex items-center gap-2">
+                          <Sliders class="w-3.5 h-3.5" />
+                          Setting Multi-Approval
+                        </span>
+                        <ChevronRight class="w-3.5 h-3.5" />
+                      </button>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -832,45 +1060,202 @@ const canManageTna = computed(() => {
                 {{ currentTabTitle }}
               </h1>
               <p id="page-subtitle" class="text-xs text-gray-400 mt-0.5">
-                Portal Operasional Terpadu Learning & Development — Bank Woori Saudara
+                {{ currentTabSubtitle }}
               </p>
             </div>
 
-            <!-- Contextual Quick Action Buttons -->
-            <div class="flex flex-wrap items-center gap-2">
+            <!-- Contextual Quick Action Buttons / Sub-Tabs per Module -->
+            <!-- 1. Executive Dashboard: General Fast Actions -->
+            <div v-if="activeTab === 'dashboard'" class="flex flex-wrap items-center gap-2">
               <button
-                @click="activeTab = 'tna'"
+                @click="activeTab = 'rbac'; rbacSubTab = 'years'"
                 class="bg-white px-3.5 py-2 rounded-full text-xs font-semibold text-gray-700 flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-100 transition"
+                title="Klik untuk Kelola Master Tahun Anggaran"
               >
-                <Calendar class="w-3.5 h-3.5 text-[#157f4f]" />
-                <span>Tahun Buku: 2026</span>
+                <Calendar class="w-3.5 h-3.5 text-[#0067AC]" />
+                <span>Tahun Buku: {{ activeFiscalYear }}</span>
               </button>
               <button
                 v-if="canCreateClass"
                 @click="showClassModal = true"
                 class="bg-white px-3.5 py-2 rounded-full text-xs font-semibold text-gray-800 flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-100 transition"
               >
-                <Send class="w-3.5 h-3.5 text-[#157f4f]" />
+                <Send class="w-3.5 h-3.5 text-[#0067AC]" />
                 <span>Send Class Invitation</span>
               </button>
               <button
                 @click="showVoucherModal = true"
-                class="bg-[#157f4f] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-emerald-800 transition"
+                class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition"
               >
                 <Receipt class="w-3.5 h-3.5" />
                 <span>+ Klaim / Reimburse</span>
+              </button>
+            </div>
+
+            <!-- 2. TNA Module Header Actions -->
+            <div v-else-if="activeTab === 'tna'" class="flex items-center gap-2">
+              <button
+                @click="activeTab = 'rbac'; rbacSubTab = 'years'"
+                class="bg-white px-3.5 py-2 rounded-full text-xs font-semibold text-gray-700 flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-100 transition"
+                title="Kelola Master Tahun Anggaran"
+              >
+                <Calendar class="w-3.5 h-3.5 text-[#0067AC]" />
+                <span>Tahun Buku: {{ activeFiscalYear }}</span>
+              </button>
+              <button
+                v-if="canManageTna && tnaViewMode === 'list'"
+                @click="tnaViewMode = 'create'"
+                class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition"
+              >
+                <Plus class="w-3.5 h-3.5" />
+                <span>+ Usulan TNA Baru</span>
+              </button>
+              <button
+                v-else-if="tnaViewMode === 'edit'"
+                @click="tnaViewMode = 'detail'"
+                class="bg-white text-gray-700 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-200 transition"
+              >
+                <ArrowLeft class="w-3.5 h-3.5 text-[#0067AC]" />
+                <span>Kembali ke Rincian Dokumen</span>
+              </button>
+              <button
+                v-else-if="tnaViewMode !== 'list'"
+                @click="tnaViewMode = 'list'"
+                class="bg-white text-gray-700 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-200 transition"
+              >
+                <FolderKanban class="w-3.5 h-3.5 text-[#0067AC]" />
+                <span>Daftar Usulan TNA</span>
+              </button>
+            </div>
+
+            <!-- 3. Program Kerja -->
+            <div v-else-if="activeTab === 'program'" class="flex items-center gap-2">
+              <button
+                @click="programModuleRef?.openCreate()"
+                class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition cursor-pointer"
+              >
+                <Plus class="w-3.5 h-3.5" />
+                <span>+ Buat Program Baru</span>
+              </button>
+            </div>
+
+            <!-- 4. Class Implementation -->
+            <div v-else-if="activeTab === 'class'" class="flex items-center gap-2">
+              <button
+                v-if="canCreateClass"
+                @click="showClassModal = true"
+                class="bg-white px-3.5 py-2 rounded-full text-xs font-semibold text-gray-800 flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-100 transition"
+              >
+                <Send class="w-3.5 h-3.5 text-[#0067AC]" />
+                <span>Send Class Invitation</span>
+              </button>
+              <button
+                v-if="canCreateClass"
+                @click="classModuleRef?.openCreate()"
+                class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition cursor-pointer"
+              >
+                <Plus class="w-3.5 h-3.5" />
+                <span>+ Buat Batch Kelas (Maker)</span>
+              </button>
+            </div>
+
+            <!-- 5. Transaksi Keuangan -->
+            <div v-else-if="activeTab === 'transaction'" class="flex items-center gap-2">
+              <button
+                @click="showVoucherModal = true"
+                class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition"
+              >
+                <Receipt class="w-3.5 h-3.5" />
+                <span>+ Buat Voucher / Klaim</span>
+              </button>
+            </div>
+
+            <!-- 6. Reporting & Audit -->
+            <div v-else-if="activeTab === 'reporting'" class="flex items-center gap-2">
+              <button
+                @click="handleDownloadAuditCsv"
+                class="bg-white px-3.5 py-2 rounded-full text-xs font-semibold text-gray-800 flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-100 transition"
+              >
+                <Download class="w-3.5 h-3.5 text-[#0067AC]" />
+                <span>Unduh Audit CSV</span>
+              </button>
+            </div>
+
+            <!-- 7. RBAC Module Sub-Tabs -->
+            <div v-else-if="activeTab === 'rbac'" class="flex items-center gap-1.5 p-1 bg-white border border-gray-100 rounded-full shadow-2xs self-start lg:self-auto overflow-x-auto">
+              <button
+                @click="rbacSubTab = 'users'"
+                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                :class="rbacSubTab === 'users' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
+              >
+                <Users class="w-3.5 h-3.5" />
+                <span>Kelola Pengguna</span>
+              </button>
+
+              <button
+                @click="rbacSubTab = 'karyawan'"
+                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                :class="rbacSubTab === 'karyawan' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
+              >
+                <UserCheck class="w-3.5 h-3.5" />
+                <span>Master Karyawan</span>
+              </button>
+
+              <button
+                @click="rbacSubTab = 'categories'"
+                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                :class="rbacSubTab === 'categories' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
+              >
+                <FolderTree class="w-3.5 h-3.5" />
+                <span>Master Kategori & Sub</span>
+              </button>
+
+              <button
+                @click="rbacSubTab = 'years'"
+                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                :class="rbacSubTab === 'years' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
+              >
+                <CalendarRange class="w-3.5 h-3.5" />
+                <span>Master Tahun</span>
+              </button>
+
+              <button
+                @click="rbacSubTab = 'levels'"
+                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                :class="rbacSubTab === 'levels' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
+              >
+                <ShieldCheck class="w-3.5 h-3.5" />
+                <span>Tingkat Peran</span>
+              </button>
+
+              <button
+                @click="rbacSubTab = 'matrix'"
+                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                :class="rbacSubTab === 'matrix' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
+              >
+                <Sliders class="w-3.5 h-3.5" />
+                <span>Matriks Hak Akses (RBAC)</span>
+              </button>
+
+              <button
+                @click="rbacSubTab = 'approvals'"
+                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                :class="rbacSubTab === 'approvals' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
+              >
+                <FileCheck2 class="w-3.5 h-3.5" />
+                <span>Setting Multi-Approval</span>
               </button>
             </div>
           </div>
 
           <!-- Alerts Banner -->
           <div v-if="flashSuccess" class="w-full">
-            <div class="bg-emerald-50 border border-emerald-200 px-4 py-2.5 rounded-2xl text-xs text-[#157f4f] flex items-center justify-between shadow-2xs">
+            <div class="bg-[#EBF4FC] border border-blue-200 px-4 py-2.5 rounded-2xl text-xs text-[#0067AC] flex items-center justify-between shadow-2xs">
               <div class="flex items-center space-x-2">
-                <CheckCircle class="w-4 h-4 text-[#157f4f] shrink-0" />
+                <CheckCircle class="w-4 h-4 text-[#0067AC] shrink-0" />
                 <span>{{ flashSuccess }}</span>
               </div>
-              <button @click="flashSuccess = ''" class="text-emerald-700 hover:text-emerald-900 font-bold">&times;</button>
+              <button @click="flashSuccess = ''" class="text-[#0067AC] hover:text-blue-900 font-bold">&times;</button>
             </div>
           </div>
 
@@ -884,29 +1269,76 @@ const canManageTna = computed(() => {
             </div>
           </div>
 
-          <!-- Dual Control Checker Priority Banner -->
+          <!-- Pusat Otorisasi & Multi-Approval Priority Banner (ONLY ON DASHBOARD/ANALYTIC TAB) -->
           <div
-            v-if="isCheckerRole && kpis.pending_checker_approvals > 0"
+            v-if="activeTab === 'dashboard' && totalPendingApprovalsForUser > 0"
             class="w-full"
           >
-            <div class="bg-amber-50 border border-amber-200/80 p-4 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900 shadow-2xs">
-              <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 rounded-full bg-amber-200/60 text-amber-800 flex items-center justify-center shrink-0">
-                  <Scale class="w-4 h-4" />
+            <div class="bg-gradient-to-r from-[#002855] via-[#003876] to-[#005088] border border-blue-900/30 p-4 sm:p-5 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-white shadow-sm">
+              <div class="flex items-start sm:items-center gap-3.5">
+                <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white shrink-0 shadow-inner">
+                  <ShieldCheck class="w-5 h-5 text-amber-300" />
                 </div>
                 <div>
-                  <span class="font-bold text-amber-950 uppercase tracking-wide">Antrean Dual-Control Checker Aktif</span>
-                  <p class="text-amber-800 text-[11px]">
-                    Terdapat {{ kpis.pending_checker_approvals }} pengajuan (Kelas & Transaksi Keuangan) yang membutuhkan otorisasi Anda sebagai Checker.
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-bold text-sm tracking-wide uppercase text-white">Antrean Multi-Approval & Task Otorisasi</span>
+                    <span class="text-[10px] bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                      {{ totalPendingApprovalsForUser }} Menunggu Tindakan
+                    </span>
+                  </div>
+                  <p class="text-blue-100/90 text-xs mt-0.5">
+                    Terdapat berkas yang membutuhkan otorisasi Anda berdasarkan matriks kewenangan peran <span class="font-semibold text-amber-300">[{{ auth.user?.role_name }}]</span>.
                   </p>
+                  
+                  <!-- Breakdown Pills per Module -->
+                  <div class="flex items-center gap-2 mt-2.5 flex-wrap">
+                    <button
+                      v-if="pendingTnaForUser.length > 0"
+                      @click="activeTab = 'tna'; tnaViewMode = 'list'"
+                      class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white text-[11px] font-semibold border border-white/20 transition cursor-pointer"
+                    >
+                      <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                      {{ pendingTnaForUser.length }} Usulan TNA
+                    </button>
+                    <button
+                      v-if="pendingClassesForUser.length > 0"
+                      @click="activeTab = 'class'"
+                      class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white text-[11px] font-semibold border border-white/20 transition cursor-pointer"
+                    >
+                      <span class="w-2 h-2 rounded-full bg-sky-300"></span>
+                      {{ pendingClassesForUser.length }} Batch Kelas
+                    </button>
+                    <button
+                      v-if="pendingFinancialsForUser.length > 0"
+                      @click="activeTab = 'transaction'"
+                      class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white text-[11px] font-semibold border border-white/20 transition cursor-pointer"
+                    >
+                      <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                      {{ pendingFinancialsForUser.length }} Transaksi Keuangan
+                    </button>
+                  </div>
                 </div>
               </div>
-              <button
-                @click="activeTab = 'class'"
-                class="px-4 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition shadow-2xs shrink-0"
-              >
-                Tinjau Antrean Checker
-              </button>
+
+              <!-- Action Buttons -->
+              <div class="flex items-center gap-2 self-stretch md:self-auto justify-end shrink-0">
+                <button
+                  v-if="auth.user?.role_name === 'Super Admin'"
+                  @click="activeTab = 'rbac'; rbacSubTab = 'approval_settings'"
+                  class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-xs transition border border-white/20 flex items-center gap-1.5 cursor-pointer"
+                  title="Konfigurasi Alur Multi-Approval"
+                >
+                  <Sliders class="w-3.5 h-3.5 text-blue-200" />
+                  <span>Setting Alur</span>
+                </button>
+                <button
+                  @click="pendingTnaForUser.length > 0 ? (activeTab = 'tna', tnaViewMode = 'list') : (pendingClassesForUser.length > 0 ? activeTab = 'class' : activeTab = 'transaction')"
+                  class="px-4 py-2 rounded-xl bg-white hover:bg-blue-50 text-[#002855] font-bold text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>Tinjau Antrean Approval</span>
+                  <ChevronRight class="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -920,23 +1352,43 @@ const canManageTna = computed(() => {
               :tna-proposals="tnaProposals"
               @switch-view="activeTab = $event"
               @open-modal="openModal"
+              @view-tna-detail="openTnaDetail"
             />
 
-            <TnaModule
-              v-else-if="activeTab === 'tna'"
-              :tna-proposals="tnaProposals"
-              :can-manage-tna="canManageTna"
-              @open-tna-modal="showTnaModal = true"
-            />
+            <!-- TNA Module (List, Full-Page Create, and Detail Rincian View) -->
+            <template v-else-if="activeTab === 'tna'">
+              <TnaDetailPage
+                v-if="tnaViewMode === 'detail' && selectedTnaProposalId"
+                :proposal-id="selectedTnaProposalId"
+                @back="tnaViewMode = 'list'"
+                @refresh-list="fetchDashboard"
+                @edit="openTnaEdit"
+              />
+              <TnaCreatePage
+                v-else-if="tnaViewMode === 'create' || tnaViewMode === 'edit'"
+                :edit-proposal-id="tnaViewMode === 'edit' ? selectedTnaProposalId : null"
+                @back="tnaViewMode = (tnaViewMode === 'edit' ? 'detail' : 'list')"
+                @created="handleTnaCreated"
+              />
+              <TnaModule
+                v-else
+                :tna-proposals="tnaProposals"
+                :can-manage-tna="canManageTna"
+                @create-tna="tnaViewMode = 'create'"
+                @view-tna-detail="openTnaDetail"
+              />
+            </template>
 
             <ProgramModule
               v-else-if="activeTab === 'program'"
+              ref="programModuleRef"
               :training-programs="trainingPrograms"
-              @open-program-modal="showClassModal = true"
+              @open-class-create="handleOpenClassCreateFromProgram"
             />
 
             <ClassModule
               v-else-if="activeTab === 'class'"
+              ref="classModuleRef"
               :training-classes="trainingClasses"
               :is-checker-role="isCheckerRole"
               :can-create-class="canCreateClass"
@@ -978,6 +1430,24 @@ const canManageTna = computed(() => {
               v-else-if="activeTab === 'reporting'"
               :audit-logs="auditLogs"
             />
+
+            <!-- User RBAC, Master Data & Multi-Approval Settings -->
+            <template v-else-if="activeTab === 'rbac'">
+              <CategoryMasterModule
+                v-if="rbacSubTab === 'categories'"
+              />
+              <YearMasterModule
+                v-else-if="rbacSubTab === 'years'"
+              />
+              <MultiApprovalSettingModule
+                v-else-if="rbacSubTab === 'approvals' || rbacSubTab === 'approval_settings'"
+              />
+              <UserRbacModule
+                v-else
+                :sub-tab="rbacSubTab"
+                @update:sub-tab="rbacSubTab = $event"
+              />
+            </template>
           </main>
 
         </div>

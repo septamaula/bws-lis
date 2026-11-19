@@ -27,11 +27,12 @@ class DashboardApiController extends Controller
         $passedParticipants = ClassEnrollment::where('completion_status', 'PASSED')->count();
         $passRatePct = $totalParticipants > 0 ? round(($passedParticipants / $totalParticipants) * 100, 1) : 0;
 
-        $pendingCheckerApprovals = TrainingClass::where('dual_control_status', 'PENDING_CHECKER')->count()
-            + FinancialTransaction::where('status', 'PENDING_APPROVAL')->count()
-            + TnaProposal::where('status', 'SUBMITTED')->count();
+        $pendingClassesCount = TrainingClass::where('dual_control_status', 'PENDING_CHECKER')->count();
+        $pendingFinancialsCount = FinancialTransaction::where('status', 'PENDING_APPROVAL')->count();
+        $pendingTnaCount = TnaProposal::whereIn('status', ['SUBMITTED', 'CHECKER_REVIEW', 'APPROVER_REVIEW'])->count();
+        $pendingCheckerApprovals = $pendingClassesCount + $pendingFinancialsCount + $pendingTnaCount;
 
-        $tnaProposals = TnaProposal::with(['items', 'proposer', 'approver'])
+        $tnaProposals = TnaProposal::with(['items', 'proposer', 'approver', 'approvalHistories'])
             ->orderByDesc('id')
             ->get();
 
@@ -78,6 +79,9 @@ class DashboardApiController extends Controller
                 'total_participants' => $totalParticipants,
                 'pass_rate_pct' => $passRatePct,
                 'pending_checker_approvals' => $pendingCheckerApprovals,
+                'pending_tna_approvals' => $pendingTnaCount,
+                'pending_class_approvals' => $pendingClassesCount,
+                'pending_trx_approvals' => $pendingFinancialsCount,
                 'ojk_compliance_score' => 99.8,
             ],
             'tnaProposals' => $tnaProposals,

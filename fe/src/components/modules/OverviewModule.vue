@@ -34,7 +34,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['switch-view', 'open-modal'])
+const emit = defineEmits(['switch-view', 'open-modal', 'view-tna-detail'])
 
 // Format Rupiah helper
 function formatRupiah(num) {
@@ -56,7 +56,7 @@ const priorityQueueData = computed(() => {
       id: `TRX-${f.id}`,
       code: f.trx_number || `#TRX-2026-${String(f.id).padStart(3, '0')}`,
       type: 'Transaction (Reimburse)',
-      typeColor: 'text-[#157f4f]',
+      typeColor: 'text-[#0067AC]',
       title: f.description || `Reimburse Operasional Diklat #${f.id}`,
       subtitle: `${formatRupiah(f.amount)} • Bukti Kwitansi Terlampir`,
       pic: f.maker?.name || 'Class PIC',
@@ -92,21 +92,43 @@ const priorityQueueData = computed(() => {
     })
   })
 
-  // Pending TNA Proposals
-  props.tnaProposals.filter(t => t.status === 'SUBMITTED').forEach(t => {
+  // Pending TNA Proposals (Multi-Approval Pipeline)
+  props.tnaProposals.filter(t => ['SUBMITTED', 'CHECKER_REVIEW', 'APPROVER_REVIEW', 'REVISION'].includes(t.status)).forEach(t => {
+    let approvalPosition = 'Menunggu Review HCBP'
+    let approvalBadgeClass = 'bg-purple-50 text-purple-700'
+    let approvalDotClass = 'bg-purple-600'
+    let actionLabel = 'Validasi HCBP'
+
+    if (t.status === 'CHECKER_REVIEW') {
+      approvalPosition = 'Menunggu Checker HC Learning'
+      approvalBadgeClass = 'bg-blue-50 text-blue-700'
+      approvalDotClass = 'bg-[#0067AC]'
+      actionLabel = 'Otorisasi Checker'
+    } else if (t.status === 'APPROVER_REVIEW') {
+      approvalPosition = 'Menunggu Kadiv HC / BoD'
+      approvalBadgeClass = 'bg-amber-50 text-amber-700'
+      approvalDotClass = 'bg-amber-500'
+      actionLabel = 'Sign-Off Kadiv'
+    } else if (t.status === 'REVISION') {
+      approvalPosition = 'Perlu Revisi Dept Head'
+      approvalBadgeClass = 'bg-rose-50 text-rose-700'
+      approvalDotClass = 'bg-rose-500'
+      actionLabel = 'Perbaiki Usulan'
+    }
+
     items.push({
       id: `TNA-${t.id}`,
       code: t.proposal_code || `#TNA-2026-${String(t.id).padStart(3, '0')}`,
       type: 'TNA (Perencanaan)',
-      typeColor: 'text-purple-600',
+      typeColor: 'text-[#002855]',
       title: `Usulan TNA Divisi ${t.department} - Tahun ${t.year}`,
-      subtitle: `Estimasi Anggaran: ${formatRupiah(t.total_budget_requested)}`,
+      subtitle: `Estimasi Anggaran: ${formatRupiah(t.total_budget_requested)} • ${t.items?.length || 0} Mata Diklat`,
       pic: t.proposer?.name || 'Dept Head',
       picRole: 'Dept Head',
-      approvalPosition: 'Menunggu Review HCBP',
-      approvalBadgeClass: 'bg-purple-50 text-purple-700',
-      approvalDotClass: 'bg-purple-600',
-      actionLabel: 'Validasi HCBP',
+      approvalPosition,
+      approvalBadgeClass,
+      approvalDotClass,
+      actionLabel,
       actionType: 'tna',
       entityId: t.id,
       date: t.created_at || '2026-05-15'
@@ -120,7 +142,7 @@ const priorityQueueData = computed(() => {
         id: 'TRX-2026-089',
         code: '#TRX-2026-089',
         type: 'Transaction (Reimburse)',
-        typeColor: 'text-[#157f4f]',
+        typeColor: 'text-[#0067AC]',
         title: 'Reimburse Ujian Sertifikasi SMR Level 2 (12 Peserta)',
         subtitle: 'Rp 42.000.000 • Bukti Kwitansi LSPP Terlampir',
         pic: 'Nadia Putri',
@@ -154,14 +176,14 @@ const priorityQueueData = computed(() => {
         id: 'TSK-2026-041',
         code: '#TSK-2026-041',
         type: 'Task (Class Activity)',
-        typeColor: 'text-emerald-700',
+        typeColor: 'text-[#0067AC]',
         title: 'Action Learning Project: Credit Analyst Batch IV',
         subtitle: '25/25 Peserta telah Upload File • Direview oleh PIC',
         pic: 'Rina Melati',
         picRole: 'Class PIC',
         approvalPosition: 'Menunggu Spv, Mgr & Kadiv',
-        approvalBadgeClass: 'bg-emerald-50 text-[#157f4f]',
-        approvalDotClass: 'bg-[#157f4f]',
+        approvalBadgeClass: 'bg-[#EBF4FC] text-[#0067AC]',
+        approvalDotClass: 'bg-[#0067AC]',
         actionLabel: 'Buka Modul Task',
         actionType: 'task',
         entityId: 3,
@@ -202,7 +224,7 @@ const priorityColumns = [
                 </div>
                 <button
                   @click="emit('switch-view', 'tna')"
-                  class="w-8 h-8 rounded-full bg-[#f4f6f5] flex items-center justify-center text-gray-600 hover:bg-[#157f4f] hover:text-white transition"
+                  class="w-8 h-8 rounded-full bg-[#f4f6f5] flex items-center justify-center text-gray-600 hover:bg-[#0067AC] hover:text-white transition"
                   title="Lihat Detail TNA"
                 >
                   <ArrowUpRight class="w-4 h-4" />
@@ -210,20 +232,24 @@ const priorityColumns = [
               </div>
 
               <!-- Green ATM Card Style -->
-              <div class="bg-[#157f4f] text-white rounded-2xl p-5 flex flex-col justify-between min-h-[165px] shadow-md relative overflow-hidden">
-                <div class="flex items-center justify-between">
-                  <span class="font-bold text-sm tracking-wider uppercase">BANK WOORI SAUDARA</span>
-                  <span class="text-[10px] bg-white/20 px-2.5 py-0.5 rounded-full font-semibold">FY 2026</span>
+              <div class="bg-gradient-to-br from-[#002855] via-[#003876] to-[#0067AC] text-white rounded-2xl p-5 flex flex-col justify-between min-h-[165px] shadow-lg relative overflow-hidden">
+                <div class="absolute -right-8 -bottom-8 w-36 h-36 rounded-full bg-white/5 pointer-events-none"></div>
+                <div class="flex items-center justify-between relative z-10">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm tracking-wider uppercase">BANK WOORI SAUDARA</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#00A0E9]"></span>
+                  </div>
+                  <span class="text-[10px] bg-white/15 px-2.5 py-0.5 rounded-full font-semibold text-sky-200">FY 2026</span>
                 </div>
-                <div class="my-3">
-                  <p class="text-[11px] text-emerald-100/80 mb-0.5">Total Approved Training Budget</p>
-                  <p class="text-2xl font-bold tracking-tight">
+                <div class="my-3 relative z-10">
+                  <p class="text-[11px] text-sky-200/90 mb-0.5">Total Approved Training Budget</p>
+                  <p class="text-2xl font-bold tracking-tight text-white">
                     {{ formatRupiah(kpis.total_budget_approved || 8450000000) }}
                   </p>
                 </div>
-                <div class="flex items-center justify-between text-xs text-emerald-100/90 pt-2 border-t border-white/15">
-                  <span>Terserap: <strong>{{ formatRupiah(kpis.total_budget_disbursed || 5180000000) }} ({{ kpis.budget_utilization_pct || 61.3 }}%)</strong></span>
-                  <span>34 Program</span>
+                <div class="flex items-center justify-between text-xs text-sky-200/90 pt-2 border-t border-white/15 relative z-10">
+                  <span>Terserap: <strong class="text-white">{{ formatRupiah(kpis.total_budget_disbursed || 5180000000) }} ({{ kpis.budget_utilization_pct || 61.3 }}%)</strong></span>
+                  <span class="text-white font-medium">34 Program</span>
                 </div>
               </div>
             </div>
@@ -234,7 +260,7 @@ const priorityColumns = [
                 <p class="text-xs text-gray-400 mb-0.5">Realisasi Sertifikasi Wajib (YTD)</p>
                 <p class="text-xl font-bold text-gray-900">412 / 450 Lulus</p>
               </div>
-              <span class="bg-[#157f4f] text-white text-xs font-semibold px-3 py-1 rounded-full">
+              <span class="bg-[#0067AC] text-white text-xs font-semibold px-3 py-1 rounded-full">
                 91.5% Target
               </span>
             </div>
@@ -245,7 +271,7 @@ const priorityColumns = [
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center gap-2.5">
                 <div class="w-9 h-9 rounded-full bg-[#f4f6f5] flex items-center justify-center text-gray-600">
-                  <BarChart2 class="w-4 h-4 text-[#157f4f]" />
+                  <BarChart2 class="w-4 h-4 text-[#0067AC]" />
                 </div>
                 <div>
                   <h2 class="font-bold text-base text-gray-900">Realisasi Kelas & Serapan Anggaran</h2>
@@ -253,7 +279,7 @@ const priorityColumns = [
                 </div>
               </div>
               <div class="bg-[#f4f6f5] p-1 rounded-full flex items-center text-xs font-medium">
-                <span class="px-3 py-1 rounded-full bg-[#157f4f] text-white font-semibold shadow-xs">S1 2026</span>
+                <span class="px-3 py-1 rounded-full bg-[#0067AC] text-white font-semibold shadow-xs">S1 2026</span>
                 <span class="px-3 py-1 rounded-full text-gray-500">Full Year</span>
               </div>
             </div>
@@ -271,7 +297,7 @@ const priorityColumns = [
                     8 Kelas
                     <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
                   </div>
-                  <div class="w-full max-w-[42px] h-[44%] rounded-full bg-[#8bbca4] transition hover:brightness-95"></div>
+                  <div class="w-full max-w-[42px] h-[44%] rounded-full bg-[#93C5FD] transition hover:brightness-95"></div>
                   <span class="text-[11px] text-gray-400 group-hover:text-gray-700">JAN</span>
                 </div>
 
@@ -281,7 +307,7 @@ const priorityColumns = [
                     12 Kelas
                     <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
                   </div>
-                  <div class="w-full max-w-[42px] h-[68%] rounded-full bg-[#8bbca4] transition hover:brightness-95"></div>
+                  <div class="w-full max-w-[42px] h-[68%] rounded-full bg-[#93C5FD] transition hover:brightness-95"></div>
                   <span class="text-[11px] text-gray-400 group-hover:text-gray-700">FEB</span>
                 </div>
 
@@ -291,7 +317,7 @@ const priorityColumns = [
                     10 Kelas
                     <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
                   </div>
-                  <div class="w-full max-w-[42px] h-[55%] rounded-full bg-[#8bbca4] transition hover:brightness-95"></div>
+                  <div class="w-full max-w-[42px] h-[55%] rounded-full bg-[#93C5FD] transition hover:brightness-95"></div>
                   <span class="text-[11px] text-gray-400 group-hover:text-gray-700">MAR</span>
                 </div>
 
@@ -301,7 +327,7 @@ const priorityColumns = [
                     14 Kelas
                     <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
                   </div>
-                  <div class="w-full max-w-[42px] h-[75%] rounded-full bg-[#8bbca4] transition hover:brightness-95"></div>
+                  <div class="w-full max-w-[42px] h-[75%] rounded-full bg-[#93C5FD] transition hover:brightness-95"></div>
                   <span class="text-[11px] text-gray-400 group-hover:text-gray-700">APR</span>
                 </div>
 
@@ -311,8 +337,8 @@ const priorityColumns = [
                     18 Kelas (Puncak)
                     <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
                   </div>
-                  <div class="w-full max-w-[42px] h-[95%] rounded-full bg-[#157f4f] transition hover:brightness-110 shadow-sm"></div>
-                  <span class="text-[11px] font-bold text-[#157f4f]">MEI</span>
+                  <div class="w-full max-w-[42px] h-[95%] rounded-full bg-[#0067AC] transition hover:brightness-110 shadow-sm"></div>
+                  <span class="text-[11px] font-bold text-[#0067AC]">MEI</span>
                 </div>
 
                 <!-- JUN -->
@@ -321,7 +347,7 @@ const priorityColumns = [
                     15 Kelas
                     <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
                   </div>
-                  <div class="w-full max-w-[42px] h-[80%] rounded-full bg-[#8bbca4] transition hover:brightness-95"></div>
+                  <div class="w-full max-w-[42px] h-[80%] rounded-full bg-[#93C5FD] transition hover:brightness-95"></div>
                   <span class="text-[11px] text-gray-400 group-hover:text-gray-700">JUN</span>
                 </div>
 
@@ -345,7 +371,7 @@ const priorityColumns = [
           <template #actions>
             <button
               @click="emit('switch-view', 'transaction')"
-              class="text-xs font-semibold text-[#157f4f] hover:text-[#0f5c38] hover:underline flex items-center gap-1.5 transition"
+              class="text-xs font-semibold text-[#0067AC] hover:text-[#003876] hover:underline flex items-center gap-1.5 transition"
             >
               Lihat Semua Transaksi & Approval &rarr;
             </button>
@@ -385,7 +411,7 @@ const priorityColumns = [
             <button
               v-if="row.actionType === 'voucher'"
               @click="emit('open-modal', 'modal-transaction')"
-              class="inline-flex items-center justify-center bg-[#157f4f] text-white text-xs font-semibold px-4 py-1.5 rounded-full hover:bg-emerald-800 transition whitespace-nowrap shadow-xs"
+              class="inline-flex items-center justify-center bg-[#0067AC] text-white text-xs font-semibold px-4 py-1.5 rounded-full hover:bg-[#00528c] transition whitespace-nowrap shadow-xs"
             >
               {{ row.actionLabel }}
             </button>
@@ -393,6 +419,13 @@ const priorityColumns = [
               v-else-if="row.actionType === 'class'"
               @click="emit('open-modal', 'modal-class')"
               class="inline-flex items-center justify-center bg-blue-600 text-white text-xs font-semibold px-4 py-1.5 rounded-full hover:bg-blue-700 transition whitespace-nowrap shadow-xs"
+            >
+              {{ row.actionLabel }}
+            </button>
+            <button
+              v-else-if="row.actionType === 'tna'"
+              @click="emit('view-tna-detail', row.entityId); emit('switch-view', 'tna')"
+              class="inline-flex items-center justify-center bg-[#002855] text-white text-xs font-semibold px-4 py-1.5 rounded-full hover:bg-[#003876] transition whitespace-nowrap shadow-xs"
             >
               {{ row.actionLabel }}
             </button>
@@ -411,16 +444,16 @@ const priorityColumns = [
       <!-- Right 4 Cols -->
       <div class="lg:col-span-4 flex flex-col gap-5">
         
-        <!-- Total Jam Pelatihan (ELAPSE) Card -->
+        <!-- Total Jam Pelatihan (LIS) Card -->
         <div class="bg-white rounded-3xl p-5 shadow-sm flex flex-col justify-between border border-gray-100">
           <div class="flex items-start justify-between">
             <div>
-              <h2 class="font-bold text-base text-gray-900">Total Jam Pelatihan (ELAPSE)</h2>
+              <h2 class="font-bold text-base text-gray-900">Total Jam Pelatihan (LIS)</h2>
               <p class="text-xs text-gray-400">Akumulasi Learning Hours Karyawan BWS</p>
             </div>
             <button
               @click="emit('switch-view', 'participants')"
-              class="w-8 h-8 rounded-full bg-[#f4f6f5] flex items-center justify-center text-gray-600 hover:bg-[#157f4f] hover:text-white transition"
+              class="w-8 h-8 rounded-full bg-[#f4f6f5] flex items-center justify-center text-gray-600 hover:bg-[#0067AC] hover:text-white transition"
               title="Lihat Peserta"
             >
               <ArrowUpRight class="w-4 h-4" />
@@ -429,17 +462,17 @@ const priorityColumns = [
           
           <div class="text-center my-4">
             <p class="text-3xl font-bold text-gray-900">28,450 <span class="text-sm text-gray-400 font-normal">Jam</span></p>
-            <p class="text-[11px] text-[#157f4f] font-semibold mt-0.5">+19.4% dibanding periode 2025</p>
+            <p class="text-[11px] text-[#0067AC] font-semibold mt-0.5">+19.4% dibanding periode 2025</p>
           </div>
 
           <!-- Mini Sparkline Simulation -->
           <div class="h-16 flex items-end justify-between gap-1 pt-3 border-t border-gray-100">
-            <div class="flex-1 bg-emerald-100 rounded-t h-[40%]"></div>
-            <div class="flex-1 bg-emerald-100 rounded-t h-[60%]"></div>
-            <div class="flex-1 bg-emerald-200 rounded-t h-[50%]"></div>
-            <div class="flex-1 bg-emerald-300 rounded-t h-[75%]"></div>
-            <div class="flex-1 bg-emerald-400 rounded-t h-[70%]"></div>
-            <div class="flex-1 bg-[#157f4f] rounded-t h-[100%]"></div>
+            <div class="flex-1 bg-blue-100 rounded-t h-[40%]"></div>
+            <div class="flex-1 bg-blue-200 rounded-t h-[60%]"></div>
+            <div class="flex-1 bg-blue-300 rounded-t h-[50%]"></div>
+            <div class="flex-1 bg-sky-400 rounded-t h-[75%]"></div>
+            <div class="flex-1 bg-blue-500 rounded-t h-[70%]"></div>
+            <div class="flex-1 bg-[#0067AC] rounded-t h-[100%]"></div>
           </div>
         </div>
 
@@ -450,7 +483,7 @@ const priorityColumns = [
               <h2 class="font-bold text-base text-gray-900">Agenda Pekan Ini</h2>
               <p class="text-xs text-gray-400">Pelatihan Aktif BWS Learning Center</p>
             </div>
-            <span class="text-xs font-semibold bg-emerald-50 text-[#157f4f] px-2.5 py-1 rounded-full">
+            <span class="text-xs font-semibold bg-[#EBF4FC] text-[#0067AC] px-2.5 py-1 rounded-full">
               4 Batch
             </span>
           </div>
@@ -458,7 +491,7 @@ const priorityColumns = [
           <div class="space-y-3">
             <div class="p-3 rounded-2xl bg-[#f8faf9] border border-gray-100 flex items-start justify-between gap-2">
               <div>
-                <span class="text-[10px] font-bold text-[#157f4f] uppercase tracking-wide">Risk Management</span>
+                <span class="text-[10px] font-bold text-[#0067AC] uppercase tracking-wide">Risk Management</span>
                 <p class="font-semibold text-xs text-gray-900 mt-0.5">SMR Level 2 Sertifikasi</p>
                 <p class="text-[11px] text-gray-400">12 Mei - 14 Mei 2026 • R. Diklat 101</p>
               </div>
@@ -478,7 +511,7 @@ const priorityColumns = [
               <div>
                 <span class="text-[10px] font-bold text-purple-600 uppercase tracking-wide">Operational</span>
                 <p class="font-semibold text-xs text-gray-900 mt-0.5">Anti-Money Laundering (APU-PPT)</p>
-                <p class="text-[11px] text-gray-400">18 Mei 2026 • Portal ELAPSE</p>
+                <p class="text-[11px] text-gray-400">18 Mei 2026 • Portal Belajar LIS</p>
               </div>
               <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700">Upcoming</span>
             </div>

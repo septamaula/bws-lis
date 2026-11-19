@@ -6,10 +6,10 @@ import './index.css';
 
 registerSW({
   onNeedRefresh() {
-    console.log('[BWS ELAPSE] Versi baru tersedia.');
+    console.log('[BWS LIS] Versi baru tersedia.');
   },
   onOfflineReady() {
-    console.log('[BWS ELAPSE] Aplikasi siap diakses secara offline.');
+    console.log('[BWS LIS] Aplikasi siap diakses secara offline.');
   },
 });
 

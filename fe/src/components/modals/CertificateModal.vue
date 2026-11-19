@@ -23,7 +23,7 @@ function printCertificate() {
     <div class="relative bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-gray-100 flex flex-col gap-5 z-10 animate-scaleIn">
       <div class="flex items-center justify-between pb-3 border-b border-gray-100">
         <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-full bg-emerald-50 text-[#157f4f] flex items-center justify-center font-bold">
+          <div class="w-9 h-9 rounded-full bg-emerald-50 text-[#0067AC] flex items-center justify-center font-bold">
             <Award class="w-4 h-4" />
           </div>
           <div>
@@ -34,7 +34,7 @@ function printCertificate() {
         <div class="flex items-center gap-2">
           <button
             @click="printCertificate"
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-semibold shadow-xs transition"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-semibold shadow-xs transition"
           >
             <Printer class="w-3.5 h-3.5" />
             <span>Cetak PDF</span>
@@ -46,16 +46,16 @@ function printCertificate() {
       </div>
 
       <!-- Certificate Document Canvas -->
-      <div class="border-4 border-double border-[#157f4f]/30 rounded-2xl p-8 bg-gradient-to-b from-[#fbfdfc] to-white relative overflow-hidden text-center shadow-xs">
+      <div class="border-4 border-double border-[#0067AC]/30 rounded-2xl p-8 bg-gradient-to-b from-[#fbfdfc] to-white relative overflow-hidden text-center shadow-xs">
         
         <!-- Watermark / BG Stamp -->
         <div class="absolute -right-10 -bottom-10 opacity-5 pointer-events-none">
-          <Award class="w-72 h-72 text-[#157f4f]" />
+          <Award class="w-72 h-72 text-[#0067AC]" />
         </div>
 
         <div class="space-y-4 relative z-10">
           <div class="flex items-center justify-center gap-2">
-            <div class="w-8 h-8 rounded-full bg-[#157f4f] text-white flex items-center justify-center font-black text-sm">W</div>
+            <div class="w-8 h-8 rounded-full bg-[#0067AC] text-white flex items-center justify-center font-black text-sm">W</div>
             <span class="font-extrabold text-sm tracking-wider uppercase text-gray-900">PT BANK WOORI SAUDARA INDONESIA 1906, TBK</span>
           </div>
 
@@ -65,7 +65,7 @@ function printCertificate() {
           </p>
 
           <p class="text-xs text-gray-500 pt-2">Diberikan secara resmi kepada:</p>
-          <h3 class="text-xl font-bold text-[#157f4f] tracking-tight border-b-2 border-[#157f4f]/20 pb-2 inline-block px-8">
+          <h3 class="text-xl font-bold text-[#0067AC] tracking-tight border-b-2 border-[#0067AC]/20 pb-2 inline-block px-8">
             {{ certificateData.employeeName || certificateData.user?.name || 'Pegawai Bank Woori Saudara' }}
           </h3>
           <p class="font-mono text-xs text-gray-400">
@@ -90,7 +90,7 @@ function printCertificate() {
             <!-- QR Verification -->
             <div class="flex flex-col items-center justify-center">
               <div class="w-16 h-16 bg-white p-1 rounded-xl border border-gray-200 shadow-2xs flex items-center justify-center">
-                <QrCode class="w-12 h-12 text-[#157f4f]" />
+                <QrCode class="w-12 h-12 text-[#0067AC]" />
               </div>
               <span class="text-[9px] text-gray-400 font-mono mt-1">Verifikasi Digital Resmi</span>
             </div>

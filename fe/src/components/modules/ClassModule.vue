@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import {
   Calendar,
   Plus,
@@ -8,9 +8,17 @@ import {
   Clock,
   ShieldCheck,
   MapPin,
-  Scale
+  Scale,
+  Award,
+  BookOpen,
+  Eye,
+  Filter,
+  RotateCcw
 } from 'lucide-vue-next'
 import DataTable from '@/components/DataTable.vue'
+import apiClient from '@/api/client'
+import ClassCreatePage from './classes/ClassCreatePage.vue'
+import ClassDetailPage from './classes/ClassDetailPage.vue'
 
 const props = defineProps({
   trainingClasses: {
@@ -29,154 +37,316 @@ const props = defineProps({
 
 const emit = defineEmits(['open-class-modal', 'approve-class'])
 
-const pendingClassesCount = computed(() => {
-  return props.trainingClasses.filter(c => c.dual_control_status === 'PENDING_CHECKER').length
+// Sub-View Modes: 'list' | 'create' | 'detail'
+const classViewMode = ref('list')
+const selectedClassId = ref(null)
+const preselectedProgramId = ref(null)
+
+const loading = ref(false)
+const classes = ref([])
+const programs = ref([])
+const stats = ref({
+  total_classes: 0,
+  active_classes: 0,
+  pending_checker: 0,
+  completed_classes: 0,
+  total_enrolled: 0
 })
 
+// Filters
+const filterProgramId = ref('')
+const filterStatus = ref('')
+const filterMethod = ref('')
+
+async function fetchClasses() {
+  loading.value = true
+  try {
+    const params = {}
+    if (filterProgramId.value) params.program_id = filterProgramId.value
+    if (filterStatus.value) params.dual_control_status = filterStatus.value
+    if (filterMethod.value) params.method = filterMethod.value
+
+    const { data } = await apiClient.get('/classes', { params })
+    classes.value = data.classes || []
+    stats.value = data.stats || stats.value
+  } catch (err) {
+    console.error('Failed to fetch classes:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function fetchPrograms() {
+  try {
+    const { data } = await apiClient.get('/programs')
+    programs.value = data.programs || []
+  } catch (err) {
+    console.error('Failed to fetch programs:', err)
+  }
+}
+
+function openCreate(programId = null) {
+  preselectedProgramId.value = programId
+  classViewMode.value = 'create'
+}
+
+function openDetail(id) {
+  selectedClassId.value = id
+  classViewMode.value = 'detail'
+}
+
+function handleClassCreated(msg) {
+  classViewMode.value = 'list'
+  fetchClasses()
+}
+
 const classColumns = [
-  { key: 'class_code', label: 'Batch & Program', sortable: true },
-  { key: 'start_date', label: 'Jadwal Pelaksanaan', sortable: true },
+  { key: 'class_code', label: 'Batch & Program Diklat', sortable: true },
+  { key: 'start_date', label: 'Jadwal & Metode', sortable: true, width: '180px' },
+  { key: 'trainer_name', label: 'Instruktur / Trainer', sortable: true, width: '180px' },
   { key: 'location_or_url', label: 'Lokasi / Ruang', sortable: true },
-  { key: 'facilitator.name', label: 'Instruktur / Trainer', sortable: true },
   {
     key: 'max_quota',
     label: 'Kapasitas Kuota',
     sortable: true,
     align: 'center',
-    format: (val, row) => `${row.enrollments_count || 0} / ${val} Peserta`
+    width: '140px',
+    format: (val, row) => `${row.enrolled_count || 0} / ${val} Peserta`
   },
-  { key: 'dual_control_status', label: 'Status Dual-Control (Maker-Checker)', sortable: true, align: 'center' }
+  { key: 'dual_control_status', label: 'Status Dual-Control', sortable: true, align: 'center', width: '150px' }
 ]
+
+onMounted(() => {
+  fetchClasses()
+  fetchPrograms()
+})
+
+defineExpose({
+  openCreate,
+  openDetail,
+  fetchClasses
+})
 </script>
 
 <template>
-  <div class="flex flex-col gap-5">
-    
-    <!-- Top Summary Statistics Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Total Batch Terbuka</p>
-          <p class="text-xl font-bold text-gray-900">{{ trainingClasses.length }} Batch</p>
+  <div>
+
+    <!-- Sub-View: Create Class Form -->
+    <ClassCreatePage
+      v-if="classViewMode === 'create'"
+      :initial-program-id="preselectedProgramId"
+      @back="classViewMode = 'list'"
+      @created="handleClassCreated"
+    />
+
+    <!-- Sub-View: Class Detail Page (Overview, Attendance, Evaluation, Roster) -->
+    <ClassDetailPage
+      v-else-if="classViewMode === 'detail' && selectedClassId"
+      :class-id="selectedClassId"
+      @back="classViewMode = 'list'"
+      @refresh-list="fetchClasses"
+    />
+
+    <!-- Sub-View: Main Classes List View -->
+    <div v-else class="flex flex-col gap-5">
+      
+      <!-- Top Summary Statistics Cards (Standard BWS Strip) -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
+            <Calendar class="w-5 h-5" />
+          </div>
+          <div>
+            <p class="text-[11px] text-gray-400 font-medium">Batch Terdaftar</p>
+            <p class="text-xl font-extrabold text-gray-900">{{ classes.length }} Batch</p>
+          </div>
         </div>
-        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-[#157f4f] flex items-center justify-center">
-          <Calendar class="w-5 h-5" />
+
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+            <Scale class="w-5 h-5" />
+          </div>
+          <div>
+            <p class="text-[11px] text-gray-400 font-medium">Antrean Checker</p>
+            <p class="text-xl font-extrabold text-amber-600 font-mono">{{ stats.pending_checker }} Menunggu</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
+            <Users class="w-5 h-5" />
+          </div>
+          <div>
+            <p class="text-[11px] text-gray-400 font-medium">Peserta Terdaftar</p>
+            <p class="text-xl font-extrabold text-gray-900">{{ stats.total_enrolled }} Pegawai</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+            <ShieldCheck class="w-5 h-5" />
+          </div>
+          <div>
+            <p class="text-[11px] text-gray-400 font-medium">Batch Terotorisasi</p>
+            <p class="text-xl font-extrabold text-emerald-700">{{ stats.active_classes }} Aktif</p>
+          </div>
         </div>
       </div>
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Antrean Checker (Dual Control)</p>
-          <p class="text-xl font-bold text-amber-600 font-mono">{{ pendingClassesCount }} Menunggu</p>
+      <!-- Header & Filter Bar -->
+      <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-2xs space-y-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC] uppercase tracking-wider">
+                Class Implementation &amp; Execution
+              </span>
+              <span class="text-xs text-gray-400">• BWS Learning Integrated System</span>
+            </div>
+            <h2 class="text-lg font-extrabold text-[#002855] mt-1">
+              Jadwal Kelas Pelatihan, Modul Presensi &amp; Evaluasi Hasil Belajar
+            </h2>
+            <p class="text-xs text-gray-500 mt-0.5">
+              1 Program dapat memiliki beberapa batch kelas. Kelola sesi, absensi harian, dan nilai ujian di halaman detail batch.
+            </p>
+          </div>
+
+          <button
+            v-if="canCreateClass"
+            @click="openCreate()"
+            class="bg-[#0067AC] hover:bg-[#00528c] text-white px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-2 transition shadow-sm cursor-pointer shrink-0"
+          >
+            <Plus class="w-4 h-4" />
+            <span>+ Buka Batch Kelas Baru</span>
+          </button>
         </div>
-        <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-          <Scale class="w-5 h-5" />
+
+        <!-- Filter Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-3 border-t border-gray-100 text-xs">
+          <div class="sm:col-span-2">
+            <select
+              v-model="filterProgramId"
+              @change="fetchClasses"
+              class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#0067AC]"
+            >
+              <option value="">-- Seluruh Program Pelatihan --</option>
+              <option v-for="p in programs" :key="p.id" :value="p.id">
+                [{{ p.program_code }}] {{ p.title }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <select
+              v-model="filterStatus"
+              @change="fetchClasses"
+              class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#0067AC]"
+            >
+              <option value="">-- Seluruh Status Otorisasi --</option>
+              <option value="APPROVED">Terotorisasi (APPROVED)</option>
+              <option value="PENDING_CHECKER">Menunggu Checker</option>
+              <option value="ONGOING">Sedang Berjalan (ONGOING)</option>
+              <option value="COMPLETED">Selesai (COMPLETED)</option>
+            </select>
+          </div>
+
+          <div>
+            <select
+              v-model="filterMethod"
+              @change="fetchClasses"
+              class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#0067AC]"
+            >
+              <option value="">-- Seluruh Metode Diklat --</option>
+              <option value="In-Classroom">In-Classroom</option>
+              <option value="Virtual">Virtual Classroom</option>
+              <option value="Hybrid">Hybrid</option>
+              <option value="E-Learning">ELAPSE E-Learning</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Total Kursi Peserta</p>
-          <p class="text-xl font-bold text-blue-600">650 Kursi</p>
-        </div>
-        <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-          <Users class="w-5 h-5" />
-        </div>
-      </div>
+      <!-- Training Classes Standard Table Component -->
+      <DataTable
+        :data="classes"
+        :columns="classColumns"
+        date-key="start_date"
+        export-filename="jadwal_batch_kelas_diklat_bws_2026"
+        :default-per-page="10"
+      >
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Standar Kepatuhan BI</p>
-          <p class="text-xl font-bold text-[#157f4f]">100% Valid</p>
-        </div>
-        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-[#157f4f] flex items-center justify-center">
-          <ShieldCheck class="w-5 h-5" />
-        </div>
-      </div>
-    </div>
+        <!-- Custom Cell: Batch & Program -->
+        <template #cell-class_code="{ row }">
+          <div class="cursor-pointer" @click="openDetail(row.id)">
+            <p class="font-bold text-xs text-gray-900 leading-tight hover:text-[#0067AC] transition">
+              {{ row.program?.title || 'Batch Pelatihan' }}
+            </p>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span class="font-mono text-[11px] font-bold text-[#0067AC]">{{ row.class_code }}</span>
+              <span class="text-gray-300">•</span>
+              <span class="text-[11px] font-extrabold text-gray-800">{{ row.batch_name }}</span>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-0.5">
+              Maker: {{ row.maker?.name || 'HC Training Officer' }}
+            </p>
+          </div>
+        </template>
 
-    <!-- Training Classes Standard Table Component -->
-    <DataTable
-      :data="trainingClasses"
-      :columns="classColumns"
-      date-key="start_date"
-      title="Jadwal & Operasional Kelas Pelatihan (Maker-Checker)"
-      subtitle="Manajemen batch, alokasi ruangan diklat, verifikasi four-eyes principle, dan absensi peserta"
-      export-filename="jadwal_kelas_diklat_bws_2026"
-      :default-per-page="10"
-    >
-      <!-- Actions in Header -->
-      <template #actions>
-        <button
-          v-if="canCreateClass"
-          @click="emit('open-class-modal')"
-          class="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-semibold shadow-sm transition"
-        >
-          <Plus class="w-4 h-4" />
-          <span>+ Buat Batch Kelas (Maker)</span>
-        </button>
-      </template>
+        <!-- Custom Cell: Schedule -->
+        <template #cell-start_date="{ row }">
+          <p class="font-semibold text-xs text-gray-800">{{ row.start_date?.substring(0, 10) }} s/d {{ row.end_date?.substring(0, 10) }}</p>
+          <div class="flex items-center gap-1.5 mt-0.5">
+            <span class="text-[10px] px-2 py-0.2 rounded-full bg-blue-50 text-[#0067AC] font-bold">
+              {{ row.method || 'Hybrid' }}
+            </span>
+            <span class="text-[10px] text-gray-400 font-mono">{{ row.daily_schedule || '08:30 WIB' }}</span>
+          </div>
+        </template>
 
-      <!-- Custom Cell: Batch & Program -->
-      <template #cell-class_code="{ row }">
-        <p class="font-bold text-xs text-gray-900 leading-tight">{{ row.program?.title || 'Batch Pelatihan' }}</p>
-        <div class="flex items-center gap-1.5 mt-0.5">
-          <span class="font-mono text-[11px] font-bold text-[#157f4f]">{{ row.class_code }} ({{ row.batch_name }})</span>
-          <span class="text-gray-300">•</span>
-          <span class="text-[10px] text-gray-400">Maker: {{ row.maker?.name || 'HC Training' }}</span>
-        </div>
-      </template>
+        <!-- Custom Cell: Trainer -->
+        <template #cell-trainer_name="{ row }">
+          <p class="font-bold text-xs text-gray-800">{{ row.trainer_name || row.facilitator?.name || 'Tim Trainer BWS' }}</p>
+          <p class="text-[10px] text-gray-400">{{ row.sessions_count || 0 }} Sesi Terjadwal</p>
+        </template>
 
-      <!-- Custom Cell: Schedule -->
-      <template #cell-start_date="{ row }">
-        <p class="font-semibold text-xs text-gray-800">{{ row.start_date?.substring(0, 10) }} s/d {{ row.end_date?.substring(0, 10) }}</p>
-        <p class="text-[10px] text-gray-400">{{ row.method || 'Hybrid' }}</p>
-      </template>
+        <!-- Custom Cell: Location -->
+        <template #cell-location_or_url="{ row }">
+          <div class="flex items-center gap-1 text-gray-700">
+            <MapPin class="w-3.5 h-3.5 text-rose-500 shrink-0" />
+            <span class="text-xs truncate max-w-[200px]" :title="row.location_or_url">{{ row.location_or_url || 'BWS Learning Center' }}</span>
+          </div>
+        </template>
 
-      <!-- Custom Cell: Location -->
-      <template #cell-location_or_url="{ row }">
-        <div class="flex items-center gap-1 text-gray-700">
-          <MapPin class="w-3.5 h-3.5 text-rose-500 shrink-0" />
-          <span class="text-xs">{{ row.location_or_url || 'BWS Learning Center' }}</span>
-        </div>
-      </template>
-
-      <!-- Custom Cell: Dual-Control Status -->
-      <template #cell-dual_control_status="{ row }">
-        <span
-          class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap"
-          :class="row.dual_control_status === 'APPROVED' ? 'bg-emerald-50 text-[#157f4f]' : row.dual_control_status === 'PENDING_CHECKER' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'"
-        >
+        <!-- Custom Cell: Dual-Control Status -->
+        <template #cell-dual_control_status="{ row }">
           <span
-            class="w-1.5 h-1.5 rounded-full shrink-0"
-            :class="row.dual_control_status === 'APPROVED' ? 'bg-[#157f4f]' : row.dual_control_status === 'PENDING_CHECKER' ? 'bg-amber-500' : 'bg-blue-600'"
-          ></span>
-          {{ row.dual_control_status === 'APPROVED' ? 'Disetujui Checker' : row.dual_control_status === 'PENDING_CHECKER' ? 'Menunggu Otorisasi Checker' : row.dual_control_status }}
-        </span>
-      </template>
+            class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap"
+            :class="row.dual_control_status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700' : row.dual_control_status === 'PENDING_CHECKER' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'"
+          >
+            <span
+              class="w-1.5 h-1.5 rounded-full shrink-0"
+              :class="row.dual_control_status === 'APPROVED' ? 'bg-emerald-600' : row.dual_control_status === 'PENDING_CHECKER' ? 'bg-amber-500' : 'bg-blue-600'"
+            ></span>
+            {{ row.dual_control_status === 'APPROVED' ? 'Disetujui Checker' : row.dual_control_status === 'PENDING_CHECKER' ? 'Menunggu Checker' : row.dual_control_status }}
+          </span>
+        </template>
 
-      <!-- Action Column Slot -->
-      <template #action="{ row }">
-        <button
-          v-if="row.dual_control_status === 'PENDING_CHECKER' && isCheckerRole"
-          @click="emit('approve-class', row)"
-          class="px-3 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition shadow-2xs"
-          title="Otorisasi Batch ini sebagai Checker"
-        >
-          Otorisasi
-        </button>
-        <span v-else-if="row.dual_control_status === 'APPROVED'" class="text-[11px] text-[#157f4f] font-semibold">
-          Terotorisasi
-        </span>
-        <button
-          v-else
-          class="px-3 py-1.5 rounded-full bg-[#f4f6f5] hover:bg-gray-200 text-gray-800 text-xs font-semibold transition"
-        >
-          Detail
-        </button>
-      </template>
-    </DataTable>
+        <!-- Action Column Slot -->
+        <template #action="{ row }">
+          <div class="flex items-center gap-1.5">
+            <button
+              @click="openDetail(row.id)"
+              class="px-3 py-1.5 rounded-full bg-[#EBF4FC] hover:bg-blue-100 text-[#0067AC] text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+              title="Kelola Batch, Presensi &amp; Evaluasi"
+            >
+              <Eye class="w-3.5 h-3.5" />
+              <span>Kelola &amp; Presensi</span>
+            </button>
+          </div>
+        </template>
+      </DataTable>
+
+    </div>
 
   </div>
 </template>
-

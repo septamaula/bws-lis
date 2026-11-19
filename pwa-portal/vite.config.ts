@@ -13,11 +13,11 @@ export default defineConfig({
       injectRegister: 'auto',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'BWS ELAPSE — Portal Belajar Karyawan',
-        short_name: 'BWS ELAPSE',
-        description: 'Portal Pembelajaran Mandiri Pegawai PT Bank Woori Saudara Indonesia 1906 Tbk',
-        theme_color: '#157f4f',
-        background_color: '#f4f6f5',
+        name: 'Bank Woori Saudara — LIS',
+        short_name: 'BWS LIS',
+        description: 'Portal Pembelajaran Pegawai PT Bank Woori Saudara Indonesia 1906 Tbk',
+        theme_color: '#002855',
+        background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait-primary',
         icons: [
@@ -45,6 +45,10 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5174,
+    watch: {
+      usePolling: true,
+      interval: 100,
+    },
     proxy: {
       '/api': {
         target: process.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000',

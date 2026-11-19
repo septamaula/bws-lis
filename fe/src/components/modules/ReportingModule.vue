@@ -49,45 +49,45 @@ const auditColumns = [
 <template>
   <div class="flex flex-col gap-5">
     
-    <!-- Top Summary Statistics Cards -->
+    <!-- Top Summary Statistics Cards (Standard BWS Strip) -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Integritas Audit Trail</p>
-          <p class="text-xl font-bold text-[#157f4f]">100% Terverifikasi</p>
-        </div>
-        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-[#157f4f] flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
           <ShieldCheck class="w-5 h-5" />
+        </div>
+        <div>
+          <p class="text-[11px] text-gray-400 font-medium">Integritas Audit</p>
+          <p class="text-xl font-extrabold text-[#0067AC]">100% Valid</p>
         </div>
       </div>
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">POJK No. 11/2022</p>
-          <p class="text-xl font-bold text-gray-900">Compliant</p>
-        </div>
-        <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
           <Lock class="w-5 h-5" />
         </div>
+        <div>
+          <p class="text-[11px] text-gray-400 font-medium">POJK No. 11/2022</p>
+          <p class="text-xl font-extrabold text-gray-900">Compliant</p>
+        </div>
       </div>
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Validasi Keamanan</p>
-          <p class="text-xl font-bold text-purple-600">Tervalidasi</p>
-        </div>
-        <div class="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
           <ShieldCheck class="w-5 h-5" />
         </div>
+        <div>
+          <p class="text-[11px] text-gray-400 font-medium">Validasi Keamanan</p>
+          <p class="text-xl font-extrabold text-purple-700">Tervalidasi</p>
+        </div>
       </div>
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Total Mutasi Audit Log</p>
-          <p class="text-xl font-bold text-gray-900">{{ auditLogs.length }} Entri</p>
-        </div>
-        <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
           <FileText class="w-5 h-5" />
+        </div>
+        <div>
+          <p class="text-[11px] text-gray-400 font-medium">Mutasi Audit Log</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ auditLogs.length }} Entri</p>
         </div>
       </div>
     </div>
@@ -97,21 +97,9 @@ const auditColumns = [
       :data="auditLogs"
       :columns="auditColumns"
       date-key="created_at"
-      title="Buku Catatan Audit Mutasi & Rekam Jejak Sistem (Immutable Audit Trail)"
-      subtitle="Pencatatan aktivitas append-only dengan penguncian hash berantai untuk kebutuhan audit forensik dan regulator OJK / Bank Indonesia"
       export-filename="bws_audit_trail_immutable_log"
       :default-per-page="10"
     >
-      <!-- Actions in Header -->
-      <template #actions>
-        <button
-          @click="downloadOfficialCsv"
-          class="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-semibold shadow-sm transition"
-        >
-          <Download class="w-4 h-4" />
-          <span>Download Rekap Resmi OJK (CSV)</span>
-        </button>
-      </template>
 
       <!-- Custom Cell: Time -->
       <template #cell-created_at="{ row }">

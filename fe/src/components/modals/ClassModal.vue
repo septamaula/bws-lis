@@ -68,7 +68,7 @@ async function submit() {
       <form @submit.prevent="submit" class="space-y-4 text-xs">
         <div>
           <label class="block font-semibold text-gray-700 mb-1">Pilih Program Pelatihan</label>
-          <select v-model="form.program_id" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none" required>
+          <select v-model="form.program_id" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required>
             <option value="" disabled>-- Pilih Program Pelatihan --</option>
             <option v-for="prog in programs" :key="prog.id" :value="prog.id">{{ prog.program_code }} - {{ prog.title }}</option>
           </select>
@@ -77,37 +77,37 @@ async function submit() {
         <div class="grid grid-cols-3 gap-3">
           <div class="col-span-2">
             <label class="block font-semibold text-gray-700 mb-1">Nama Batch</label>
-            <input type="text" v-model="form.batch_name" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none" required />
+            <input type="text" v-model="form.batch_name" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required />
           </div>
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Kuota</label>
-            <input type="number" v-model.number="form.max_quota" min="5" max="100" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none" required />
+            <input type="number" v-model.number="form.max_quota" min="5" max="100" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required />
           </div>
         </div>
 
         <div class="grid grid-cols-3 gap-3">
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Metode</label>
-            <select v-model="form.method" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none">
+            <select v-model="form.method" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none">
               <option value="Hybrid">Hybrid</option>
               <option value="In-Classroom">In-Classroom</option>
               <option value="Virtual Classroom">Virtual Classroom</option>
-              <option value="ELAPSE E-Learning">ELAPSE E-Learning</option>
+              <option value="LIS E-Learning">LIS E-Learning</option>
             </select>
           </div>
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Tgl Mulai</label>
-            <input type="date" v-model="form.start_date" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none" required />
+            <input type="date" v-model="form.start_date" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required />
           </div>
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Tgl Selesai</label>
-            <input type="date" v-model="form.end_date" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none" required />
+            <input type="date" v-model="form.end_date" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required />
           </div>
         </div>
 
         <div>
           <label class="block font-semibold text-gray-700 mb-1">Ruangan / URL Pembelajaran</label>
-          <input type="text" v-model="form.location_or_url" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none" required />
+          <input type="text" v-model="form.location_or_url" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required />
         </div>
 
         <div class="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-amber-800 flex items-start gap-2.5">

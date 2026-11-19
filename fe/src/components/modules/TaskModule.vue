@@ -91,45 +91,45 @@ const taskColumns = [
 <template>
   <div class="flex flex-col gap-5">
     
-    <!-- Top Summary Statistics Cards -->
+    <!-- Top Summary Statistics Cards (Standard BWS Strip) -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Total Penugasan Terkumpul</p>
-          <p class="text-xl font-bold text-gray-900">42 Dokumen</p>
-        </div>
-        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-[#157f4f] flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
           <FileText class="w-5 h-5" />
         </div>
+        <div>
+          <p class="text-[11px] text-gray-400 font-medium">Terkumpul</p>
+          <p class="text-xl font-extrabold text-gray-900">42 Dokumen</p>
+        </div>
       </div>
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Sudah Dinilai (Graded)</p>
-          <p class="text-xl font-bold text-[#157f4f]">35 Tugas</p>
-        </div>
-        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-[#157f4f] flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
           <CheckCircle class="w-5 h-5" />
         </div>
+        <div>
+          <p class="text-[11px] text-gray-400 font-medium">Sudah Dinilai</p>
+          <p class="text-xl font-extrabold text-[#0067AC]">35 Tugas</p>
+        </div>
       </div>
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Menunggu Review Trainer</p>
-          <p class="text-xl font-bold text-amber-600">7 Dokumen</p>
-        </div>
-        <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
           <Clock class="w-5 h-5" />
         </div>
+        <div>
+          <p class="text-[11px] text-gray-400 font-medium">Menunggu Review</p>
+          <p class="text-xl font-extrabold text-amber-600">7 Dokumen</p>
+        </div>
       </div>
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Rata-rata Nilai Action Plan</p>
-          <p class="text-xl font-bold text-blue-600 font-mono">89.4 / 100</p>
-        </div>
-        <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
           <FileCheck class="w-5 h-5" />
+        </div>
+        <div>
+          <p class="text-[11px] text-gray-400 font-medium">Rata-rata Nilai</p>
+          <p class="text-xl font-extrabold text-purple-700 font-mono">89.4 <span class="text-xs text-gray-400 font-normal">/ 100</span></p>
         </div>
       </div>
     </div>
@@ -139,14 +139,12 @@ const taskColumns = [
       :data="taskData"
       :columns="taskColumns"
       date-key="date"
-      title="Monitoring Penugasan & Action Learning Plan (ALP)"
-      subtitle="Evaluasi penerapan materi pelatihan di lingkungan kerja nyata (Kirkpatrick Level 3 Behavior)"
       export-filename="daftar_penugasan_peserta_bws"
       :default-per-page="10"
     >
       <!-- Custom Cell: Code -->
       <template #cell-code="{ row }">
-        <span class="font-mono text-xs font-bold text-[#157f4f] block">{{ row.code }}</span>
+        <span class="font-mono text-xs font-bold text-[#0067AC] block">{{ row.code }}</span>
         <span class="text-[10px] text-gray-400">{{ row.classTitle }}</span>
       </template>
 
@@ -163,15 +161,15 @@ const taskColumns = [
 
       <!-- Custom Cell: File -->
       <template #cell-file="{ row }">
-        <span class="inline-flex items-center gap-1.5 text-xs text-[#157f4f] font-semibold hover:underline cursor-pointer">
-          <FileText class="w-3.5 h-3.5 text-[#157f4f] shrink-0" />
+        <span class="inline-flex items-center gap-1.5 text-xs text-[#0067AC] font-semibold hover:underline cursor-pointer">
+          <FileText class="w-3.5 h-3.5 text-[#0067AC] shrink-0" />
           <span class="truncate max-w-[170px]">{{ row.file }}</span>
         </span>
       </template>
 
       <!-- Custom Cell: Grade -->
       <template #cell-grade="{ row }">
-        <span v-if="row.grade" class="font-mono font-bold text-xs text-[#157f4f] bg-emerald-50 px-2.5 py-1 rounded-full">
+        <span v-if="row.grade" class="font-mono font-bold text-xs text-[#0067AC] bg-emerald-50 px-2.5 py-1 rounded-full">
           {{ row.grade }} / 100
         </span>
         <span v-else class="text-gray-400 text-xs">-</span>
@@ -181,11 +179,11 @@ const taskColumns = [
       <template #cell-status="{ row }">
         <span
           class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap"
-          :class="row.status === 'GRADED' ? 'bg-emerald-50 text-[#157f4f]' : row.status === 'SUBMITTED' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-700'"
+          :class="row.status === 'GRADED' ? 'bg-emerald-50 text-[#0067AC]' : row.status === 'SUBMITTED' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-700'"
         >
           <span
             class="w-1.5 h-1.5 rounded-full shrink-0"
-            :class="row.status === 'GRADED' ? 'bg-[#157f4f]' : row.status === 'SUBMITTED' ? 'bg-blue-600' : 'bg-gray-400'"
+            :class="row.status === 'GRADED' ? 'bg-[#0067AC]' : row.status === 'SUBMITTED' ? 'bg-blue-600' : 'bg-gray-400'"
           ></span>
           {{ row.status === 'GRADED' ? 'Selesai Dinilai' : row.status === 'SUBMITTED' ? 'Menunggu Penilaian' : 'Belum Upload' }}
         </span>
@@ -196,7 +194,7 @@ const taskColumns = [
         <button
           v-if="row.status === 'SUBMITTED'"
           @click="emit('grade-task', row)"
-          class="px-3 py-1.5 rounded-full bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-semibold transition"
+          class="px-3 py-1.5 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-semibold transition"
           title="Beri Nilai Tugas Ini"
         >
           Nilai

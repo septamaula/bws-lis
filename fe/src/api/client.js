@@ -9,9 +9,9 @@ const apiClient = axios.create({
   },
 });
 
-// Request interceptor: Attach Sanctum token if available in sessionStorage
+// Request interceptor: Attach Sanctum token if available in localStorage or sessionStorage
 apiClient.interceptors.request.use((config) => {
-  const token = sessionStorage.getItem('bws_fe_token');
+  const token = localStorage.getItem('bws_fe_token') || sessionStorage.getItem('bws_fe_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -23,6 +23,8 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
+      localStorage.removeItem('bws_fe_token');
+      localStorage.removeItem('bws_fe_user');
       sessionStorage.removeItem('bws_fe_token');
       sessionStorage.removeItem('bws_fe_user');
       if (window.location.pathname !== '/login') {

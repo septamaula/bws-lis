@@ -66,10 +66,10 @@ export function exportToExcel(data, columns, filename = 'bws_export') {
   <Style ss:ID="HeaderStyle">
    <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
    <Borders>
-    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0F5C38"/>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#003876"/>
    </Borders>
    <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/>
-   <Interior ss:Color="#157F4F" ss:Pattern="Solid"/>
+   <Interior ss:Color="#0067AC" ss:Pattern="Solid"/>
   </Style>
   <Style ss:ID="DataRow">
    <Borders>

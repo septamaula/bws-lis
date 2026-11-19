@@ -74,45 +74,45 @@ const transactionColumns = [
 <template>
   <div class="flex flex-col gap-5">
     
-    <!-- Top Summary Statistics Cards -->
+    <!-- Top Summary Statistics Cards (Standard BWS Strip) -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Total Realisasi Terbayar</p>
-          <p class="text-xl font-bold text-[#157f4f] font-mono">{{ formatRupiah(totalDisbursed) }}</p>
-        </div>
-        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-[#157f4f] flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
           <CheckCircle class="w-5 h-5" />
         </div>
+        <div>
+          <p class="text-[11px] text-gray-400 font-medium">Realisasi Terbayar</p>
+          <p class="text-xl font-extrabold text-[#0067AC] font-mono">{{ formatRupiah(totalDisbursed) }}</p>
+        </div>
       </div>
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Menunggu Otorisasi Checker</p>
-          <p class="text-xl font-bold text-amber-600 font-mono">{{ formatRupiah(pendingDisbursed) }}</p>
-        </div>
-        <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
           <Scale class="w-5 h-5" />
         </div>
+        <div>
+          <p class="text-[11px] text-gray-400 font-medium">Antrean Checker</p>
+          <p class="text-xl font-extrabold text-amber-600 font-mono">{{ formatRupiah(pendingDisbursed) }}</p>
+        </div>
       </div>
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Total Voucher Tercatat</p>
-          <p class="text-xl font-bold text-gray-900">{{ financials.length }} Voucher</p>
-        </div>
-        <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
           <Receipt class="w-5 h-5" />
         </div>
+        <div>
+          <p class="text-[11px] text-gray-400 font-medium">Total Voucher</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ financials.length }} Voucher</p>
+        </div>
       </div>
 
-      <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-          <p class="text-xs text-gray-400 mb-0.5">Verifikasi Four-Eyes (2x)</p>
-          <p class="text-xl font-bold text-purple-600">100% Valid</p>
-        </div>
-        <div class="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
           <FileCheck class="w-5 h-5" />
+        </div>
+        <div>
+          <p class="text-[11px] text-gray-400 font-medium">Four-Eyes Control</p>
+          <p class="text-xl font-extrabold text-purple-700">100% Valid</p>
         </div>
       </div>
     </div>
@@ -122,26 +122,13 @@ const transactionColumns = [
       :data="financials"
       :columns="transactionColumns"
       date-key="created_at"
-      title="Buku Transaksi Pengeluaran Anggaran & Reimbursement"
-      subtitle="Pengelolaan voucher pencairan biaya diklat, sertifikasi LSPP/BSMR, dan reimbursement perjalanan dinas pelatihan"
       export-filename="transaksi_anggaran_diklat_bws"
       :default-per-page="10"
     >
-      <!-- Actions in Header -->
-      <template #actions>
-        <button
-          v-if="canCreateVoucher"
-          @click="emit('open-voucher-modal')"
-          class="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-semibold shadow-sm transition"
-        >
-          <Plus class="w-4 h-4" />
-          <span>+ Buat Voucher / Klaim</span>
-        </button>
-      </template>
 
       <!-- Custom Cell: Voucher Code -->
       <template #cell-trx_number="{ row }">
-        <span class="font-mono text-xs font-bold text-[#157f4f] block">{{ row.trx_number }}</span>
+        <span class="font-mono text-xs font-bold text-[#0067AC] block">{{ row.trx_number }}</span>
         <span class="text-[10px] text-gray-400">Lampiran: {{ row.receipt_attachment_url ? 'Kwitansi Valid' : 'Belum Ada' }}</span>
       </template>
 
@@ -162,11 +149,11 @@ const transactionColumns = [
       <template #cell-status="{ row }">
         <span
           class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap"
-          :class="row.status === 'APPROVED' ? 'bg-emerald-50 text-[#157f4f]' : 'bg-amber-50 text-amber-700'"
+          :class="row.status === 'APPROVED' ? 'bg-emerald-50 text-[#0067AC]' : 'bg-amber-50 text-amber-700'"
         >
           <span
             class="w-1.5 h-1.5 rounded-full shrink-0"
-            :class="row.status === 'APPROVED' ? 'bg-[#157f4f]' : 'bg-amber-500'"
+            :class="row.status === 'APPROVED' ? 'bg-[#0067AC]' : 'bg-amber-500'"
           ></span>
           {{ row.status === 'APPROVED' ? 'Disetujui Checker' : 'Menunggu Approval' }}
         </span>
@@ -182,7 +169,7 @@ const transactionColumns = [
         >
           Otorisasi
         </button>
-        <span v-else-if="row.status === 'APPROVED'" class="text-[11px] text-[#157f4f] font-semibold">
+        <span v-else-if="row.status === 'APPROVED'" class="text-[11px] text-[#0067AC] font-semibold">
           Terbayar
         </span>
         <button

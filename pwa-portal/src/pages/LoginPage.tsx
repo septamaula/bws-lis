@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Mail, Eye, EyeOff, ArrowRight, ShieldCheck, AlertCircle, Smartphone } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, ArrowRight, ShieldCheck, AlertCircle, Sparkles, Building2, Smartphone, CheckCircle2 } from 'lucide-react';
 import apiClient from '@/api/client';
 import { LearnerUser } from '@/types/learner';
 
@@ -27,7 +27,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
         }
       })
       .catch(() => {
-        // Offline or unreachable backend fallback
+        // Offline or unreachable fallback
       });
   }, []);
 
@@ -44,7 +44,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
       setError(
         err.response?.data?.errors?.email?.[0] ||
           err.response?.data?.message ||
-          'Gagal terhubung ke server autentikasi BWS.'
+          'Gagal terhubung ke server autentikasi Bank Woori Saudara.'
       );
     } finally {
       setLoading(false);
@@ -52,37 +52,70 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6f5] flex flex-col justify-between p-4 sm:p-6">
-      <header className="max-w-md mx-auto w-full flex items-center justify-between pt-2">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-full bg-[#157f4f] text-white flex items-center justify-center font-bold text-base shadow-sm">
-            W
-          </div>
+    <div className="min-h-screen bg-white flex flex-col justify-between selection:bg-[#0067AC] selection:text-white">
+      {/* Top Header */}
+      <header className="w-full max-w-7xl mx-auto px-6 py-5 flex items-center justify-between border-b border-gray-100/80">
+        <div className="flex items-center gap-3.5">
+          <svg className="h-8 w-auto" viewBox="0 0 290 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="bwsGlobePwaLogin" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#00A0E9"/>
+                <stop offset="65%" stopColor="#0067AC"/>
+                <stop offset="100%" stopColor="#002855"/>
+              </radialGradient>
+              <linearGradient id="horizonGlowPwaLogin" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#00A0E9" stopOpacity="0.3"/>
+                <stop offset="20%" stopColor="#FFFFFF"/>
+                <stop offset="80%" stopColor="#FFFFFF"/>
+                <stop offset="100%" stopColor="#00A0E9" stopOpacity="0.3"/>
+              </linearGradient>
+            </defs>
+            <circle cx="40" cy="40" r="36" fill="url(#bwsGlobePwaLogin)"/>
+            <path d="M 6 40 A 34 34 0 0 1 74 40 Z" fill="#0067AC"/>
+            <path d="M 6 40 Q 40 18 74 40 Q 40 30 6 40 Z" fill="url(#horizonGlowPwaLogin)"/>
+            <path d="M 6 40 Q 40 30 74 40 A 34 34 0 0 1 6 40 Z" fill="#0055A5"/>
+            <text x="86" y="47" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontStyle="italic" fontSize="44" fill="#0067AC" letterSpacing="-1">BWS</text>
+            <text x="88" y="65" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="800" fontStyle="italic" fontSize="11.5" fill="#0067AC" letterSpacing="0.5">BANK WOORI SAUDARA</text>
+          </svg>
+          <div className="h-6 w-px bg-slate-200"></div>
           <div>
-            <span className="font-extrabold text-sm text-gray-900 block">BWS ELAPSE</span>
-            <span className="text-[10px] text-gray-400 block -mt-0.5">Portal Belajar Pegawai</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-extrabold text-sm text-[#002855] tracking-tight">LIS MOBILE</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#EBF4FC] text-[#0067AC] uppercase">Pegawai</span>
+            </div>
+            <span className="text-[10px] text-gray-400 block -mt-0.5">Learning Integrated System</span>
           </div>
+        </div>
+
+        <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-gray-500 bg-[#EBF4FC]/60 px-3 py-1.5 rounded-full border border-[#0067AC]/20">
+          <Smartphone className="w-3.5 h-3.5 text-[#0067AC]" />
+          <span className="text-[#002855]">Portal Mandiri Pegawai BWS</span>
         </div>
       </header>
 
-      <main className="max-w-md mx-auto w-full my-auto py-8">
-        <div className="bg-white rounded-3xl p-6 sm:p-7 shadow-xl border border-gray-100 space-y-5">
-          <div className="space-y-1.5">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-[#157f4f] flex items-center justify-center mb-3">
-              <Lock className="w-5 h-5" />
+      {/* Main Split Body */}
+      <main className="max-w-7xl mx-auto w-full px-6 py-6 lg:py-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center my-auto">
+        {/* Left Form Column */}
+        <div className="lg:col-span-6 max-w-md w-full mx-auto space-y-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EBF4FC] text-[#0067AC] text-xs font-bold">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Portal Belajar Pegawai BWS</span>
             </div>
-            <h1 className="text-xl font-bold text-gray-900">Masuk ke Portal Pegawai</h1>
-            <p className="text-xs text-gray-400">
-              Akses jadwal diklat, materi ELAPSE, action learning plan, dan e-sertifikat resmi Bank Woori Saudara.
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#002855] tracking-tight">
+              Selamat Datang Kembali
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
+              Silakan masukkan NIK atau email korporat Bank Woori Saudara Anda untuk mengakses kelas dan sertifikat.
             </p>
           </div>
 
           {demoUsers.length > 0 && (
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                Pilih Cepat Akun Demo Karyawan:
+            <div className="space-y-2">
+              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                Pilih Cepat Akun Login Demo:
               </label>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {demoUsers
                   .filter((u) => ['Employee / Participant', 'Facilitator / Trainer', 'Super Admin'].includes(u.role_name))
                   .map((u) => (
@@ -93,13 +126,13 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
                         setEmail(u.email);
                         setPassword('password123');
                       }}
-                      className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition border ${
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition border ${
                         email === u.email
-                          ? 'bg-[#157f4f] text-white border-[#157f4f]'
-                          : 'bg-[#f8faf9] text-gray-600 border-gray-200 hover:border-emerald-300'
+                          ? 'bg-[#002855] text-white border-[#002855] shadow-sm'
+                          : 'bg-[#F8FAFC] text-gray-700 border-gray-200 hover:border-[#0067AC] hover:text-[#0067AC]'
                       }`}
                     >
-                      {u.role_name === 'Employee / Participant' ? 'Peserta' : u.role_name}
+                      {u.role_name === 'Employee / Participant' ? 'Peserta (Ahmad Pratama)' : u.role_name === 'Facilitator / Trainer' ? 'Fasilitator Diklat' : 'Super Admin'}
                     </button>
                   ))}
               </div>
@@ -107,32 +140,34 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
           )}
 
           {error && (
-            <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+            <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5">
               <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+              <span className="font-medium">{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-            <div>
-              <label className="block font-semibold text-gray-700 mb-1">Email Korporat BWS</label>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-gray-700">
+                Email Korporat atau NIK
+              </label>
               <div className="relative">
                 <input
-                  type="email"
+                  type="text"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-[#f4f6f5] rounded-xl pl-3.5 pr-9 py-2.5 text-gray-900 border border-transparent focus:border-[#157f4f] focus:bg-white focus:outline-none transition"
-                  placeholder="nama@bws.co.id"
+                  className="w-full bg-[#F8FAFC] rounded-2xl pl-4 pr-10 py-3 text-sm text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:ring-2 focus:ring-[#0067AC]/15 focus:outline-none transition font-medium"
+                  placeholder="nama@bws.co.id atau NIK pegawai"
                 />
-                <Mail className="w-4 h-4 text-gray-400 absolute right-3 top-2.5" />
+                <Mail className="w-4 h-4 text-gray-400 absolute right-3.5 top-3.5" />
               </div>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="font-semibold text-gray-700">Password</label>
-                <span className="text-[10px] font-mono text-[#157f4f]">Default: password123</span>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-gray-700">Password</label>
+                <span className="text-[11px] font-mono text-[#0067AC] font-semibold">Default: password123</span>
               </div>
               <div className="relative">
                 <input
@@ -140,12 +175,13 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#f4f6f5] rounded-xl pl-3.5 pr-9 py-2.5 text-gray-900 border border-transparent focus:border-[#157f4f] focus:bg-white focus:outline-none transition"
+                  className="w-full bg-[#F8FAFC] rounded-2xl pl-4 pr-10 py-3 text-sm text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:ring-2 focus:ring-[#0067AC]/15 focus:outline-none transition font-medium"
+                  placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3.5 top-3.5 text-gray-400 hover:text-gray-600"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -155,22 +191,75 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-full bg-[#157f4f] hover:bg-emerald-800 text-white font-semibold text-xs shadow-md transition flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#002855] via-[#003876] to-[#0067AC] hover:opacity-95 text-white font-bold text-sm shadow-lg shadow-[#003876]/25 transition transform active:scale-[0.98] flex items-center justify-center gap-2.5 disabled:opacity-50"
             >
-              <span>{loading ? 'Mengautentikasi...' : 'Masuk ke Mobile Portal'}</span>
+              <span>{loading ? 'Mengautentikasi...' : 'Masuk ke Portal Pegawai'}</span>
               {!loading && <ArrowRight className="w-4 h-4" />}
             </button>
           </form>
 
-          <div className="pt-3 border-t border-gray-100 flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#157f4f]" />
-            <span>Sistem Otentikasi Resmi Bank Woori Saudara</span>
+          <div className="pt-2 flex items-center justify-center gap-2 text-xs text-gray-400">
+            <ShieldCheck className="w-4 h-4 text-[#0067AC]" />
+            <span>Sistem Otentikasi Terintegrasi Bank Woori Saudara</span>
+          </div>
+        </div>
+
+        {/* Right Havenix Hero Card (Desktop) */}
+        <div className="hidden lg:block lg:col-span-6">
+          <div className="relative rounded-[32px] overflow-hidden bg-gradient-to-br from-[#002855] via-[#003876] to-[#001D3D] p-8 sm:p-10 text-white shadow-2xl min-h-[500px] flex flex-col justify-between">
+            {/* Background Texture & Glow */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(0,160,233,0.25),transparent_60%)]"></div>
+            <div className="absolute bottom-0 right-0 w-80 h-80 bg-[#0067AC]/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            {/* Top Badge */}
+            <div className="relative z-10 flex items-center justify-between">
+              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 text-xs font-semibold text-white">
+                <Sparkles className="w-3.5 h-3.5 text-[#00A0E9]" />
+                <span>LIS Platform v2.0</span>
+              </div>
+              <div className="w-9 h-9 rounded-full bg-white/10 backdrop-blur flex items-center justify-center border border-white/20">
+                <Building2 className="w-4 h-4 text-white" />
+              </div>
+            </div>
+
+            {/* Statement Content */}
+            <div className="relative z-10 space-y-4 max-w-md my-auto pt-8">
+              <div className="inline-block px-3 py-1 rounded-xl bg-[#00A0E9]/25 border border-[#00A0E9]/40 text-[#00A0E9] text-[11px] font-extrabold uppercase tracking-widest">
+                Karyawan & Pegawai Mandiri
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight">
+                Tuntaskan 20 Jam Pelatihan Tahunan Anda.
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed">
+                Akses materi modul pelatihan terintegrasi, kerjakan Action Learning Project, ikuti pre-test/post-test, dan unduh sertifikat resmi langsung dari smartphone atau browser Anda.
+              </p>
+            </div>
+
+            {/* Bottom Floating Glass Card */}
+            <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#00A0E9]/30 flex items-center justify-center text-white shrink-0">
+                  <CheckCircle2 className="w-5 h-5 text-sky-200" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white">PWA & Offline Ready</h4>
+                  <p className="text-[11px] text-slate-300">Dapat diinstal di layar utama ponsel Anda</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider bg-white/20 text-white px-2.5 py-1 rounded-full shrink-0">
+                OJK & BI Compliant
+              </span>
+            </div>
           </div>
         </div>
       </main>
 
-      <footer className="text-center text-[11px] text-gray-400 pb-2">
-        PT Bank Woori Saudara Indonesia 1906 Tbk • Learning Integrated System
+      {/* Footer */}
+      <footer className="w-full border-t border-gray-100 py-4">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400">
+          <span>&copy; 2026 PT Bank Woori Saudara Indonesia 1906 Tbk. All Rights Reserved.</span>
+          <span>Learning Integrated System (LIS) Mobile Portal</span>
+        </div>
       </footer>
     </div>
   );

@@ -5,6 +5,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -13,7 +14,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, Notifiable;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'nik',
@@ -21,6 +22,8 @@ class User extends Authenticatable
         'email',
         'password',
         'role_name',
+        'level_id',
+        'karyawan_id',
         'department',
         'branch',
         'phone',
@@ -58,5 +61,24 @@ class User extends Authenticatable
     public function facilitatedClasses(): HasMany
     {
         return $this->hasMany(TrainingClass::class, 'facilitator_id');
+    }
+
+    public function level(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(UserLevel::class, 'level_id', 'level_id');
+    }
+
+    public function karyawan(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Karyawan::class, 'karyawan_id', 'karyawan_id');
+    }
+
+    public function hasAccess(string $controllerKey): bool
+    {
+        if ($this->level && $this->level->is_admin) {
+            return true;
+        }
+
+        return $this->level ? $this->level->hasAccess($controllerKey) : false;
     }
 }

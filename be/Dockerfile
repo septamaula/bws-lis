@@ -1,9 +1,9 @@
 # ==============================================================================
-# BWS LIS - LARAVEL 13 BACKEND DOCKERFILE
+# BWS LIS - LARAVEL 13 BACKEND DOCKERFILE (PHP 8.5 LATEST LTS)
 # ==============================================================================
-FROM php:8.3-cli-alpine AS development
+FROM php:8.5-cli-alpine AS development
 
-# Install system dependencies & PostgreSQL client tools
+# Install system dependencies, MySQL & PostgreSQL client tools
 RUN apk add --no-cache \
     bash \
     curl \
@@ -12,19 +12,18 @@ RUN apk add --no-cache \
     libzip-dev \
     icu-dev \
     oniguruma-dev \
+    mysql-client \
+    mariadb-connector-c-dev \
     postgresql-client \
     linux-headers \
     dos2unix
 
-# Install PHP extensions required by Laravel, Spatie Permission & PostgreSQL
+# Install PHP extensions required by Laravel 13 and MySQL
 RUN docker-php-ext-install \
-    pdo \
-    pdo_pgsql \
-    pgsql \
+    pdo_mysql \
+    mysqli \
     bcmath \
     zip \
-    intl \
-    opcache \
     pcntl
 
 # Install Composer binary

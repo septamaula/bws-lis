@@ -77,7 +77,7 @@ async function submit() {
     <div class="relative bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-gray-100 flex flex-col gap-5 z-10 animate-scaleIn">
       <div class="flex items-center justify-between pb-3 border-b border-gray-100">
         <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-full bg-emerald-50 text-[#157f4f] flex items-center justify-center font-bold">
+          <div class="w-9 h-9 rounded-full bg-emerald-50 text-[#0067AC] flex items-center justify-center font-bold">
             <ClipboardList class="w-4 h-4" />
           </div>
           <div>
@@ -98,17 +98,17 @@ async function submit() {
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Divisi / Departemen</label>
-            <select v-model="form.department" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none">
+            <select v-model="form.department" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none">
               <option v-for="dept in departments" :key="dept" :value="dept">{{ dept }}</option>
             </select>
           </div>
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Tahun Anggaran</label>
-            <input type="number" v-model.number="form.year" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none" />
+            <input type="number" v-model.number="form.year" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" />
           </div>
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Prioritas</label>
-            <select v-model="form.priority" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#157f4f] focus:outline-none">
+            <select v-model="form.priority" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none">
               <option value="Critical">Critical</option>
               <option value="High">High</option>
               <option value="Medium">Medium</option>
@@ -120,7 +120,7 @@ async function submit() {
         <div class="space-y-3 pt-2 max-h-64 overflow-y-auto pr-1">
           <div class="flex items-center justify-between">
             <h4 class="font-bold text-gray-800">Daftar Kebutuhan Kompetensi</h4>
-            <button type="button" @click="addItem" class="text-xs text-[#157f4f] font-semibold hover:underline flex items-center gap-1">
+            <button type="button" @click="addItem" class="text-xs text-[#0067AC] font-semibold hover:underline flex items-center gap-1">
               <Plus class="w-3.5 h-3.5" /> Tambah Kebutuhan
             </button>
           </div>
@@ -136,7 +136,7 @@ async function submit() {
               type="text"
               v-model="item.competency_gap"
               placeholder="Kompetensi yang dibutuhkan..."
-              class="w-full bg-white rounded-xl px-3 py-2 border border-gray-200 focus:border-[#157f4f] focus:outline-none"
+              class="w-full bg-white rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:outline-none"
               required
             />
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -144,14 +144,14 @@ async function submit() {
                 type="text"
                 v-model="item.recommended_program"
                 placeholder="Nama program pelatihan..."
-                class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-200 focus:border-[#157f4f] focus:outline-none"
+                class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none"
                 required
               />
               <input
                 type="text"
                 v-model="item.target_audience"
                 placeholder="Target jabatan peserta..."
-                class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-200 focus:border-[#157f4f] focus:outline-none"
+                class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none"
                 required
               />
             </div>
@@ -161,7 +161,7 @@ async function submit() {
                 <input
                   type="number"
                   v-model.number="item.target_participants_count"
-                  class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-200 focus:border-[#157f4f] focus:outline-none"
+                  class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none"
                   required
                 />
               </div>
@@ -170,13 +170,13 @@ async function submit() {
                 <input
                   type="number"
                   v-model.number="item.estimated_cost"
-                  class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-200 focus:border-[#157f4f] focus:outline-none"
+                  class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none"
                   required
                 />
               </div>
               <div>
                 <label class="block text-[10px] text-gray-500 mb-0.5">Urgensi</label>
-                <select v-model="item.urgency" class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-200 focus:border-[#157f4f] focus:outline-none">
+                <select v-model="item.urgency" class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none">
                   <option value="Critical">Critical</option>
                   <option value="High">High</option>
                   <option value="Medium">Medium</option>
@@ -191,7 +191,7 @@ async function submit() {
           <button type="button" @click="emit('close')" class="px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition">
             Batal
           </button>
-          <button type="submit" :disabled="loading" class="px-5 py-2 rounded-full bg-[#157f4f] hover:bg-emerald-800 text-white font-semibold transition shadow-sm disabled:opacity-50">
+          <button type="submit" :disabled="loading" class="px-5 py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white font-semibold transition shadow-sm disabled:opacity-50">
             {{ loading ? 'Mengirim...' : 'Kirim Usulan ke HCBP' }}
           </button>
         </div>

@@ -81,7 +81,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
   const opsPortalUrl = import.meta.env.VITE_OPS_URL || 'http://localhost:5173';
 
   return (
-    <div className="min-h-screen bg-[#f4f6f5] text-gray-900 flex flex-col font-sans selection:bg-[#157f4f] selection:text-white pb-20 md:pb-6">
+    <div className="min-h-screen bg-[#f4f6f5] text-gray-900 flex flex-col font-sans selection:bg-[#0067AC] selection:text-white pb-20 md:pb-6">
       
       {/* Top Offline PWA Alert */}
       {!isOnline && (
@@ -94,28 +94,47 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
       {/* Mobile Top Navbar */}
       <header className="bg-white px-4 py-3 border-b border-gray-100 sticky top-0 z-40 shadow-2xs">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full bg-[#157f4f] text-white flex items-center justify-center font-bold text-base shadow-xs">
-              W
-            </div>
+          <div className="flex items-center gap-3">
+            <svg className="h-8 w-auto" viewBox="0 0 290 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="bwsGlobePwaDash" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#00A0E9"/>
+                  <stop offset="65%" stopColor="#0067AC"/>
+                  <stop offset="100%" stopColor="#002855"/>
+                </radialGradient>
+                <linearGradient id="horizonGlowPwaDash" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#00A0E9" stopOpacity="0.3"/>
+                  <stop offset="20%" stopColor="#FFFFFF"/>
+                  <stop offset="80%" stopColor="#FFFFFF"/>
+                  <stop offset="100%" stopColor="#00A0E9" stopOpacity="0.3"/>
+                </linearGradient>
+              </defs>
+              <circle cx="40" cy="40" r="36" fill="url(#bwsGlobePwaDash)"/>
+              <path d="M 6 40 A 34 34 0 0 1 74 40 Z" fill="#0067AC"/>
+              <path d="M 6 40 Q 40 18 74 40 Q 40 30 6 40 Z" fill="url(#horizonGlowPwaDash)"/>
+              <path d="M 6 40 Q 40 30 74 40 A 34 34 0 0 1 6 40 Z" fill="#0055A5"/>
+              <text x="86" y="47" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontStyle="italic" fontSize="44" fill="#0067AC" letterSpacing="-1">BWS</text>
+              <text x="88" y="65" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="800" fontStyle="italic" fontSize="11.5" fill="#0067AC" letterSpacing="0.5">BANK WOORI SAUDARA</text>
+            </svg>
+            <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-sm tracking-tight text-gray-900">BWS ELAPSE</span>
-                <span className="bg-emerald-50 text-[#157f4f] text-[10px] font-bold px-2 py-0.2 rounded-full border border-emerald-200">
+                <span className="font-extrabold text-sm tracking-tight text-[#002855]">LIS</span>
+                <span className="bg-[#EBF4FC] text-[#0067AC] text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-blue-200">
                   Portal Belajar
                 </span>
               </div>
-              <p className="text-[10px] text-gray-400">Portal Belajar Karyawan</p>
+              <p className="text-[10px] text-gray-400">Learning Integrated System</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => refetch()}
-              className="w-8 h-8 rounded-full bg-[#f4f6f5] hover:bg-emerald-50 hover:text-[#157f4f] text-gray-500 flex items-center justify-center transition"
+              className="w-8 h-8 rounded-full bg-[#f4f6f5] hover:bg-blue-50 hover:text-[#0067AC] text-gray-500 flex items-center justify-center transition"
               title="Sinkronkan Data"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-[#157f4f]' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-[#0067AC]' : ''}`} />
             </button>
 
             <a
@@ -141,7 +160,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
       <main className="max-w-4xl mx-auto px-4 py-4 w-full flex-1 flex flex-col gap-4">
         
         {toastMsg && (
-          <div className="bg-emerald-50 border border-emerald-200 text-[#157f4f] px-4 py-2.5 rounded-2xl text-xs flex items-center justify-between shadow-2xs">
+          <div className="bg-[#EBF4FC] border border-blue-200 text-[#0067AC] px-4 py-2.5 rounded-2xl text-xs flex items-center justify-between shadow-2xs">
             <span className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 shrink-0" />
               <span>{toastMsg}</span>
@@ -154,7 +173,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
         <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#157f4f] flex items-center justify-center font-black text-lg border border-emerald-200 shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-[#EBF4FC] text-[#0067AC] flex items-center justify-center font-black text-lg border border-blue-200 shrink-0">
                 {currentUser?.name ? currentUser.name[0] : 'U'}
               </div>
               <div>
@@ -162,13 +181,13 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
                   {currentUser?.name || 'Pegawai Bank Woori Saudara'}
                 </h2>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  <span className="font-mono text-[#157f4f] font-semibold">{currentUser?.nik || 'NIK-BWS'}</span> • {currentUser?.department || 'Kantor Cabang'}
+                  <span className="font-mono text-[#0067AC] font-semibold">{currentUser?.nik || 'NIK-BWS'}</span> • {currentUser?.department || 'Kantor Cabang'}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 self-start sm:self-auto">
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-[#157f4f]">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#EBF4FC] text-[#0067AC]">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>OJK 20 Jam Target</span>
               </span>
@@ -178,7 +197,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
           <div className="p-4 rounded-2xl bg-[#f8faf9] border border-gray-100 space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-gray-700 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-[#157f4f]" />
+                <Clock className="w-3.5 h-3.5 text-[#0067AC]" />
                 Akumulasi Jam Pelatihan 2026:
               </span>
               <span className="font-mono font-bold text-gray-900">
@@ -188,7 +207,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
 
             <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
               <div
-                className="bg-[#157f4f] h-2.5 rounded-full transition-all duration-500"
+                className="bg-[#0067AC] h-2.5 rounded-full transition-all duration-500"
                 style={{ width: `${progressPercentage}%` }}
               ></div>
             </div>
@@ -205,7 +224,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             onClick={() => setActiveTab('classes')}
             className={`px-4 py-2 rounded-full text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'classes'
-                ? 'bg-[#157f4f] text-white shadow-xs'
+                ? 'bg-[#0067AC] text-white shadow-xs'
                 : 'text-gray-600 hover:bg-white'
             }`}
           >
@@ -217,7 +236,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             onClick={() => setActiveTab('tasks')}
             className={`px-4 py-2 rounded-full text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'tasks'
-                ? 'bg-[#157f4f] text-white shadow-xs'
+                ? 'bg-[#0067AC] text-white shadow-xs'
                 : 'text-gray-600 hover:bg-white'
             }`}
           >
@@ -229,7 +248,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             onClick={() => setActiveTab('certificates')}
             className={`px-4 py-2 rounded-full text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
               activeTab === 'certificates'
-                ? 'bg-[#157f4f] text-white shadow-xs'
+                ? 'bg-[#0067AC] text-white shadow-xs'
                 : 'text-gray-600 hover:bg-white'
             }`}
           >
@@ -257,10 +276,10 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
               </div>
             ) : (
               enrolledClasses.map((cls) => (
-                <div key={cls.id} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-emerald-200 transition">
+                <div key={cls.id} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-blue-200 transition">
                   <div className="space-y-1.5 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-[11px] font-bold text-[#157f4f] bg-emerald-50 px-2 py-0.5 rounded-full">
+                      <span className="font-mono text-[11px] font-bold text-[#0067AC] bg-[#EBF4FC] px-2 py-0.5 rounded-full">
                         {cls.class_code} • {cls.batch_name}
                       </span>
                       <span className="text-[10px] text-gray-400 uppercase font-semibold">{cls.category}</span>
@@ -272,7 +291,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
 
                     <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 pt-1">
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5 text-[#157f4f]" />
+                        <Calendar className="w-3.5 h-3.5 text-[#0067AC]" />
                         {cls.start_date} s/d {cls.end_date}
                       </span>
                       <span className="flex items-center gap-1">
@@ -286,13 +305,13 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
                     <span
                       className={`text-xs font-semibold px-3 py-1 rounded-full inline-flex items-center gap-1.5 ${
                         cls.completion_status === 'PASSED'
-                          ? 'bg-emerald-50 text-[#157f4f]'
+                          ? 'bg-[#EBF4FC] text-[#0067AC]'
                           : 'bg-blue-50 text-blue-700'
                       }`}
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${
-                          cls.completion_status === 'PASSED' ? 'bg-[#157f4f]' : 'bg-blue-600'
+                          cls.completion_status === 'PASSED' ? 'bg-[#0067AC]' : 'bg-blue-600'
                         }`}
                       ></span>
                       {cls.completion_status === 'PASSED' ? 'Lulus' : `Progress ${cls.elapse_progress_pct}%`}
@@ -301,7 +320,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
                     {cls.completion_status === 'PASSED' && (
                       <button
                         onClick={() => setSelectedCert(cls)}
-                        className="text-xs font-semibold text-[#157f4f] hover:underline flex items-center gap-1"
+                        className="text-xs font-semibold text-[#0067AC] hover:underline flex items-center gap-1"
                       >
                         <Award className="w-3.5 h-3.5" />
                         <span>Lihat Sertifikat</span>
@@ -333,7 +352,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
 
                   <div className="flex items-center gap-3 self-end sm:self-auto">
                     {task.grade !== null ? (
-                      <span className="font-mono text-xs font-bold text-[#157f4f] bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                      <span className="font-mono text-xs font-bold text-[#0067AC] bg-[#EBF4FC] px-3 py-1 rounded-full border border-blue-200">
                         Nilai: {task.grade} / 100
                       </span>
                     ) : task.status === 'SUBMITTED' ? (
@@ -344,7 +363,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
                       <button
                         onClick={() => handleSubmitTask(task.id)}
                         disabled={submitTaskMutation.isPending}
-                        className="px-4 py-1.5 rounded-full bg-[#157f4f] hover:bg-emerald-800 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-xs disabled:opacity-50"
+                        className="px-4 py-1.5 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-xs disabled:opacity-50"
                       >
                         <UploadCloud className="w-3.5 h-3.5" />
                         <span>{submitTaskMutation.isPending ? 'Mengunggah...' : 'Submit Action Plan'}</span>
@@ -363,10 +382,10 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             {enrolledClasses.filter(c => c.completion_status === 'PASSED').map((c) => (
               <div key={c.id} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-between gap-4">
                 <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-[#157f4f] flex items-center justify-center font-bold">
+                  <div className="w-10 h-10 rounded-2xl bg-[#EBF4FC] text-[#0067AC] flex items-center justify-center font-bold">
                     <Award className="w-5 h-5" />
                   </div>
-                  <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-semibold">
+                  <span className="text-[10px] text-[#0067AC] bg-[#EBF4FC] px-2 py-0.5 rounded-full font-semibold">
                     Resmi
                   </span>
                 </div>
@@ -379,7 +398,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
                 <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                   <button
                     onClick={() => setSelectedCert(c)}
-                    className="w-full py-2 rounded-full bg-[#157f4f] hover:bg-emerald-800 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-2xs"
+                    className="w-full py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-2xs"
                   >
                     <Printer className="w-3.5 h-3.5" />
                     <span>Buka / Cetak E-Sertifikat</span>
@@ -400,7 +419,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
           <div className="relative bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-gray-100 flex flex-col gap-4 z-10">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
-                <Award className="w-5 h-5 text-[#157f4f]" />
+                <Award className="w-5 h-5 text-[#0067AC]" />
                 <h3 className="font-bold text-base text-gray-900">E-Sertifikat Resmi Bank Woori Saudara</h3>
               </div>
               <button
@@ -411,17 +430,17 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
               </button>
             </div>
 
-            <div className="border-4 border-double border-[#157f4f]/30 rounded-2xl p-6 bg-gradient-to-b from-[#fbfdfc] to-white text-center space-y-3">
+            <div className="border-4 border-double border-[#0067AC]/30 rounded-2xl p-6 bg-gradient-to-b from-[#fbfdfc] to-white text-center space-y-3">
               <p className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">PT BANK WOORI SAUDARA INDONESIA 1906, TBK</p>
               <h2 className="text-xl font-serif font-black uppercase text-gray-900">SERTIFIKAT KELULUSAN</h2>
               <p className="text-[10px] font-mono text-gray-400">NO: {selectedCert.certificate_number}</p>
               <p className="text-xs text-gray-500 pt-2">Diberikan kepada:</p>
-              <h3 className="text-lg font-bold text-[#157f4f]">{currentUser?.name}</h3>
+              <h3 className="text-lg font-bold text-[#0067AC]">{currentUser?.name}</h3>
               <p className="text-xs text-gray-600">Atas kelulusan memuaskan pada program:</p>
               <h4 className="font-bold text-sm text-gray-900">{selectedCert.program_title}</h4>
               
               <div className="pt-4 flex items-center justify-center gap-2">
-                <QrCode className="w-12 h-12 text-[#157f4f]" />
+                <QrCode className="w-12 h-12 text-[#0067AC]" />
                 <span className="text-[9px] text-gray-400 font-medium">Verifikasi Digital Resmi BWS</span>
               </div>
             </div>
@@ -429,7 +448,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 onClick={() => window.print()}
-                className="px-4 py-2 rounded-full bg-[#157f4f] hover:bg-emerald-800 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-xs"
+                className="px-4 py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-xs"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Cetak Lembar Sertifikat</span>
@@ -444,7 +463,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
         <button
           onClick={() => setActiveTab('classes')}
           className={`flex flex-col items-center text-[10px] font-semibold gap-1 ${
-            activeTab === 'classes' ? 'text-[#157f4f]' : 'text-gray-400'
+            activeTab === 'classes' ? 'text-[#0067AC]' : 'text-gray-400'
           }`}
         >
           <Calendar className="w-4 h-4" />
@@ -454,7 +473,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
         <button
           onClick={() => setActiveTab('tasks')}
           className={`flex flex-col items-center text-[10px] font-semibold gap-1 ${
-            activeTab === 'tasks' ? 'text-[#157f4f]' : 'text-gray-400'
+            activeTab === 'tasks' ? 'text-[#0067AC]' : 'text-gray-400'
           }`}
         >
           <FileText className="w-4 h-4" />
@@ -464,7 +483,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
         <button
           onClick={() => setActiveTab('certificates')}
           className={`flex flex-col items-center text-[10px] font-semibold gap-1 ${
-            activeTab === 'certificates' ? 'text-[#157f4f]' : 'text-gray-400'
+            activeTab === 'certificates' ? 'text-[#0067AC]' : 'text-gray-400'
           }`}
         >
           <Award className="w-4 h-4" />

@@ -17,17 +17,78 @@ class TrainingProgram extends Model
         'duration_hours',
         'is_mandatory',
         'created_by',
+        'tna_proposal_id',
+        'tna_item_id',
+        'department',
+        'year',
+        'execution_quarter',
+        'target_audience',
+        'target_participants_count',
+        'participant_prerequisites',
+        'method',
+        'location',
+        'approval_type',
+        'approval_doc_number',
+        'approval_doc_date',
+        'approval_doc_signer',
+        'approval_doc_path',
+        'approval_doc_name',
+        'approval_doc_size',
+        'total_budget',
+        'status',
+        'current_step_order',
+        'approval_status_badge',
+        'rejection_notes',
+        'approved_by',
+        'approved_at',
     ];
 
     protected $casts = [
         'is_mandatory' => 'boolean',
         'passing_grade' => 'integer',
         'duration_hours' => 'integer',
+        'target_participants_count' => 'integer',
+        'total_budget' => 'decimal:2',
+        'current_step_order' => 'integer',
+        'approval_doc_date' => 'date',
+        'approved_at' => 'datetime',
     ];
 
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function tnaProposal(): BelongsTo
+    {
+        return $this->belongsTo(TnaProposal::class, 'tna_proposal_id');
+    }
+
+    public function tnaItem(): BelongsTo
+    {
+        return $this->belongsTo(TnaItem::class, 'tna_item_id');
+    }
+
+    public function budgetItems(): HasMany
+    {
+        return $this->hasMany(ProgramBudgetItem::class, 'training_program_id');
+    }
+
+    public function participants(): HasMany
+    {
+        return $this->hasMany(ProgramParticipant::class, 'training_program_id');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function approvalHistories(): HasMany
+    {
+        return $this->hasMany(ApprovalHistory::class, 'record_id')
+            ->where('module_code', 'program')
+            ->orderBy('id', 'asc');
     }
 
     public function classes(): HasMany
