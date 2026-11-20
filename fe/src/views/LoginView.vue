@@ -89,35 +89,8 @@ async function submit() {
         <!-- Top Logo: Official Bank Woori Saudara + Title BWS - LIS -->
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <!-- Official BWS Logo Vector (Luminous Horizon Arc & Text) -->
-            <svg class="h-10 w-auto" viewBox="0 0 290 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <radialGradient id="bwsGlobeLogin" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="#00A0E9"/>
-                  <stop offset="65%" stop-color="#0067AC"/>
-                  <stop offset="100%" stop-color="#003876"/>
-                </radialGradient>
-                <linearGradient id="horizonGlowLogin" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#00A0E9" stop-opacity="0.3"/>
-                  <stop offset="20%" stop-color="#FFFFFF"/>
-                  <stop offset="80%" stop-color="#FFFFFF"/>
-                  <stop offset="100%" stop-color="#00A0E9" stop-opacity="0.3"/>
-                </linearGradient>
-              </defs>
-              <!-- Outer Circle -->
-              <circle cx="40" cy="40" r="36" fill="url(#bwsGlobeLogin)"/>
-              <!-- Top Dome -->
-              <path d="M 6 40 A 34 34 0 0 1 74 40 Z" fill="#0067AC"/>
-              <!-- Glowing Crescent Horizon -->
-              <path d="M 6 40 Q 40 18 74 40 Q 40 30 6 40 Z" fill="url(#horizonGlowLogin)"/>
-              <!-- Bottom Dome -->
-              <path d="M 6 40 Q 40 30 74 40 A 34 34 0 0 1 6 40 Z" fill="#0055A5"/>
-
-              <!-- Bold Italic BWS -->
-              <text x="86" y="47" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-style="italic" font-size="44" fill="#0067AC" letter-spacing="-1">BWS</text>
-              <!-- Subtitle BANK WOORI SAUDARA -->
-              <text x="88" y="65" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-style="italic" font-size="11.5" fill="#0067AC" letter-spacing="0.5">BANK WOORI SAUDARA</text>
-            </svg>
+            <!-- Official BWS Logo Primary (Resmi) -->
+            <img src="/images/bws-logo-primary.png" alt="Bank Woori Saudara" class="h-10 sm:h-11 w-auto object-contain" />
           </div>
 
           <!-- Title Badge: BWS - LIS -->

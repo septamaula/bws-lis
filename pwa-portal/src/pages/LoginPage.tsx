@@ -56,27 +56,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
       {/* Top Header */}
       <header className="w-full max-w-7xl mx-auto px-6 py-5 flex items-center justify-between border-b border-gray-100/80">
         <div className="flex items-center gap-3.5">
-          <svg className="h-8 w-auto" viewBox="0 0 290 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <radialGradient id="bwsGlobePwaLogin" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#00A0E9"/>
-                <stop offset="65%" stopColor="#0067AC"/>
-                <stop offset="100%" stopColor="#002855"/>
-              </radialGradient>
-              <linearGradient id="horizonGlowPwaLogin" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#00A0E9" stopOpacity="0.3"/>
-                <stop offset="20%" stopColor="#FFFFFF"/>
-                <stop offset="80%" stopColor="#FFFFFF"/>
-                <stop offset="100%" stopColor="#00A0E9" stopOpacity="0.3"/>
-              </linearGradient>
-            </defs>
-            <circle cx="40" cy="40" r="36" fill="url(#bwsGlobePwaLogin)"/>
-            <path d="M 6 40 A 34 34 0 0 1 74 40 Z" fill="#0067AC"/>
-            <path d="M 6 40 Q 40 18 74 40 Q 40 30 6 40 Z" fill="url(#horizonGlowPwaLogin)"/>
-            <path d="M 6 40 Q 40 30 74 40 A 34 34 0 0 1 6 40 Z" fill="#0055A5"/>
-            <text x="86" y="47" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontStyle="italic" fontSize="44" fill="#0067AC" letterSpacing="-1">BWS</text>
-            <text x="88" y="65" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="800" fontStyle="italic" fontSize="11.5" fill="#0067AC" letterSpacing="0.5">BANK WOORI SAUDARA</text>
-          </svg>
+          <img src="/images/bws-logo-primary.png" alt="Bank Woori Saudara" className="h-8 w-auto object-contain" />
           <div className="h-6 w-px bg-slate-200"></div>
           <div>
             <div className="flex items-center gap-1.5">

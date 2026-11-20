@@ -378,32 +378,22 @@ const totalPendingApprovalsForUser = computed(() => {
       <!-- ========================================================== -->
       <!-- CLEAN TOP NAVBAR (BWS CORPORATE BRANDING)                   -->
       <!-- ========================================================== -->
-      <header class="bg-white rounded-full px-5 py-2.5 flex items-center justify-between shadow-sm sticky top-2 z-40 border border-gray-100">
+      <header class="bg-white rounded-full px-5 py-2.5 flex items-center justify-between shadow-sm sticky top-2 z-40 border border-gray-100 relative overflow-hidden">
         
-        <!-- Left: Official BWS Logo + LIS Information -->
-        <div class="flex items-center gap-3.5 cursor-pointer shrink-0 group" @click="activeTab = 'dashboard'">
-          <!-- Official Bank Woori Saudara Vector Logo -->
-          <svg class="h-8 sm:h-9 w-auto" viewBox="0 0 290 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <radialGradient id="bwsGlobeHeader" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#00A0E9"/>
-                <stop offset="65%" stop-color="#0067AC"/>
-                <stop offset="100%" stop-color="#002855"/>
-              </radialGradient>
-              <linearGradient id="horizonGlowHeader" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#00A0E9" stop-opacity="0.3"/>
-                <stop offset="20%" stop-color="#FFFFFF"/>
-                <stop offset="80%" stop-color="#FFFFFF"/>
-                <stop offset="100%" stop-color="#00A0E9" stop-opacity="0.3"/>
-              </linearGradient>
-            </defs>
-            <circle cx="40" cy="40" r="36" fill="url(#bwsGlobeHeader)"/>
-            <path d="M 6 40 A 34 34 0 0 1 74 40 Z" fill="#0067AC"/>
-            <path d="M 6 40 Q 40 18 74 40 Q 40 30 6 40 Z" fill="url(#horizonGlowHeader)"/>
-            <path d="M 6 40 Q 40 30 74 40 A 34 34 0 0 1 6 40 Z" fill="#0055A5"/>
-            <text x="86" y="47" font-family="'Plus Jakarta Sans', sans-serif" font-weight="900" font-style="italic" font-size="44" fill="#0067AC" letter-spacing="-1">BWS</text>
-            <text x="88" y="65" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-style="italic" font-size="11.5" fill="#0067AC" letter-spacing="0.5">BANK WOORI SAUDARA</text>
+        <!-- BWS Signature Corporate Wave Accent (Supergraphic Pemanis - Ultra-Ringan 0ms Lag) -->
+        <div class="absolute right-0 top-0 bottom-0 w-72 md:w-96 pointer-events-none overflow-hidden rounded-r-full select-none opacity-25">
+          <svg class="w-full h-full object-cover" viewBox="0 0 380 60" fill="none" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Curve 1: Sky Cyan / Sunrise Gradation tint -->
+            <path d="M 60 60 C 140 60 190 8 380 0 L 380 60 Z" fill="#00A0E9" />
+            <!-- Curve 2: BWS Main Royal Blue (Pantone 7462 PC #0067AC) -->
+            <path d="M 140 60 C 210 60 250 16 380 6 L 380 60 Z" fill="#0067AC" />
           </svg>
+        </div>
+
+        <!-- Left: Official BWS Logo + LIS Information -->
+        <div class="flex items-center gap-3.5 cursor-pointer shrink-0 group relative z-10" @click="activeTab = 'dashboard'">
+          <!-- Official Bank Woori Saudara Primary Logo (Resmi) -->
+          <img src="/images/bws-logo-primary.png" alt="Bank Woori Saudara" class="h-8 sm:h-9 w-auto object-contain transition group-hover:scale-105" />
 
           <!-- Divider -->
           <div class="h-7 w-px bg-slate-200 hidden sm:block"></div>
@@ -423,18 +413,18 @@ const totalPendingApprovalsForUser = computed(() => {
         </div>
 
         <!-- Center: Global Search Bar -->
-        <div class="flex-1 max-w-md mx-4 lg:mx-8 relative hidden md:block">
+        <div class="flex-1 max-w-md mx-4 lg:mx-8 relative hidden md:block z-10">
           <Search class="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             v-model="globalSearch"
             type="text"
             placeholder="Cari TNA, Program, Kelas, Peserta..."
-            class="w-full bg-[#f4f6f5] hover:bg-gray-100 focus:bg-white text-xs text-gray-800 rounded-full pl-9 pr-4 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none transition"
+            class="w-full bg-[#f4f6f5] hover:bg-gray-100 focus:bg-white text-xs text-gray-800 rounded-full pl-9 pr-4 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none transition shadow-inner"
           />
         </div>
 
         <!-- Right: Role Switcher + Notification + Profile -->
-        <div class="flex items-center gap-2.5 shrink-0">
+        <div class="flex items-center gap-2.5 shrink-0 relative z-10">
           
           <!-- Refresh Button -->
           <button

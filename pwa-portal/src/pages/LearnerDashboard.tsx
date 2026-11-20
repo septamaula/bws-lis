@@ -92,30 +92,18 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
       )}
 
       {/* Mobile Top Navbar */}
-      <header className="bg-white px-4 py-3 border-b border-gray-100 sticky top-0 z-40 shadow-2xs">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+      <header className="bg-white px-4 py-3 border-b border-gray-100 sticky top-0 z-40 shadow-2xs relative overflow-hidden">
+        {/* Subtle BWS Corporate Wave Accent */}
+        <div className="absolute right-0 top-0 bottom-0 w-48 pointer-events-none overflow-hidden opacity-20">
+          <svg className="w-full h-full object-cover" viewBox="0 0 200 50" fill="none" preserveAspectRatio="none">
+            <path d="M 30 50 C 80 50 110 5 200 0 L 200 50 Z" fill="#00A0E9" />
+            <path d="M 80 50 C 120 50 150 12 200 4 L 200 50 Z" fill="#0067AC" />
+          </svg>
+        </div>
+
+        <div className="max-w-4xl mx-auto flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3">
-            <svg className="h-8 w-auto" viewBox="0 0 290 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <radialGradient id="bwsGlobePwaDash" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#00A0E9"/>
-                  <stop offset="65%" stopColor="#0067AC"/>
-                  <stop offset="100%" stopColor="#002855"/>
-                </radialGradient>
-                <linearGradient id="horizonGlowPwaDash" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#00A0E9" stopOpacity="0.3"/>
-                  <stop offset="20%" stopColor="#FFFFFF"/>
-                  <stop offset="80%" stopColor="#FFFFFF"/>
-                  <stop offset="100%" stopColor="#00A0E9" stopOpacity="0.3"/>
-                </linearGradient>
-              </defs>
-              <circle cx="40" cy="40" r="36" fill="url(#bwsGlobePwaDash)"/>
-              <path d="M 6 40 A 34 34 0 0 1 74 40 Z" fill="#0067AC"/>
-              <path d="M 6 40 Q 40 18 74 40 Q 40 30 6 40 Z" fill="url(#horizonGlowPwaDash)"/>
-              <path d="M 6 40 Q 40 30 74 40 A 34 34 0 0 1 6 40 Z" fill="#0055A5"/>
-              <text x="86" y="47" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="900" fontStyle="italic" fontSize="44" fill="#0067AC" letterSpacing="-1">BWS</text>
-              <text x="88" y="65" fontFamily="'Plus Jakarta Sans', sans-serif" fontWeight="800" fontStyle="italic" fontSize="11.5" fill="#0067AC" letterSpacing="0.5">BANK WOORI SAUDARA</text>
-            </svg>
+            <img src="/images/bws-logo-primary.png" alt="Bank Woori Saudara" className="h-8 w-auto object-contain" />
             <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
             <div>
               <div className="flex items-center gap-1.5">
