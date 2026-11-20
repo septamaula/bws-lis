@@ -26,22 +26,35 @@ class ProgramApiController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $year = $request->query('year', 2026);
-
         $query = TrainingProgram::with(['tnaProposal', 'tnaItem', 'creator', 'approver'])
             ->withCount(['budgetItems', 'participants', 'classes'])
-            ->orderByDesc('id');
+            ->orderByDesc('year')
+            ->orderBy('program_code');
 
         if ($request->filled('year') && $request->year !== 'ALL') {
-            $query->where('year', $year);
+            $query->where('year', (int) $request->year);
+        }
+
+        if ($request->filled('process') && $request->process !== 'ALL') {
+            $query->where('status', $request->process);
+        } elseif ($request->filled('status') && $request->status !== 'ALL') {
+            $query->where('status', $request->status);
         }
 
         if ($request->filled('department') && $request->department !== 'ALL') {
             $query->where('department', $request->department);
         }
 
-        if ($request->filled('status') && $request->status !== 'ALL') {
-            $query->where('status', $request->status);
+        if ($request->filled('search')) {
+            $s = '%' . trim($request->search) . '%';
+            $query->where(function ($q) use ($s) {
+                $q->where('title', 'like', $s)
+                  ->orWhere('program_code', 'like', $s)
+                  ->orWhere('facilitator', 'like', $s)
+                  ->orWhere('location', 'like', $s)
+                  ->orWhere('category', 'like', $s)
+                  ->orWhere('bi_category', 'like', $s);
+            });
         }
 
         if ($request->filled('tna_proposal_id')) {
@@ -53,6 +66,7 @@ class ProgramApiController extends Controller
         $stats = [
             'total_programs' => $programs->count(),
             'total_budget' => (float) $programs->sum('total_budget'),
+            'total_realization' => (float) $programs->sum('realization_amount'),
             'total_participants' => (int) $programs->sum('target_participants_count'),
             'mandatory_count' => $programs->where('is_mandatory', true)->count(),
             'approved_count' => $programs->where('status', 'APPROVED')->count(),
@@ -101,6 +115,7 @@ class ProgramApiController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'program_code' => 'nullable|string|max:50',
             'title' => 'required|string|max:255',
             'category' => 'required|string|max:100',
             'tna_proposal_id' => 'nullable|exists:tna_proposals,id',
@@ -113,41 +128,56 @@ class ProgramApiController extends Controller
             'participant_prerequisites' => 'nullable|string',
             'method' => 'nullable|string|max:50',
             'location' => 'nullable|string|max:255',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'facilitator' => 'nullable|string|max:150',
             'duration_hours' => 'nullable|integer|min:1',
+            'duration_text' => 'nullable|string|max:100',
+            'program_type' => 'nullable|string|max:100',
+            'unit_initiator' => 'nullable|string|max:150',
+            'activity_type' => 'nullable|string|max:100',
+            'bi_category' => 'nullable|string|max:150',
             'passing_grade' => 'nullable|integer|min:0|max:100',
             'is_mandatory' => 'nullable|boolean',
             'description' => 'nullable|string',
-            'approval_type' => 'required|in:DOCUMENT,WORKFLOW',
+            'notes' => 'nullable|string',
+            'approval_scenario' => 'nullable|in:WITHOUT_BUDGET,WITH_BUDGET,WITH_APPROVAL_DOC',
+            'approval_type' => 'nullable|in:DOCUMENT,WORKFLOW',
             'approval_doc_number' => 'nullable|string|max:100',
             'approval_doc_date' => 'nullable|date',
             'approval_doc_signer' => 'nullable|string|max:150',
             'document' => 'nullable|file|max:15360',
+            'doc1' => 'nullable|file|max:15360',
+            'doc1_name' => 'nullable|string|max:255',
+            'doc1_remarks' => 'nullable|string|max:255',
+            'doc2' => 'nullable|file|max:15360',
+            'doc2_name' => 'nullable|string|max:255',
             'approval_doc_name' => 'nullable|string|max:255',
             'approval_doc_size' => 'nullable|integer',
             'is_submit' => 'nullable|boolean',
+            // 10 Budget breakdown fields
+            'budget_fee_facilitator' => 'nullable|numeric|min:0',
+            'budget_meals' => 'nullable|numeric|min:0',
+            'budget_hotel' => 'nullable|numeric|min:0',
+            'budget_meeting_package' => 'nullable|numeric|min:0',
+            'budget_transportation' => 'nullable|numeric|min:0',
+            'budget_business_trip' => 'nullable|numeric|min:0',
+            'budget_reward' => 'nullable|numeric|min:0',
+            'budget_material' => 'nullable|numeric|min:0',
+            'budget_internet' => 'nullable|numeric|min:0',
+            'budget_miscellaneous' => 'nullable|numeric|min:0',
+            'realization_amount' => 'nullable|numeric|min:0',
             'budget_items' => 'nullable|array',
-            'budget_items.*.item_type' => 'required_with:budget_items|string',
-            'budget_items.*.description' => 'required_with:budget_items|string',
-            'budget_items.*.quantity' => 'nullable|numeric|min:0',
-            'budget_items.*.unit' => 'nullable|string|max:50',
-            'budget_items.*.unit_price' => 'nullable|numeric|min:0',
-            'budget_items.*.subtotal' => 'nullable|numeric|min:0',
-            'budget_items.*.notes' => 'nullable|string',
             'participants' => 'nullable|array',
-            'participants.*.nik' => 'nullable|string|max:50',
-            'participants.*.name' => 'required_with:participants|string|max:150',
-            'participants.*.department' => 'nullable|string|max:100',
-            'participants.*.branch' => 'nullable|string|max:100',
-            'participants.*.position' => 'nullable|string|max:100',
-            'participants.*.email' => 'nullable|email|max:150',
         ]);
 
         $user = $request->user();
         $year = $validated['year'] ?? 2026;
         $isSubmit = $request->boolean('is_submit', true);
-        $approvalType = $validated['approval_type'];
+        $approvalScenario = $validated['approval_scenario'] ?? 'WITH_BUDGET';
+        $approvalType = $validated['approval_type'] ?? ($approvalScenario === 'WITH_APPROVAL_DOC' ? 'DOCUMENT' : 'WORKFLOW');
 
-        // Handle Dokumen Persetujuan
+        // Handle Dokumen Persetujuan & Dokumen 1 / 2
         $docPath = null;
         $docName = $validated['approval_doc_name'] ?? null;
         $docSize = $validated['approval_doc_size'] ?? null;
@@ -161,9 +191,42 @@ class ProgramApiController extends Controller
             $docPath = 'attachments/programs/' . uniqid() . '_' . preg_replace('/[^A-Za-z0-9_\-\.]/', '', $docName);
         }
 
-        // Hitung total akumulasi RAB
+        $doc1Path = null;
+        $doc1Name = $validated['doc1_name'] ?? null;
+        if ($request->hasFile('doc1')) {
+            $file = $request->file('doc1');
+            $doc1Name = $file->getClientOriginalName();
+            $doc1Path = $file->store('attachments/programs', 'public');
+        } elseif ($doc1Name) {
+            $doc1Path = 'attachments/programs/' . uniqid() . '_' . preg_replace('/[^A-Za-z0-9_\-\.]/', '', $doc1Name);
+        }
+
+        $doc2Path = null;
+        $doc2Name = $validated['doc2_name'] ?? null;
+        if ($request->hasFile('doc2')) {
+            $file = $request->file('doc2');
+            $doc2Name = $file->getClientOriginalName();
+            $doc2Path = $file->store('attachments/programs', 'public');
+        } elseif ($doc2Name) {
+            $doc2Path = 'attachments/programs/' . uniqid() . '_' . preg_replace('/[^A-Za-z0-9_\-\.]/', '', $doc2Name);
+        }
+
+        // Hitung total 10 item RAB
+        $bFee = (float) ($validated['budget_fee_facilitator'] ?? 0);
+        $bMeals = (float) ($validated['budget_meals'] ?? 0);
+        $bHotel = (float) ($validated['budget_hotel'] ?? 0);
+        $bMeet = (float) ($validated['budget_meeting_package'] ?? 0);
+        $bTrans = (float) ($validated['budget_transportation'] ?? 0);
+        $bTrip = (float) ($validated['budget_business_trip'] ?? 0);
+        $bReward = (float) ($validated['budget_reward'] ?? 0);
+        $bMat = (float) ($validated['budget_material'] ?? 0);
+        $bNet = (float) ($validated['budget_internet'] ?? 0);
+        $bMisc = (float) ($validated['budget_miscellaneous'] ?? 0);
+
+        $sum10 = $bFee + $bMeals + $bHotel + $bMeet + $bTrans + $bTrip + $bReward + $bMat + $bNet + $bMisc;
+
         $budgetItems = $validated['budget_items'] ?? [];
-        $totalBudget = collect($budgetItems)->sum(function ($i) {
+        $totalBudget = $sum10 > 0 ? $sum10 : collect($budgetItems)->sum(function ($i) {
             $sub = (float) ($i['subtotal'] ?? 0);
             if ($sub <= 0 && isset($i['quantity'], $i['unit_price'])) {
                 $sub = (float) $i['quantity'] * (float) $i['unit_price'];
@@ -171,18 +234,25 @@ class ProgramApiController extends Controller
             return $sub;
         });
 
-        // Generate Program Code unik BWS
-        $count = TrainingProgram::where('year', $year)->count() + 1;
-        $deptShort = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $validated['department'] ?? 'GEN'), 0, 3));
-        $programCode = 'PRG-' . $year . '-' . $deptShort . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
+        // Program Code
+        if (!empty($validated['program_code'])) {
+            $programCode = $validated['program_code'];
+        } else {
+            $count = TrainingProgram::where('year', $year)->count() + 1;
+            $deptShort = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $validated['unit_initiator'] ?? $validated['department'] ?? 'GEN'), 0, 3));
+            $programCode = 'PRG-' . $year . '-' . $deptShort . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
+        }
 
         // Tentukan status dan badge
-        if ($approvalType === 'DOCUMENT') {
+        if ($approvalScenario === 'WITHOUT_BUDGET') {
+            $status = $isSubmit ? 'SUBMITTED' : 'DRAFT';
+            $badge = $isSubmit ? 'Menunggu Disposisi LD Div Head' : 'Draft Program';
+        } elseif ($approvalScenario === 'WITH_APPROVAL_DOC') {
             $status = $isSubmit ? 'APPROVED' : 'DRAFT';
-            $badge = $isSubmit ? 'Disahkan via Dokumen (' . ($validated['approval_doc_number'] ?? 'MEMO') . ')' : 'Draft Program';
+            $badge = $isSubmit ? 'Disahkan via Dokumen (' . ($docName ?? 'Memo') . ')' : 'Draft Program';
         } else {
             $status = $isSubmit ? 'SUBMITTED' : 'DRAFT';
-            $badge = $isSubmit ? 'Menunggu Reviewer 1 (HCBP)' : 'Draft Program';
+            $badge = $isSubmit ? 'Menunggu Reviewer 1 (People Dev)' : 'Draft Program';
         }
 
         try {
@@ -194,7 +264,7 @@ class ProgramApiController extends Controller
                 'category' => $validated['category'],
                 'tna_proposal_id' => $validated['tna_proposal_id'] ?? null,
                 'tna_item_id' => $validated['tna_item_id'] ?? null,
-                'department' => $validated['department'] ?? ($user->department ?? 'Human Capital'),
+                'department' => $validated['department'] ?? ($validated['unit_initiator'] ?? 'Human Capital'),
                 'year' => $year,
                 'execution_quarter' => $validated['execution_quarter'] ?? 'Q1',
                 'target_audience' => $validated['target_audience'] ?? null,
@@ -202,10 +272,20 @@ class ProgramApiController extends Controller
                 'participant_prerequisites' => $validated['participant_prerequisites'] ?? null,
                 'method' => $validated['method'] ?? 'Hybrid',
                 'location' => $validated['location'] ?? 'BWS Learning Center',
+                'start_date' => $validated['start_date'] ?? null,
+                'end_date' => $validated['end_date'] ?? null,
+                'facilitator' => $validated['facilitator'] ?? null,
                 'duration_hours' => $validated['duration_hours'] ?? 8,
+                'duration_text' => $validated['duration_text'] ?? null,
+                'program_type' => $validated['program_type'] ?? 'In-House Training',
+                'unit_initiator' => $validated['unit_initiator'] ?? null,
+                'activity_type' => $validated['activity_type'] ?? 'Pelatihan',
+                'bi_category' => $validated['bi_category'] ?? null,
                 'passing_grade' => $validated['passing_grade'] ?? 75,
                 'is_mandatory' => $request->boolean('is_mandatory', false),
                 'description' => $validated['description'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'approval_scenario' => $approvalScenario,
                 'approval_type' => $approvalType,
                 'approval_doc_number' => $validated['approval_doc_number'] ?? null,
                 'approval_doc_date' => $validated['approval_doc_date'] ?? null,
@@ -213,13 +293,29 @@ class ProgramApiController extends Controller
                 'approval_doc_path' => $docPath,
                 'approval_doc_name' => $docName,
                 'approval_doc_size' => $docSize,
+                'doc1_path' => $doc1Path,
+                'doc1_name' => $doc1Name,
+                'doc1_remarks' => $validated['doc1_remarks'] ?? null,
+                'doc2_path' => $doc2Path,
+                'doc2_name' => $doc2Name,
+                'budget_fee_facilitator' => $bFee,
+                'budget_meals' => $bMeals,
+                'budget_hotel' => $bHotel,
+                'budget_meeting_package' => $bMeet,
+                'budget_transportation' => $bTrans,
+                'budget_business_trip' => $bTrip,
+                'budget_reward' => $bReward,
+                'budget_material' => $bMat,
+                'budget_internet' => $bNet,
+                'budget_miscellaneous' => $bMisc,
                 'total_budget' => $totalBudget,
+                'realization_amount' => $validated['realization_amount'] ?? 0,
                 'status' => $status,
                 'current_step_order' => 1,
                 'approval_status_badge' => $badge,
-                'created_by' => $user->id,
-                'approved_by' => ($approvalType === 'DOCUMENT' && $isSubmit) ? $user->id : null,
-                'approved_at' => ($approvalType === 'DOCUMENT' && $isSubmit) ? now() : null,
+                'created_by' => $user?->id ?? 1,
+                'approved_by' => ($approvalScenario === 'WITH_APPROVAL_DOC' && $isSubmit) ? ($user?->id ?? 1) : null,
+                'approved_at' => ($approvalScenario === 'WITH_APPROVAL_DOC' && $isSubmit) ? now() : null,
             ]);
 
             // Simpan baris RAB

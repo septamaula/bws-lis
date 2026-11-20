@@ -31,6 +31,8 @@ class TnaProposal extends Model
         'approval_status_badge',
         'revision_count',
         'rejection_notes',
+        'minimum_regulator_investment',
+        'realization_amount',
         'attachment_path',
         'attachment_name',
         'attachment_size',
@@ -40,11 +42,33 @@ class TnaProposal extends Model
     protected $casts = [
         'total_budget_requested' => 'decimal:2',
         'total_budget_approved' => 'decimal:2',
+        'minimum_regulator_investment' => 'decimal:2',
+        'realization_amount' => 'decimal:2',
         'approved_at' => 'datetime',
         'current_step_order' => 'integer',
         'revision_count' => 'integer',
         'attachment_size' => 'integer',
     ];
+
+    protected $appends = [
+        'remaining_budget',
+        'realization_percentage',
+    ];
+
+    public function getRemainingBudgetAttribute(): float
+    {
+        $proj = (float) ($this->total_budget_requested ?? 0);
+        $real = (float) ($this->realization_amount ?? 0);
+        return max(0, $proj - $real);
+    }
+
+    public function getRealizationPercentageAttribute(): float
+    {
+        $proj = (float) ($this->total_budget_requested ?? 0);
+        if ($proj <= 0) return 0.0;
+        $real = (float) ($this->realization_amount ?? 0);
+        return round(($real / $proj) * 100, 1);
+    }
 
     public function fiscalYear(): BelongsTo
     {

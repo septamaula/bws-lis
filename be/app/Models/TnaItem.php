@@ -29,6 +29,7 @@ class TnaItem extends Model
         'execution_quarter',
         'cost_per_participant',
         'impact_kpi',
+        'realization_amount',
     ];
 
     protected $casts = [
@@ -36,7 +37,19 @@ class TnaItem extends Model
         'cost_per_participant' => 'decimal:2',
         'estimated_cost' => 'decimal:2',
         'budget' => 'decimal:2',
+        'realization_amount' => 'decimal:2',
     ];
+
+    protected $appends = [
+        'remaining_budget',
+    ];
+
+    public function getRemainingBudgetAttribute(): float
+    {
+        $proj = (float) ($this->budget ?? $this->estimated_cost ?? 0);
+        $real = (float) ($this->realization_amount ?? 0);
+        return max(0, $proj - $real);
+    }
 
     public function proposal(): BelongsTo
     {

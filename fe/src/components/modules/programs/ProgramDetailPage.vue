@@ -69,6 +69,21 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
+function formatDateDisplay(d) {
+  if (!d) return '-'
+  try {
+    const date = new Date(d)
+    if (isNaN(date.getTime())) return d
+    return new Intl.DateTimeFormat('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    }).format(date)
+  } catch {
+    return d
+  }
+}
+
 async function fetchProgramDetail() {
   loading.value = true
   try {
@@ -409,29 +424,101 @@ onMounted(() => {
           </span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
           <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-gray-100 space-y-1">
-            <span class="text-gray-400 font-medium block">Kategori &amp; Divisi Penyelenggara</span>
+            <span class="text-gray-400 font-medium block">Kategori &amp; Unit Pemohon</span>
             <span class="font-bold text-gray-900 block">{{ program.category }}</span>
-            <span class="text-gray-500 block">Divisi: {{ program.department }}</span>
+            <span class="text-gray-500 block">Unit: {{ program.unit_initiator || program.department }}</span>
           </div>
 
           <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-gray-100 space-y-1">
-            <span class="text-gray-400 font-medium block">Metode &amp; Kuartal Eksekusi</span>
-            <span class="font-bold text-[#002855] block">{{ program.method }} • Kuartal {{ program.execution_quarter }}</span>
-            <span class="text-gray-500 block">Lokasi: {{ program.location || 'BWS Learning Center' }}</span>
+            <span class="text-gray-400 font-medium block">Periode &amp; Durasi</span>
+            <span class="font-bold text-[#002855] block">
+              {{ program.start_date ? formatDateDisplay(program.start_date) : '-' }} s/d {{ program.end_date ? formatDateDisplay(program.end_date) : '-' }}
+            </span>
+            <span class="text-gray-500 block">Durasi: {{ program.duration_text || (program.duration_hours + ' Jam') }}</span>
           </div>
 
           <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-gray-100 space-y-1">
-            <span class="text-gray-400 font-medium block">Target Level Jabatan</span>
-            <span class="font-bold text-gray-900 block">{{ program.target_audience || 'Staff & Officer' }}</span>
-            <span class="text-gray-500 block">Prasyarat: {{ program.participant_prerequisites || 'Standar kompetensi dasar' }}</span>
+            <span class="text-gray-400 font-medium block">Lokasi &amp; Fasilitator</span>
+            <span class="font-bold text-gray-900 block">{{ program.location || 'BWS Learning Center' }}</span>
+            <span class="text-gray-500 block">Fasilitator: {{ program.facilitator || '-' }}</span>
           </div>
+
+          <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-gray-100 space-y-1">
+            <span class="text-gray-400 font-medium block">Kategori BI &amp; Tipe</span>
+            <span class="font-bold text-[#0067AC] block">{{ program.bi_category || 'Regulasi Perbankan' }}</span>
+            <span class="text-gray-500 block">Tipe: {{ program.activity_type || program.program_type || 'Pelatihan' }}</span>
+          </div>
+        </div>
+
+        <div v-if="program.notes" class="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 text-xs space-y-1">
+          <span class="font-bold text-[#0067AC] uppercase tracking-wider text-[10px] block">Catatan / Disposisi:</span>
+          <p class="text-gray-700 leading-relaxed">{{ program.notes }}</p>
         </div>
 
         <div v-if="program.description" class="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs space-y-1">
           <span class="font-bold text-gray-700 uppercase tracking-wider text-[10px] block">Deskripsi &amp; Silabus Materi:</span>
           <p class="text-gray-700 leading-relaxed">{{ program.description }}</p>
+        </div>
+      </div>
+
+      <!-- 10 ITEM BUDGET BREAKDOWN (BWS STANDARD) -->
+      <div v-if="program.budget_fee_facilitator > 0 || program.total_budget > 0" class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-100 shadow-2xs space-y-4">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div class="flex items-center gap-2">
+            <Wallet class="w-4 h-4 text-[#0067AC]" />
+            <h2 class="text-sm font-bold text-gray-900">Rincian 10 Item Anggaran RAB (Standar BWS)</h2>
+          </div>
+          <span class="text-xs font-mono font-bold text-[#0067AC]">Total: {{ formatRupiah(program.total_budget) }}</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div class="space-y-2 bg-[#F8FAFC] p-4 rounded-2xl border border-gray-100">
+            <div class="flex justify-between py-1 border-b border-gray-200/60">
+              <span class="text-gray-600 font-medium">Fee Facilitator:</span>
+              <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_fee_facilitator) }}</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-gray-200/60">
+              <span class="text-gray-600 font-medium">Meals:</span>
+              <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_meals) }}</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-gray-200/60">
+              <span class="text-gray-600 font-medium">Hotel:</span>
+              <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_hotel) }}</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-gray-200/60">
+              <span class="text-gray-600 font-medium">Meeting Package:</span>
+              <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_meeting_package) }}</span>
+            </div>
+            <div class="flex justify-between py-1">
+              <span class="text-gray-600 font-medium">Transportation:</span>
+              <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_transportation) }}</span>
+            </div>
+          </div>
+
+          <div class="space-y-2 bg-[#F8FAFC] p-4 rounded-2xl border border-gray-100">
+            <div class="flex justify-between py-1 border-b border-gray-200/60">
+              <span class="text-gray-600 font-medium">Business Trip Allowance:</span>
+              <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_business_trip) }}</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-gray-200/60">
+              <span class="text-gray-600 font-medium">Reward:</span>
+              <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_reward) }}</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-gray-200/60">
+              <span class="text-gray-600 font-medium">Material:</span>
+              <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_material) }}</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-gray-200/60">
+              <span class="text-gray-600 font-medium">Internet:</span>
+              <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_internet) }}</span>
+            </div>
+            <div class="flex justify-between py-1">
+              <span class="text-gray-600 font-medium">Miscellaneous:</span>
+              <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_miscellaneous) }}</span>
+            </div>
+          </div>
         </div>
       </div>
 

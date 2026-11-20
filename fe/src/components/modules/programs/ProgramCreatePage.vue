@@ -1,10 +1,9 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import {
   ArrowLeft,
   Plus,
   Trash2,
-  Building2,
   Calendar,
   Wallet,
   Users,
@@ -13,23 +12,17 @@ import {
   AlertCircle,
   CheckCircle2,
   ChevronRight,
-  Sparkles,
   FileUp,
   FileCheck2,
   Paperclip,
   X,
   FileText,
   Layers,
-  GraduationCap,
-  Clock,
-  Compass,
-  Award,
-  Video,
   MapPin,
-  HelpCircle,
+  Clock,
   ShieldCheck,
-  Check,
-  UserCheck
+  Building2,
+  HelpCircle
 } from 'lucide-vue-next'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
@@ -45,66 +38,58 @@ const emit = defineEmits(['back', 'created'])
 const auth = useAuthStore()
 
 const isEditMode = computed(() => !!props.editProgramId)
-const editingProgram = ref(null)
 const loadingInit = ref(true)
 const isSubmitting = ref(false)
 const feedback = ref({ type: '', message: '' })
 
-// Master / Reference Data State
+// Master data
 const tnaProposals = ref([])
 const categories = ref([])
-const fiscalYears = ref([])
 
-// Form State
+// Form state matching Excel wireframe
 const form = ref({
+  program_code: '',
   title: '',
   category: 'Operasional & Layanan Perbankan',
-  tna_proposal_id: '',
-  tna_item_id: '',
-  department: auth.user?.department || 'Information Technology',
+  location: 'Ruang 1 - BWS Learning Center',
+  facilitator: 'PT Mitra Konsultan Perbankan',
+  duration_text: '2 Hari (16 Jam)',
+  start_date: '2026-03-10',
+  end_date: '2026-03-11',
+  program_type: 'In-House Training',
+  unit_initiator: 'Divisi Operasional & Layanan',
+  activity_type: 'Pelatihan',
+  bi_category: 'Operasional Perbankan & Sistem Pembayaran',
   year: 2026,
-  execution_quarter: 'Q2',
-  target_audience: 'Officer & Senior Staff Operasional Cabang & Kantor Pusat',
-  target_participants_count: 25,
-  participant_prerequisites: 'Masa kerja minimum 1 tahun di Bank Woori Saudara dan memiliki pemahaman proses bisnis perbankan.',
-  method: 'Hybrid', // In-Class, Virtual, Hybrid, E-Learning
-  location: 'BWS Learning Center - R. Diklat 101',
-  duration_hours: 16,
-  passing_grade: 75,
-  is_mandatory: false,
-  description: '',
-  approval_type: 'WORKFLOW', // 'DOCUMENT' or 'WORKFLOW'
-  approval_doc_number: '',
-  approval_doc_date: '',
-  approval_doc_signer: 'Kepala Divisi Human Capital',
-  budget_items: [],
-  participants: []
+  notes: '',
+  approval_scenario: 'WITH_BUDGET', // 'WITHOUT_BUDGET' | 'WITH_BUDGET' | 'WITH_APPROVAL_DOC'
+
+  // 10 Budget breakdown items
+  budget_fee_facilitator: 15000000,
+  budget_meals: 4500000,
+  budget_hotel: 6000000,
+  budget_meeting_package: 3500000,
+  budget_transportation: 2000000,
+  budget_business_trip: 0,
+  budget_reward: 0,
+  budget_material: 2500000,
+  budget_internet: 1000000,
+  budget_miscellaneous: 1500000,
+
+  doc1_remarks: 'RAB & Kerangka Acuan Kerja (TOR)',
+  approval_doc_signer: 'Learning & Development Div. Head'
 })
 
-// File Attachment State for Document Approval
-const selectedDocFile = ref(null)
-const docFileInputRef = ref(null)
-const existingDocFile = ref(null)
+// File uploads
+const doc1File = ref(null)
+const doc2File = ref(null)
+const approvalDocFile = ref(null)
+const existingDoc1 = ref(null)
+const existingDoc2 = ref(null)
 
-const budgetItemTypes = [
-  { value: 'SPEAKER', label: 'Honorarium Pembicara / Instruktur', badgeColor: '#0067AC' },
-  { value: 'TRANSPORT', label: 'Transportasi & Perjalanan Dinas', badgeColor: '#003876' },
-  { value: 'ACCOMMODATION', label: 'Akomodasi / Penginapan Hotel', badgeColor: '#4F46E5' },
-  { value: 'LUNCH', label: 'Konsumsi: Makan Siang (Lunch)', badgeColor: '#059669' },
-  { value: 'SNACK', label: 'Konsumsi: Snack & Coffee Break', badgeColor: '#D97706' },
-  { value: 'MATERIALS', label: 'Modul, ATK & Training Kit', badgeColor: '#7C3AED' },
-  { value: 'VENUE', label: 'Sewa Ruangan / Hall & Audio Visual', badgeColor: '#0284C7' },
-  { value: 'CERTIFICATION', label: 'Biaya Ujian & Sertifikasi Resmi', badgeColor: '#DC2626' },
-  { value: 'OTHER', label: 'Dana Taktis / Kontinjensi / Lainnya', badgeColor: '#4B5563' },
-]
-
-const quarters = ['Q1', 'Q2', 'Q3', 'Q4', 'Q1 - Q2', 'Q3 - Q4', 'Fleksibel']
-const trainingMethods = [
-  { value: 'Hybrid', label: 'Hybrid Learning (Tatap Muka & Virtual)', desc: 'Kombinasi kelas offline BWS Learning Center dan Zoom/Teams' },
-  { value: 'In-Class', label: 'In-Class (Tatap Muka Penuh)', desc: 'Pelatihan tatap muka langsung di ruang kelas atau hotel' },
-  { value: 'Virtual', label: 'Virtual Online Penuh', desc: 'Sesi webinar interaktif via video conference BWS LIS' },
-  { value: 'E-Learning', label: 'E-Learning Self-Paced', desc: 'Pembelajaran mandiri berbasis modul video & kuis portal LIS' },
-]
+const doc1InputRef = ref(null)
+const doc2InputRef = ref(null)
+const approvalDocInputRef = ref(null)
 
 function formatRupiah(num) {
   if (num === null || num === undefined) return 'Rp 0'
@@ -115,319 +100,137 @@ function formatRupiah(num) {
   }).format(num)
 }
 
-function formatFileSize(bytes) {
-  if (!bytes) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
-}
-
-// Computeds for Selected TNA
-const selectedTna = computed(() => {
-  if (!form.value.tna_proposal_id) return null
-  return tnaProposals.value.find(p => p.id === Number(form.value.tna_proposal_id)) || null
-})
-
-const availableTnaItems = computed(() => {
-  return selectedTna.value?.items || []
-})
-
-const selectedTnaItem = computed(() => {
-  if (!form.value.tna_item_id) return null
-  return availableTnaItems.value.find(i => i.id === Number(form.value.tna_item_id)) || null
-})
-
-// Live Budget Computations
+// 10 Budget Total Calculation
 const totalBudgetCalculated = computed(() => {
-  return form.value.budget_items.reduce((sum, item) => {
-    const q = Number(item.quantity) || 0
-    const p = Number(item.unit_price) || 0
-    return sum + (q * p)
-  }, 0)
+  const b = form.value
+  return (
+    Number(b.budget_fee_facilitator || 0) +
+    Number(b.budget_meals || 0) +
+    Number(b.budget_hotel || 0) +
+    Number(b.budget_meeting_package || 0) +
+    Number(b.budget_transportation || 0) +
+    Number(b.budget_business_trip || 0) +
+    Number(b.budget_reward || 0) +
+    Number(b.budget_material || 0) +
+    Number(b.budget_internet || 0) +
+    Number(b.budget_miscellaneous || 0)
+  )
 })
 
-const costPerParticipant = computed(() => {
-  const pax = Number(form.value.target_participants_count) || 1
-  return pax > 0 ? Math.round(totalBudgetCalculated.value / pax) : 0
-})
+// Options list
+const unitOptions = [
+  'Divisi Operasional & Layanan',
+  'Divisi Kredit Komersial & SME',
+  'Divisi Manajemen Risiko & Kepatuhan',
+  'Divisi Teknologi Informasi',
+  'Divisi Human Capital & Learning',
+  'Divisi Treasury & Perbankan Internasional',
+  'Divisi Digital Banking & Produk'
+]
 
-// Watch TNA selection to auto-fill suggestions
-watch(() => form.value.tna_proposal_id, (newId) => {
-  if (!newId) {
-    form.value.tna_item_id = ''
-    return
-  }
-  const tna = tnaProposals.value.find(p => p.id === Number(newId))
-  if (tna) {
-    form.value.department = tna.department || form.value.department
-    form.value.year = tna.year || form.value.year
-    if (tna.items && tna.items.length > 0 && !form.value.tna_item_id) {
-      form.value.tna_item_id = tna.items[0].id
-      onTnaItemChanged(tna.items[0].id)
-    }
-  }
-})
+const programTypeOptions = [
+  'In-House Training',
+  'Public Training / External Vendor',
+  'Program Sertifikasi Profesi',
+  'Workshop / FGD Spesialis',
+  'E-Learning & Virtual Webinar'
+]
 
-function onTnaItemChanged(itemId) {
-  const item = availableTnaItems.value.find(i => i.id === Number(itemId))
-  if (item) {
-    if (!form.value.title || form.value.title === '') {
-      form.value.title = item.sub_category_name || item.recommended_program || ''
-    }
-    form.value.category = item.category_name || item.job_family || form.value.category
-    form.value.execution_quarter = item.execution_quarter || form.value.execution_quarter
-    form.value.target_participants_count = item.target_participants_count || form.value.target_participants_count
-    if (item.target_audience) {
-      form.value.target_audience = item.target_audience
-    }
-  }
+const activityTypeOptions = [
+  'Pelatihan',
+  'Workshop',
+  'Sertifikasi',
+  'Seminar / Konferensi',
+  'Coaching & Mentoring'
+]
+
+const biCategoryOptions = [
+  'Operasional Perbankan & Sistem Pembayaran (SKNBI/FAST)',
+  'Kredit, Pembiayaan Komersial & Analisis Risiko',
+  'Manajemen Risiko Perbankan (BSMR)',
+  'Anti Pencucian Uang & Pencegahan Terorisme (APU-PPT)',
+  'Teknologi Informasi, Keamanan Siber & POJK 29/2022',
+  'Kepatuhan, Regulasi OJK & Perlindungan Konsumen',
+  'Kepemimpinan, Budaya Kerja & Human Capital'
+]
+
+function onDoc1Change(e) {
+  const f = e.target.files[0]
+  if (f) doc1File.value = f
 }
 
-// Budget Table Row Management
-function addBudgetItemRow() {
-  form.value.budget_items.push({
-    item_type: 'SPEAKER',
-    description: '',
-    quantity: 1,
-    unit: 'Paket',
-    unit_price: 10000000,
-    notes: ''
-  })
+function onDoc2Change(e) {
+  const f = e.target.files[0]
+  if (f) doc2File.value = f
 }
 
-function removeBudgetItemRow(index) {
-  if (form.value.budget_items.length <= 1) {
-    feedback.value = { type: 'error', message: 'Minimal harus terdapat 1 komponen biaya pada RAB.' }
-    return
-  }
-  form.value.budget_items.splice(index, 1)
+function onApprovalDocChange(e) {
+  const f = e.target.files[0]
+  if (f) approvalDocFile.value = f
 }
 
-function populateStandardRabTemplate() {
-  const pax = Number(form.value.target_participants_count) || 25
-  form.value.budget_items = [
-    {
-      item_type: 'SPEAKER',
-      description: 'Honorarium Narasumber Eksternal / Praktisi Senior Perbankan (2 Hari)',
-      quantity: 2,
-      unit: 'Hari',
-      unit_price: 8000000,
-      notes: 'Sertifikasi kompetensi resmi'
-    },
-    {
-      item_type: 'TRANSPORT',
-      description: 'Transportasi & Tiket Penerbangan / Taksi Bandara Instruktur',
-      quantity: 1,
-      unit: 'Paket',
-      unit_price: 6500000,
-      notes: 'PP Jakarta - Lokasi Pelatihan'
-    },
-    {
-      item_type: 'LUNCH',
-      description: `Makan Siang Prasmanan / Bento Box Peserta & Panitia (${pax} Orang x 2 Hari)`,
-      quantity: pax * 2,
-      unit: 'Pax',
-      unit_price: 85000,
-      notes: 'Menu higienis standar korporat'
-    },
-    {
-      item_type: 'SNACK',
-      description: `Coffee Break Pagi & Sore (${pax} Orang x 4 Sesi)`,
-      quantity: pax * 4,
-      unit: 'Pax',
-      unit_price: 45000,
-      notes: 'Termasuk aneka kue & coffee/tea'
-    },
-    {
-      item_type: 'MATERIALS',
-      description: `Modul Hardcopy, Binder, ATK Eksklusif & Training Kit BWS (${pax} Paket)`,
-      quantity: pax,
-      unit: 'Paket',
-      unit_price: 350000,
-      notes: 'Lanyard, blocknote & tas'
-    },
-    {
-      item_type: 'CERTIFICATION',
-      description: `Voucher Ujian Resmi Lembaga Sertifikasi Kompetensi (${pax} Peserta)`,
-      quantity: pax,
-      unit: 'Peserta',
-      unit_price: 1250000,
-      notes: 'Sertifikat kelulusan standar OJK'
-    },
-    {
-      item_type: 'OTHER',
-      description: 'Dana Taktis & Kontinjensi Operasional Kelas (5%)',
-      quantity: 1,
-      unit: 'Paket',
-      unit_price: 4500000,
-      notes: 'Biaya darurat / tak terduga'
-    }
-  ]
-
-  feedback.value = {
-    type: 'success',
-    message: `Template RAB standar BWS LIS berhasil dimuat (${form.value.budget_items.length} komponen biaya terstruktur).`
-  }
-}
-
-// Participants Management
-function addParticipantRow() {
-  form.value.participants.push({
-    nik: '',
-    name: '',
-    department: form.value.department,
-    branch: 'Kantor Cabang Utama BWS',
-    position: 'Staff / Officer',
-    email: ''
-  })
-}
-
-function removeParticipantRow(index) {
-  form.value.participants.splice(index, 1)
-}
-
-function populateSampleParticipants() {
-  form.value.participants = [
-    { nik: 'BWS-2024-010', name: 'Rangga Prawira', department: form.value.department, branch: 'Kantor Pusat BWS - Sudirman', position: 'Senior Officer', email: 'rangga.p@bankwoorisaudara.com' },
-    { nik: 'BWS-2024-011', name: 'Dewi Lestari', department: form.value.department, branch: 'KC Bandung Asia Afrika', position: 'Assistant Manager', email: 'dewi.l@bankwoorisaudara.com' },
-    { nik: 'BWS-2024-012', name: 'Fikri Haikal', department: form.value.department, branch: 'KC Surabaya Darmo', position: 'Credit Analyst Officer', email: 'fikri.h@bankwoorisaudara.com' },
-    { nik: 'BWS-2024-013', name: 'Nadia Safitri', department: form.value.department, branch: 'KC Medan Putri Hijau', position: 'Compliance Specialist', email: 'nadia.s@bankwoorisaudara.com' },
-    { nik: 'BWS-2024-014', name: 'Budi Santoso', department: form.value.department, branch: 'KC Semarang Pandanaran', position: 'Operations Supervisor', email: 'budi.s@bankwoorisaudara.com' },
-  ]
-}
-
-// File Attachment for Approval by Document
-function onDocFileSelected(event) {
-  const file = event.target.files[0]
-  if (!file) return
-  if (file.size > 15 * 1024 * 1024) {
-    feedback.value = { type: 'error', message: 'Ukuran berkas dokumen maksimal adalah 15 MB.' }
-    return
-  }
-  selectedDocFile.value = file
-  feedback.value = { type: '', message: '' }
-}
-
-function removeDocAttachment() {
-  selectedDocFile.value = null
-  if (docFileInputRef.value) {
-    docFileInputRef.value.value = ''
-  }
-}
-
-// Load References on Mount
-async function loadReferences() {
+async function loadData() {
   loadingInit.value = true
   try {
-    const [resTna, resCats, resYears] = await Promise.all([
-      apiClient.get('/tna?year=ALL'),
+    const [resCats, resTna] = await Promise.all([
       apiClient.get('/categories'),
-      apiClient.get('/fiscal-years')
+      apiClient.get('/tna')
     ])
-
-    tnaProposals.value = resTna.data.proposals || []
     categories.value = resCats.data.categories || []
-    fiscalYears.value = resYears.data.years || []
+    tnaProposals.value = resTna.data.proposals || []
 
     if (isEditMode.value) {
       const { data } = await apiClient.get(`/programs/${props.editProgramId}`)
       const p = data.program
-      editingProgram.value = p
-
+      form.value.program_code = p.program_code || ''
       form.value.title = p.title || ''
       form.value.category = p.category || 'Operasional & Layanan Perbankan'
-      form.value.tna_proposal_id = p.tna_proposal_id || ''
-      form.value.tna_item_id = p.tna_item_id || ''
-      form.value.department = p.department || auth.user?.department || 'Information Technology'
+      form.value.location = p.location || 'Ruang 1'
+      form.value.facilitator = p.facilitator || ''
+      form.value.duration_text = p.duration_text || (p.duration_hours ? `${p.duration_hours} Jam` : '')
+      form.value.start_date = p.start_date ? p.start_date.substring(0, 10) : ''
+      form.value.end_date = p.end_date ? p.end_date.substring(0, 10) : ''
+      form.value.program_type = p.program_type || 'In-House Training'
+      form.value.unit_initiator = p.unit_initiator || p.department || 'Divisi Operasional & Layanan'
+      form.value.activity_type = p.activity_type || 'Pelatihan'
+      form.value.bi_category = p.bi_category || 'Operasional Perbankan'
       form.value.year = p.year || 2026
-      form.value.execution_quarter = p.execution_quarter || 'Q1'
-      form.value.target_audience = p.target_audience || ''
-      form.value.target_participants_count = p.target_participants_count || 20
-      form.value.participant_prerequisites = p.participant_prerequisites || ''
-      form.value.method = p.method || 'Hybrid'
-      form.value.location = p.location || 'BWS Learning Center'
-      form.value.duration_hours = p.duration_hours || 16
-      form.value.passing_grade = p.passing_grade || 75
-      form.value.is_mandatory = !!p.is_mandatory
-      form.value.description = p.description || ''
-      form.value.approval_type = p.approval_type || 'WORKFLOW'
-      form.value.approval_doc_number = p.approval_doc_number || ''
-      form.value.approval_doc_date = p.approval_doc_date ? p.approval_doc_date.substring(0, 10) : ''
-      form.value.approval_doc_signer = p.approval_doc_signer || ''
+      form.value.notes = p.notes || ''
+      form.value.approval_scenario = p.approval_scenario || (p.total_budget > 0 ? 'WITH_BUDGET' : 'WITHOUT_BUDGET')
 
-      if (p.approval_doc_name) {
-        existingDocFile.value = {
-          name: p.approval_doc_name,
-          size: p.approval_doc_size,
-          path: p.approval_doc_path
-        }
-      }
+      form.value.budget_fee_facilitator = Number(p.budget_fee_facilitator || 0)
+      form.value.budget_meals = Number(p.budget_meals || 0)
+      form.value.budget_hotel = Number(p.budget_hotel || 0)
+      form.value.budget_meeting_package = Number(p.budget_meeting_package || 0)
+      form.value.budget_transportation = Number(p.budget_transportation || 0)
+      form.value.budget_business_trip = Number(p.budget_business_trip || 0)
+      form.value.budget_reward = Number(p.budget_reward || 0)
+      form.value.budget_material = Number(p.budget_material || 0)
+      form.value.budget_internet = Number(p.budget_internet || 0)
+      form.value.budget_miscellaneous = Number(p.budget_miscellaneous || 0)
 
-      if (p.budget_items && p.budget_items.length > 0) {
-        form.value.budget_items = p.budget_items.map(b => ({
-          item_type: b.item_type || 'OTHER',
-          description: b.description || '',
-          quantity: Number(b.quantity) || 1,
-          unit: b.unit || 'Paket',
-          unit_price: Number(b.unit_price) || 0,
-          notes: b.notes || ''
-        }))
-      } else {
-        populateStandardRabTemplate()
-      }
-
-      if (p.participants && p.participants.length > 0) {
-        form.value.participants = p.participants.map(part => ({
-          nik: part.nik || '',
-          name: part.name || '',
-          department: part.department || '',
-          branch: part.branch || '',
-          position: part.position || '',
-          email: part.email || ''
-        }))
-      }
+      if (p.doc1_name) existingDoc1.value = p.doc1_name
+      if (p.doc2_name) existingDoc2.value = p.doc2_name
     } else {
-      if (tnaProposals.value.length > 0) {
-        const approvedTna = tnaProposals.value.find(t => t.status === 'APPROVED') || tnaProposals.value[0]
-        form.value.tna_proposal_id = approvedTna.id
-        form.value.department = approvedTna.department
-        if (approvedTna.items && approvedTna.items.length > 0) {
-          form.value.tna_item_id = approvedTna.items[0].id
-          onTnaItemChanged(approvedTna.items[0].id)
-        }
-      }
-      populateStandardRabTemplate()
-      populateSampleParticipants()
+      // Auto-generate program code suggestion
+      const randNum = Math.floor(100 + Math.random() * 900)
+      form.value.program_code = `D26_${randNum}`
     }
   } catch (err) {
-    feedback.value = {
-      type: 'error',
-      message: 'Gagal memuat master data atau referensi TNA. Pastikan koneksi backend aktif.'
-    }
+    feedback.value = { type: 'error', message: 'Gagal memuat data program.' }
   } finally {
     loadingInit.value = false
   }
 }
 
 onMounted(() => {
-  loadReferences()
+  loadData()
 })
 
-// Submission Handler
-async function submitForm(isSubmit) {
-  if (!form.value.title.trim()) {
-    feedback.value = { type: 'error', message: 'Nama Program Pelatihan wajib diisi.' }
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+async function submitProgram() {
+  if (!form.value.title) {
+    feedback.value = { type: 'error', message: 'Program Name (Nama Program) wajib diisi.' }
     return
-  }
-
-  if (form.value.approval_type === 'DOCUMENT' && isSubmit) {
-    if (!form.value.approval_doc_number.trim() || !form.value.approval_doc_signer.trim()) {
-      feedback.value = { type: 'error', message: 'Nomor Dokumen/Memo dan Pejabat Pengesah wajib diisi untuk Approval by Document.' }
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-      return
-    }
   }
 
   isSubmitting.value = true
@@ -435,85 +238,58 @@ async function submitForm(isSubmit) {
 
   try {
     const formData = new FormData()
+    formData.append('program_code', form.value.program_code)
     formData.append('title', form.value.title)
     formData.append('category', form.value.category)
-    if (form.value.tna_proposal_id) formData.append('tna_proposal_id', form.value.tna_proposal_id)
-    if (form.value.tna_item_id) formData.append('tna_item_id', form.value.tna_item_id)
-    formData.append('department', form.value.department)
-    formData.append('year', form.value.year)
-    formData.append('execution_quarter', form.value.execution_quarter)
-    formData.append('target_audience', form.value.target_audience)
-    formData.append('target_participants_count', form.value.target_participants_count || 20)
-    formData.append('participant_prerequisites', form.value.participant_prerequisites)
-    formData.append('method', form.value.method)
     formData.append('location', form.value.location)
-    formData.append('duration_hours', form.value.duration_hours || 16)
-    formData.append('passing_grade', form.value.passing_grade || 75)
-    formData.append('is_mandatory', form.value.is_mandatory ? '1' : '0')
-    formData.append('description', form.value.description)
-    formData.append('approval_type', form.value.approval_type)
-    formData.append('approval_doc_number', form.value.approval_doc_number)
-    if (form.value.approval_doc_date) formData.append('approval_doc_date', form.value.approval_doc_date)
-    formData.append('approval_doc_signer', form.value.approval_doc_signer)
-    formData.append('is_submit', isSubmit ? '1' : '0')
+    formData.append('facilitator', form.value.facilitator)
+    formData.append('duration_text', form.value.duration_text)
+    formData.append('start_date', form.value.start_date)
+    formData.append('end_date', form.value.end_date)
+    formData.append('program_type', form.value.program_type)
+    formData.append('unit_initiator', form.value.unit_initiator)
+    formData.append('activity_type', form.value.activity_type)
+    formData.append('bi_category', form.value.bi_category)
+    formData.append('year', form.value.year)
+    formData.append('notes', form.value.notes || '')
+    formData.append('approval_scenario', form.value.approval_scenario)
+    formData.append('is_submit', '1')
 
-    if (selectedDocFile.value) {
-      formData.append('document', selectedDocFile.value)
-      formData.append('approval_doc_name', selectedDocFile.value.name)
-      formData.append('approval_doc_size', selectedDocFile.value.size)
-    } else if (existingDocFile.value) {
-      formData.append('approval_doc_name', existingDocFile.value.name)
-      formData.append('approval_doc_size', existingDocFile.value.size)
-    }
+    // 10 Budget items
+    formData.append('budget_fee_facilitator', form.value.budget_fee_facilitator || 0)
+    formData.append('budget_meals', form.value.budget_meals || 0)
+    formData.append('budget_hotel', form.value.budget_hotel || 0)
+    formData.append('budget_meeting_package', form.value.budget_meeting_package || 0)
+    formData.append('budget_transportation', form.value.budget_transportation || 0)
+    formData.append('budget_business_trip', form.value.budget_business_trip || 0)
+    formData.append('budget_reward', form.value.budget_reward || 0)
+    formData.append('budget_material', form.value.budget_material || 0)
+    formData.append('budget_internet', form.value.budget_internet || 0)
+    formData.append('budget_miscellaneous', form.value.budget_miscellaneous || 0)
 
-    form.value.budget_items.forEach((item, index) => {
-      formData.append(`budget_items[${index}][item_type]`, item.item_type)
-      formData.append(`budget_items[${index}][description]`, item.description)
-      formData.append(`budget_items[${index}][quantity]`, item.quantity)
-      formData.append(`budget_items[${index}][unit]`, item.unit)
-      formData.append(`budget_items[${index}][unit_price]`, item.unit_price)
-      const sub = (Number(item.quantity) || 0) * (Number(item.unit_price) || 0)
-      formData.append(`budget_items[${index}][subtotal]`, sub)
-      formData.append(`budget_items[${index}][notes]`, item.notes || '')
-    })
+    if (doc1File.value) formData.append('doc1', doc1File.value)
+    if (form.value.doc1_remarks) formData.append('doc1_remarks', form.value.doc1_remarks)
+    if (doc2File.value) formData.append('doc2', doc2File.value)
+    if (approvalDocFile.value) formData.append('document', approvalDocFile.value)
 
-    form.value.participants.forEach((p, index) => {
-      if (p.name && p.name.trim()) {
-        formData.append(`participants[${index}][nik]`, p.nik || '')
-        formData.append(`participants[${index}][name]`, p.name)
-        formData.append(`participants[${index}][department]`, p.department || form.value.department)
-        formData.append(`participants[${index}][branch]`, p.branch || '')
-        formData.append(`participants[${index}][position]`, p.position || '')
-        formData.append(`participants[${index}][email]`, p.email || '')
-      }
-    })
-
-    const targetUrl = isEditMode.value ? `/programs/${props.editProgramId}` : '/programs'
-    const { data } = await apiClient.post(targetUrl, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-
-    const code = data.program?.program_code || 'PRG'
-    let msg = ''
+    let res
     if (isEditMode.value) {
-      msg = isSubmit
-        ? `Program kerja (${code}) berhasil diperbarui dan diajukan ke otorisasi.`
-        : `Draft program kerja (${code}) berhasil disimpan.`
+      formData.append('_method', 'PUT')
+      res = await apiClient.post(`/programs/${props.editProgramId}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
     } else {
-      msg = isSubmit
-        ? (form.value.approval_type === 'DOCUMENT'
-            ? `Program kerja (${code}) resmi disahkan via Dokumen Pendukung.`
-            : `Program kerja (${code}) berhasil diajukan ke Alur Multi-Approval (Step 1 HCBP).`)
-        : `DRAFT Program kerja (${code}) berhasil disimpan.`
+      res = await apiClient.post('/programs', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
     }
 
-    emit('created', msg)
+    emit('created', res.data.message || 'Program kerja berhasil disimpan.')
   } catch (err) {
     feedback.value = {
       type: 'error',
-      message: err.response?.data?.message || 'Gagal menyimpan program kerja pelatihan.'
+      message: err.response?.data?.message || 'Gagal menyimpan program kerja.'
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   } finally {
     isSubmitting.value = false
   }
@@ -521,824 +297,689 @@ async function submitForm(isSubmit) {
 </script>
 
 <template>
-  <div class="space-y-6 max-w-6xl mx-auto pb-28">
+  <div class="flex flex-col gap-6 max-w-5xl mx-auto pb-16">
 
-    <!-- Top Action Navigation Bar -->
-    <div class="flex items-center justify-between gap-4 border-b border-gray-200 pb-4">
-      <div class="flex items-center gap-3">
-        <button
-          @click="emit('back')"
-          class="w-9 h-9 rounded-full bg-white hover:bg-gray-100 flex items-center justify-center text-gray-700 shadow-2xs border border-gray-200 transition cursor-pointer"
-          :title="isEditMode ? 'Kembali ke Rincian' : 'Kembali ke Daftar Program'"
-        >
-          <ArrowLeft class="w-4 h-4" />
-        </button>
-        <div>
-          <div class="flex items-center gap-2">
-            <span
-              class="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider"
-              :class="isEditMode ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-[#EBF4FC] text-[#0067AC]'"
-            >
-              {{ isEditMode ? 'Mode Perbaikan Program' : 'Program Kerja Mandiri' }}
-            </span>
-            <span class="text-xs text-gray-400">• Standar Pelatihan Bank BWS & OJK</span>
-          </div>
-          <h1 class="text-xl sm:text-2xl font-extrabold text-[#002855]">
-            {{ isEditMode ? `Perbaiki Program Kerja — ${editingProgram?.program_code || ''}` : 'Penyusunan Program Kerja & Rencana Anggaran (RAB) Diklat' }}
-          </h1>
-        </div>
-      </div>
-
+    <!-- Top Navigation Bar -->
+    <div class="flex items-center justify-between">
       <button
         @click="emit('back')"
-        class="text-xs font-semibold text-gray-500 hover:text-[#0067AC] transition flex items-center gap-1 cursor-pointer"
+        class="inline-flex items-center gap-2 text-xs font-bold text-gray-600 hover:text-[#0067AC] transition cursor-pointer"
       >
-        <span>Batal & Kembali</span>
+        <ArrowLeft class="w-4 h-4" />
+        <span>Kembali ke Program List</span>
       </button>
+
+      <div class="flex items-center gap-2 text-xs text-gray-400">
+        <span>Program</span>
+        <ChevronRight class="w-3.5 h-3.5" />
+        <span class="text-gray-800 font-bold">{{ isEditMode ? 'Edit Program' : 'Create Program' }}</span>
+      </div>
     </div>
 
     <!-- Alert / Feedback Banner -->
-    <div v-if="feedback.message" class="transition-all">
-      <div
-        class="p-4 rounded-2xl flex items-center justify-between text-xs font-semibold shadow-2xs border"
-        :class="feedback.type === 'error' ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-blue-50 text-[#0067AC] border-blue-200'"
-      >
-        <div class="flex items-center gap-2">
-          <AlertCircle v-if="feedback.type === 'error'" class="w-4 h-4 shrink-0 text-rose-600" />
-          <CheckCircle2 v-else class="w-4 h-4 shrink-0 text-[#0067AC]" />
-          <span>{{ feedback.message }}</span>
-        </div>
-        <button @click="feedback.message = ''" class="font-bold text-sm cursor-pointer">&times;</button>
+    <div
+      v-if="feedback.message"
+      class="p-4 rounded-2xl text-xs font-semibold flex items-center justify-between shadow-xs animate-fadeIn"
+      :class="feedback.type === 'error' ? 'bg-rose-50 text-rose-800 border border-rose-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'"
+    >
+      <div class="flex items-center gap-2">
+        <AlertCircle v-if="feedback.type === 'error'" class="w-4 h-4 text-rose-600" />
+        <CheckCircle2 v-else class="w-4 h-4 text-emerald-600" />
+        <span>{{ feedback.message }}</span>
       </div>
+      <button @click="feedback = { type: '', message: '' }" class="hover:opacity-75">
+        <X class="w-4 h-4" />
+      </button>
     </div>
 
-    <!-- ============================================================= -->
-    <!-- BAGIAN 1: KAITAN USULAN TNA (1 TNA -> BANYAK PROGRAM)         -->
-    <!-- ============================================================= -->
-    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-100 shadow-2xs space-y-5">
-      <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-        <div class="flex items-center gap-2">
-          <Compass class="w-4 h-4 text-[#0067AC]" />
-          <h2 class="text-sm font-bold text-gray-900">1. Kaitan Dokumen Usulan TNA (1 TNA &rarr; Banyak Program)</h2>
+    <!-- MAIN FORM: Create/View/Edit Program (Matching Excel Wireframe) -->
+    <div class="bg-white rounded-3xl border border-gray-200/90 shadow-sm overflow-hidden">
+      
+      <!-- Card Header Bar -->
+      <div class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <Layers class="w-5 h-5 text-white/90" />
+          <h2 class="text-base font-extrabold tracking-wide uppercase">
+            {{ isEditMode ? `Edit Program: ${form.program_code}` : 'Create/View/Edit Program' }}
+          </h2>
         </div>
-        <span class="text-[11px] font-semibold text-[#0067AC] bg-[#EBF4FC] px-2.5 py-1 rounded-full">
-          Integrasi Rencana Induk BWS
+        <span class="text-xs bg-white/20 text-white font-bold px-3 py-1 rounded-full">
+          Standar BWS Learning Hub
         </span>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-        
-        <!-- Dropdown Pilih Dokumen TNA -->
-        <div class="space-y-1.5">
-          <label class="block font-bold text-gray-700 flex items-center justify-between">
-            <span>Pilih Dokumen TNA Tahunan Acuan *</span>
-            <span class="text-[10px] text-gray-400">1 TNA mencakup banyak program</span>
-          </label>
-          <select
-            v-model="form.tna_proposal_id"
-            class="w-full bg-[#F8FAFC] rounded-xl px-3 py-2.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none transition font-semibold"
-          >
-            <option value="">-- Tanpa Kaitan TNA (Program Insidental) --</option>
-            <option v-for="tna in tnaProposals" :key="tna.id" :value="tna.id">
-              {{ tna.proposal_code }} — {{ tna.department }} (Tahun {{ tna.year }} - {{ tna.status }})
-            </option>
-          </select>
+      <!-- Form Body -->
+      <div class="p-6 md:p-8 flex flex-col gap-8">
+
+        <!-- SECTION 1: PROGRAM INFORMATION (2 Columns matching Excel Mockup) -->
+        <div>
+          <h3 class="text-xs font-extrabold text-gray-900 uppercase tracking-wider mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-[#0067AC]"></span>
+            <span>Informasi Pokok Program</span>
+          </h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+            
+            <!-- Left Column: TNA Category, Program Name, Location, Facilitator, Duration -->
+            <div class="flex flex-col gap-4">
+              
+              <!-- TNA Category -->
+              <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  TNA Category
+                </label>
+                <input
+                  v-model="form.category"
+                  type="text"
+                  placeholder="Category 1 / Operasional & Layanan Perbankan"
+                  class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+                />
+              </div>
+
+              <!-- Program Name -->
+              <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <span>Program Name</span>
+                  <span class="text-[10px] text-[#0067AC] font-bold">Wajib</span>
+                </label>
+                <input
+                  v-model="form.title"
+                  type="text"
+                  placeholder="Nama Program Pelatihan (e.g. Program A / Service Excellence)"
+                  class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+                />
+              </div>
+
+              <!-- Location -->
+              <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Location
+                </label>
+                <input
+                  v-model="form.location"
+                  type="text"
+                  placeholder="Ruang 1 / Ruang 2 / Virtual / Hotel"
+                  class="w-full bg-white text-xs text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+                />
+              </div>
+
+              <!-- Facilitator -->
+              <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Facilitator
+                </label>
+                <input
+                  v-model="form.facilitator"
+                  type="text"
+                  placeholder="PT A / Lembaga Sertifikasi / Trainer Internal"
+                  class="w-full bg-white text-xs text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+                />
+              </div>
+
+              <!-- Duration & Tanggal -->
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                    Duration
+                  </label>
+                  <input
+                    v-model="form.duration_text"
+                    type="text"
+                    placeholder="2 Hari (16 Jam)"
+                    class="w-full bg-white text-xs text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs font-mono"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                    Periode Tgl
+                  </label>
+                  <div class="flex items-center gap-1">
+                    <input
+                      v-model="form.start_date"
+                      type="date"
+                      class="w-full bg-white text-[11px] font-mono text-gray-900 rounded-xl px-2 py-2 border border-gray-300 focus:outline-none"
+                    />
+                    <span class="text-gray-400 text-[10px]">-</span>
+                    <input
+                      v-model="form.end_date"
+                      type="date"
+                      class="w-full bg-white text-[11px] font-mono text-gray-900 rounded-xl px-2 py-2 border border-gray-300 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Right Column: Program ID, Program Type, Unit Initiator, Activity Type, BI Category -->
+            <div class="flex flex-col gap-4">
+              
+              <!-- Program ID -->
+              <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Program ID
+                </label>
+                <input
+                  v-model="form.program_code"
+                  type="text"
+                  placeholder="D24_001"
+                  class="w-full bg-white text-xs font-extrabold text-[#0067AC] rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs font-mono"
+                />
+              </div>
+
+              <!-- Program Type -->
+              <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Program Type
+                </label>
+                <select
+                  v-model="form.program_type"
+                  class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer"
+                >
+                  <option v-for="t in programTypeOptions" :key="t" :value="t">{{ t }}</option>
+                </select>
+              </div>
+
+              <!-- Unit Initiator -->
+              <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Unit Initiator
+                </label>
+                <input
+                  v-model="form.unit_initiator"
+                  type="text"
+                  placeholder="Divisi Operasional & Layanan / Unit Pengusul"
+                  class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+                />
+              </div>
+
+              <!-- Activity Type -->
+              <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Activity Type
+                </label>
+                <select
+                  v-model="form.activity_type"
+                  class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer"
+                >
+                  <option v-for="a in activityTypeOptions" :key="a" :value="a">{{ a }}</option>
+                </select>
+              </div>
+
+              <!-- BI Category (Bank Indonesia / OJK Regulatory Category) -->
+              <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <span>BI Category</span>
+                  <span class="text-[10px] text-[#0067AC]">Regulasi BI / OJK</span>
+                </label>
+                <input
+                  v-model="form.bi_category"
+                  type="text"
+                  placeholder="Kategori Regulasi BI / OJK"
+                  class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+                />
+              </div>
+
+            </div>
+
+          </div>
         </div>
 
-        <!-- Dropdown Pilih Kebutuhan Diklat Spesifik TNA -->
-        <div class="space-y-1.5">
-          <label class="block font-bold text-gray-700 flex items-center justify-between">
-            <span>Spesifikasi Mata Diklat TNA (Sub-Kategori)</span>
-            <span class="text-[10px] text-[#0067AC] font-semibold" v-if="availableTnaItems.length > 0">
-              {{ availableTnaItems.length }} Mata Diklat Tersedia
+        <!-- SECTION 2: BUDGET (10 Components matching Excel Wireframe) -->
+        <div class="bg-gray-50/70 p-6 rounded-2xl border border-gray-200">
+          <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-200">
+            <div>
+              <h3 class="text-sm font-extrabold text-gray-900 flex items-center gap-2">
+                <Wallet class="w-4 h-4 text-[#0067AC]" />
+                <span>Budget (Rincian 10 Item Anggaran RAB)</span>
+              </h3>
+              <p class="text-[11px] text-gray-500">Isi komponen biaya pelaksanaan pelatihan sesuai RAB BWS</p>
+            </div>
+            <span class="text-xs font-bold text-[#0067AC]">[+] Add budget</span>
+          </div>
+
+          <!-- 10 Budget Items in 2 Columns -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3.5">
+            
+            <!-- Left 5 Items: Fee Facilitator, Meals, Hotel, Meeting Package, Transportation -->
+            <div class="flex flex-col gap-3">
+              
+              <!-- 1. Fee Facilitator -->
+              <div class="flex items-center justify-between gap-3">
+                <label class="text-xs font-bold text-gray-700 w-44">Fee Facilitator</label>
+                <div class="relative flex-1">
+                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
+                  <input
+                    v-model.number="form.budget_fee_facilitator"
+                    type="number"
+                    step="500000"
+                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              <!-- 2. Meals -->
+              <div class="flex items-center justify-between gap-3">
+                <label class="text-xs font-bold text-gray-700 w-44">Meals</label>
+                <div class="relative flex-1">
+                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
+                  <input
+                    v-model.number="form.budget_meals"
+                    type="number"
+                    step="500000"
+                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              <!-- 3. Hotel -->
+              <div class="flex items-center justify-between gap-3">
+                <label class="text-xs font-bold text-gray-700 w-44">Hotel</label>
+                <div class="relative flex-1">
+                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
+                  <input
+                    v-model.number="form.budget_hotel"
+                    type="number"
+                    step="500000"
+                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              <!-- 4. Meeting Package -->
+              <div class="flex items-center justify-between gap-3">
+                <label class="text-xs font-bold text-gray-700 w-44">Meeting Package</label>
+                <div class="relative flex-1">
+                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
+                  <input
+                    v-model.number="form.budget_meeting_package"
+                    type="number"
+                    step="500000"
+                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              <!-- 5. Transportation -->
+              <div class="flex items-center justify-between gap-3">
+                <label class="text-xs font-bold text-gray-700 w-44">Transportation</label>
+                <div class="relative flex-1">
+                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
+                  <input
+                    v-model.number="form.budget_transportation"
+                    type="number"
+                    step="500000"
+                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                  />
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Right 5 Items: Business Trip, Reward, Material, Internet, Miscellaneous -->
+            <div class="flex flex-col gap-3">
+              
+              <!-- 6. Business Trip Allowance -->
+              <div class="flex items-center justify-between gap-3">
+                <label class="text-xs font-bold text-gray-700 w-44">Business Trip Allowance</label>
+                <div class="relative flex-1">
+                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
+                  <input
+                    v-model.number="form.budget_business_trip"
+                    type="number"
+                    step="500000"
+                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              <!-- 7. Reward -->
+              <div class="flex items-center justify-between gap-3">
+                <label class="text-xs font-bold text-gray-700 w-44">Reward</label>
+                <div class="relative flex-1">
+                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
+                  <input
+                    v-model.number="form.budget_reward"
+                    type="number"
+                    step="500000"
+                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              <!-- 8. Material -->
+              <div class="flex items-center justify-between gap-3">
+                <label class="text-xs font-bold text-gray-700 w-44">Material</label>
+                <div class="relative flex-1">
+                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
+                  <input
+                    v-model.number="form.budget_material"
+                    type="number"
+                    step="500000"
+                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              <!-- 9. Internet -->
+              <div class="flex items-center justify-between gap-3">
+                <label class="text-xs font-bold text-gray-700 w-44">Internet</label>
+                <div class="relative flex-1">
+                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
+                  <input
+                    v-model.number="form.budget_internet"
+                    type="number"
+                    step="500000"
+                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              <!-- 10. Miscellaneous -->
+              <div class="flex items-center justify-between gap-3">
+                <label class="text-xs font-bold text-gray-700 w-44">Miscellaneous</label>
+                <div class="relative flex-1">
+                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
+                  <input
+                    v-model.number="form.budget_miscellaneous"
+                    type="number"
+                    step="500000"
+                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                  />
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Total Row matching Excel [Total 0] -->
+          <div class="mt-5 pt-3 border-t border-gray-200 flex items-center justify-between">
+            <span class="text-xs font-extrabold text-gray-800 uppercase tracking-wider">
+              Total Budget (RAB)
             </span>
+            <div class="px-5 py-2 rounded-xl bg-white border border-gray-300 font-extrabold text-sm text-[#0067AC] font-mono shadow-2xs">
+              {{ formatRupiah(totalBudgetCalculated) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: UPLOAD DOKUMEN & REMARKS (Matching Excel Mockup) -->
+        <div class="bg-gray-50/70 p-6 rounded-2xl border border-gray-200 flex flex-col gap-4">
+          <h3 class="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+            <FileText class="w-4 h-4 text-[#0067AC]" />
+            <span>Upload Dokumen</span>
+          </h3>
+
+          <!-- Dokumen 1 + Remarks -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+            <div class="flex items-center gap-3">
+              <label class="text-xs font-bold text-gray-700 w-24">Dokumen 1</label>
+              <input ref="doc1InputRef" type="file" @change="onDoc1Change" class="hidden" />
+              <button
+                type="button"
+                @click="doc1InputRef?.click()"
+                class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-gray-100 border border-gray-300 text-xs font-bold text-gray-700 transition shadow-2xs flex items-center gap-1 cursor-pointer shrink-0"
+              >
+                <FileUp class="w-3.5 h-3.5 text-[#0067AC]" />
+                <span>[Browse]</span>
+              </button>
+              <span class="text-xs text-gray-600 truncate font-semibold">
+                {{ doc1File ? doc1File.name : (existingDoc1 || 'Belum ada file') }}
+              </span>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <label class="text-xs font-bold text-gray-700 w-20">Remarks</label>
+              <input
+                v-model="form.doc1_remarks"
+                type="text"
+                placeholder="Keterangan dokumen (e.g. Memo Persetujuan / TOR)"
+                class="flex-1 bg-white text-xs text-gray-900 rounded-xl px-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <!-- Dokumen 2 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+            <div class="flex items-center gap-3">
+              <label class="text-xs font-bold text-gray-700 w-24">Dokumen 2</label>
+              <input ref="doc2InputRef" type="file" @change="onDoc2Change" class="hidden" />
+              <button
+                type="button"
+                @click="doc2InputRef?.click()"
+                class="px-3.5 py-1.5 rounded-xl bg-white hover:bg-gray-100 border border-gray-300 text-xs font-bold text-gray-700 transition shadow-2xs flex items-center gap-1 cursor-pointer shrink-0"
+              >
+                <FileUp class="w-3.5 h-3.5 text-[#0067AC]" />
+                <span>[Browse]</span>
+              </button>
+              <span class="text-xs text-gray-600 truncate font-semibold">
+                {{ doc2File ? doc2File.name : (existingDoc2 || 'Belum ada file') }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 4: NOTE (Matching Excel Mockup Big Box) -->
+        <div>
+          <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+            Note
           </label>
-          <select
-            v-model="form.tna_item_id"
-            @change="onTnaItemChanged(form.tna_item_id)"
-            :disabled="!form.tna_proposal_id || availableTnaItems.length === 0"
-            class="w-full bg-[#F8FAFC] rounded-xl px-3 py-2.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none transition font-semibold disabled:opacity-50"
-          >
-            <option value="">-- Pilih Mata Diklat yang Diturunkan --</option>
-            <option v-for="item in availableTnaItems" :key="item.id" :value="item.id">
-              {{ item.sub_category_name || item.recommended_program }} [{{ item.execution_quarter || 'Q1' }} - {{ formatRupiah(item.budget) }}]
-            </option>
-          </select>
-        </div>
-
-      </div>
-
-      <!-- Live TNA Context Preview Card -->
-      <div v-if="selectedTna" class="p-4 rounded-2xl bg-[#EBF4FC]/50 border border-blue-200/80 text-xs space-y-2">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-blue-100/80 pb-2">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-[#0067AC] animate-pulse"></span>
-            <span class="font-bold text-[#002855]">Rujukan TNA: {{ selectedTna.proposal_code }}</span>
-            <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-[#0067AC] font-bold">Status: {{ selectedTna.status }}</span>
-          </div>
-          <span class="font-mono text-xs font-bold text-[#0067AC]">
-            Alokasi Pagu TNA Divisi: {{ formatRupiah(selectedTna.total_budget_requested) }}
-          </span>
-        </div>
-        <p class="text-gray-600 text-[11px] leading-relaxed">
-          <strong class="text-[#002855]">Sasaran Strategis TNA:</strong> {{ selectedTna.strategic_objective }}
-        </p>
-        <div v-if="selectedTnaItem" class="pt-1.5 flex items-center gap-3 text-[11px] font-semibold text-gray-700">
-          <span>Kebutuhan: <span class="text-[#0067AC] font-bold">{{ selectedTnaItem.sub_category_name }}</span></span>
-          <span>• Kuartal: <span class="text-[#002855] font-bold">{{ selectedTnaItem.execution_quarter }}</span></span>
-          <span>• Pagu Item: <span class="text-emerald-700 font-mono font-bold">{{ formatRupiah(selectedTnaItem.budget) }}</span></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- ============================================================= -->
-    <!-- BAGIAN 2: INFORMASI DASAR & SPESIFIKASI PROGRAM               -->
-    <!-- ============================================================= -->
-    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-100 shadow-2xs space-y-5">
-      <div class="flex items-center gap-2 border-b border-gray-100 pb-3">
-        <BookOpen class="w-4 h-4 text-[#0067AC]" />
-        <h2 class="text-sm font-bold text-gray-900">2. Informasi Dasar & Kurikulum Program Pelatihan</h2>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-        
-        <!-- Judul Program -->
-        <div class="sm:col-span-2 space-y-1.5">
-          <label class="block font-bold text-gray-700">Nama / Judul Program Pelatihan *</label>
-          <input
-            type="text"
-            v-model="form.title"
-            required
-            placeholder="Contoh: Comprehensive Commercial Credit Analysis & Risk Mitigation 2026"
-            class="w-full bg-[#F8FAFC] rounded-xl px-3.5 py-2.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none transition font-semibold"
-          />
-        </div>
-
-        <!-- Kategori Diklat -->
-        <div class="space-y-1.5">
-          <label class="block font-bold text-gray-700">Kategori Diklat *</label>
-          <select
-            v-model="form.category"
-            class="w-full bg-[#F8FAFC] rounded-xl px-3 py-2.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none transition font-semibold"
-          >
-            <option v-for="c in categories" :key="c.id" :value="c.name">{{ c.name }}</option>
-            <option value="Operasional & Layanan Perbankan">Operasional & Layanan Perbankan</option>
-            <option value="Kredit & Pembiayaan Komersial">Kredit & Pembiayaan Komersial</option>
-            <option value="Manajemen Risiko, Kepatuhan & Regulasi OJK">Manajemen Risiko, Kepatuhan & Regulasi OJK</option>
-            <option value="Teknologi Informasi & Keamanan Siber">Teknologi Informasi & Keamanan Siber</option>
-            <option value="Kepemimpinan, Manajerial & Budaya Kerja">Kepemimpinan, Manajerial & Budaya Kerja</option>
-          </select>
-        </div>
-
-        <!-- Metode Pelatihan -->
-        <div class="space-y-1.5">
-          <label class="block font-bold text-gray-700">Metode Penyelenggaraan *</label>
-          <select
-            v-model="form.method"
-            class="w-full bg-[#F8FAFC] rounded-xl px-3 py-2.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none transition font-semibold"
-          >
-            <option v-for="m in trainingMethods" :key="m.value" :value="m.value">
-              {{ m.label }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Durasi & Kuartal -->
-        <div class="space-y-1.5">
-          <label class="block font-bold text-gray-700">Durasi Pelatihan (Jam)</label>
-          <div class="relative">
-            <input
-              type="number"
-              v-model.number="form.duration_hours"
-              min="1"
-              max="200"
-              class="w-full bg-[#F8FAFC] rounded-xl px-3.5 py-2.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none transition font-semibold"
-            />
-            <span class="absolute right-3.5 top-2.5 text-gray-400 font-medium">Jam Pelajaran</span>
-          </div>
-        </div>
-
-        <!-- Target Kuartal Eksekusi -->
-        <div class="space-y-1.5">
-          <label class="block font-bold text-gray-700">Target Kuartal Pelaksanaan</label>
-          <select
-            v-model="form.execution_quarter"
-            class="w-full bg-[#F8FAFC] rounded-xl px-3 py-2.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none transition font-semibold"
-          >
-            <option v-for="q in quarters" :key="q" :value="q">{{ q }}</option>
-          </select>
-        </div>
-
-        <!-- Lokasi / Ruang Kelas -->
-        <div class="sm:col-span-2 space-y-1.5">
-          <label class="block font-bold text-gray-700">Lokasi / Fasilitas Pelatihan *</label>
-          <input
-            type="text"
-            v-model="form.location"
-            placeholder="Contoh: BWS Learning Center - R. Diklat 101 atau Hotel Grand Mercure Jakarta"
-            class="w-full bg-[#F8FAFC] rounded-xl px-3.5 py-2.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none transition font-medium"
-          />
-        </div>
-
-        <!-- Passing Grade Kelulusan -->
-        <div class="space-y-1.5">
-          <label class="block font-bold text-gray-700">Passing Grade Minimum (%)</label>
-          <div class="relative">
-            <input
-              type="number"
-              v-model.number="form.passing_grade"
-              min="50"
-              max="100"
-              class="w-full bg-[#F8FAFC] rounded-xl px-3.5 py-2.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none transition font-semibold font-mono"
-            />
-            <span class="absolute right-3.5 top-2.5 text-gray-400 font-medium">% Nilai Kelulusan</span>
-          </div>
-        </div>
-
-        <!-- Sifat Diklat Mandatori OJK -->
-        <div class="sm:col-span-3 pt-1">
-          <label class="flex items-center gap-2.5 cursor-pointer">
-            <input
-              type="checkbox"
-              v-model="form.is_mandatory"
-              class="w-4 h-4 text-[#0067AC] rounded border-gray-300 focus:ring-[#0067AC]"
-            />
-            <span class="font-bold text-gray-800 text-xs">
-              Program Wajib Regulasi Otoritas Jasa Keuangan (OJK) / Bank Indonesia (BI)
-            </span>
-          </label>
-        </div>
-
-        <!-- Deskripsi & Silabus -->
-        <div class="sm:col-span-3 space-y-1.5">
-          <label class="block font-bold text-gray-700">Deskripsi Silabus & Output Kompetensi *</label>
           <textarea
+            v-model="form.notes"
             rows="3"
-            v-model="form.description"
-            placeholder="Uraikan garis besar materi, studi kasus perbankan, dan standar kompetensi yang diharapkan..."
-            class="w-full bg-[#F8FAFC] rounded-xl p-3 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none transition"
+            placeholder="Catatan tambahan, urgensi pelaksanaan, atau disposisi persetujuan..."
+            class="w-full bg-white text-xs text-gray-900 rounded-2xl p-3.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs leading-relaxed"
           ></textarea>
         </div>
 
-      </div>
-    </div>
-
-    <!-- ============================================================= -->
-    <!-- BAGIAN 3: INFORMASI & TARGET PESERTA DIDIK                     -->
-    <!-- ============================================================= -->
-    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-100 shadow-2xs space-y-5">
-      <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-        <div class="flex items-center gap-2">
-          <Users class="w-4 h-4 text-[#0067AC]" />
-          <h2 class="text-sm font-bold text-gray-900">3. Informasi & Target Peserta Didik</h2>
-        </div>
-        <span class="text-[11px] font-bold text-gray-500 font-mono">
-          Kuota: {{ form.target_participants_count }} Pegawai BWS
-        </span>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-        
-        <!-- Target Kuota Peserta -->
-        <div class="space-y-1.5">
-          <label class="block font-bold text-gray-700">Target Kuota Peserta (Pegawai) *</label>
-          <input
-            type="number"
-            v-model.number="form.target_participants_count"
-            min="1"
-            class="w-full bg-[#F8FAFC] rounded-xl px-3.5 py-2.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none transition font-bold font-mono"
-          />
-        </div>
-
-        <!-- Target Audience / Level Jabatan -->
-        <div class="sm:col-span-2 space-y-1.5">
-          <label class="block font-bold text-gray-700">Target Level Jabatan & Kategori Peserta *</label>
-          <input
-            type="text"
-            v-model="form.target_audience"
-            placeholder="Contoh: Staff, Officer, Assistant Manager, Relationship Manager Cabang"
-            class="w-full bg-[#F8FAFC] rounded-xl px-3.5 py-2.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none transition font-medium"
-          />
-        </div>
-
-        <!-- Prasyarat Peserta -->
-        <div class="sm:col-span-3 space-y-1.5">
-          <label class="block font-bold text-gray-700">Kriteria & Prasyarat Keikutsertaan Peserta</label>
-          <input
-            type="text"
-            v-model="form.participant_prerequisites"
-            placeholder="Contoh: Lulus evaluasi dasar operasional dan memiliki rekomendasi dari Pemimpin Cabang"
-            class="w-full bg-[#F8FAFC] rounded-xl px-3.5 py-2.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none transition font-medium"
-          />
-        </div>
-
-      </div>
-
-      <!-- Tabel Daftar Nominasi Peserta (Multiple Add) -->
-      <div class="space-y-3 pt-2">
-        <div class="flex items-center justify-between">
+        <!-- SECTION 5: APPROVAL SCENARIOS (Matching Excel Mockup 3 Tables) -->
+        <div class="flex flex-col gap-4 bg-gray-50/70 p-6 rounded-2xl border border-gray-200">
           <div>
-            <h3 class="text-xs font-bold text-gray-900">Daftar Nominasi Pegawai Terdaftar (Opsional / Awal)</h3>
-            <p class="text-[11px] text-gray-400">Dapat diisi saat penyusunan program atau dilengkapi saat batch kelas dibuka.</p>
+            <h3 class="text-xs font-extrabold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+              <ShieldCheck class="w-4 h-4 text-[#0067AC]" />
+              <span>Alur Persetujuan & Disposisi</span>
+            </h3>
+            <p class="text-[11px] text-gray-500 mt-0.5">
+              Pilih skenario alur persetujuan sesuai ketentuan tata kelola BWS
+            </p>
           </div>
-          <div class="flex items-center gap-2">
+
+          <!-- Scenario Switcher Pills -->
+          <div class="flex items-center gap-2 flex-wrap">
             <button
               type="button"
-              @click="populateSampleParticipants"
-              class="px-3 py-1.5 rounded-full bg-blue-50 text-[#0067AC] hover:bg-blue-100 text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
+              @click="form.approval_scenario = 'WITHOUT_BUDGET'"
+              class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border"
+              :class="form.approval_scenario === 'WITHOUT_BUDGET' ? 'bg-[#0067AC] text-white border-[#0067AC] shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'"
             >
-              <UserCheck class="w-3.5 h-3.5" />
-              <span>+ Muat Contoh Karyawan BWS</span>
+              Approved Without Budget
             </button>
+
             <button
               type="button"
-              @click="addParticipantRow"
-              class="px-3 py-1.5 rounded-full bg-[#0067AC] text-white hover:bg-[#00528c] text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
+              @click="form.approval_scenario = 'WITH_BUDGET'"
+              class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border"
+              :class="form.approval_scenario === 'WITH_BUDGET' ? 'bg-[#0067AC] text-white border-[#0067AC] shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'"
             >
-              <Plus class="w-3.5 h-3.5" />
-              <span>+ Tambah Peserta</span>
+              Approved With Budget (EHR Berjenjang)
+            </button>
+
+            <button
+              type="button"
+              @click="form.approval_scenario = 'WITH_APPROVAL_DOC'"
+              class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border"
+              :class="form.approval_scenario === 'WITH_APPROVAL_DOC' ? 'bg-[#0067AC] text-white border-[#0067AC] shadow-sm' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'"
+            >
+              Approved With Approval Document
             </button>
           </div>
-        </div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-xs text-left border-collapse">
-            <thead class="bg-[#F8FAFC] text-gray-700 font-bold border-b border-gray-200">
-              <tr>
-                <th class="py-2.5 px-3 text-center w-12">No</th>
-                <th class="py-2.5 px-3 w-36">NIK Pegawai</th>
-                <th class="py-2.5 px-3">Nama Lengkap</th>
-                <th class="py-2.5 px-3">Unit / Kantor Cabang</th>
-                <th class="py-2.5 px-3">Jabatan</th>
-                <th class="py-2.5 px-2 text-center w-12">Aksi</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              <tr v-for="(p, idx) in form.participants" :key="idx" class="hover:bg-gray-50/50">
-                <td class="py-2 px-3 text-center font-bold text-gray-400 font-mono">{{ idx + 1 }}</td>
-                <td class="py-2 px-3">
-                  <input
-                    type="text"
-                    v-model="p.nik"
-                    placeholder="BWS-2024-xxx"
-                    class="w-full bg-white rounded-lg px-2.5 py-1.5 text-xs border border-gray-200 focus:border-[#0067AC] focus:outline-none font-mono"
-                  />
-                </td>
-                <td class="py-2 px-3">
-                  <input
-                    type="text"
-                    v-model="p.name"
-                    placeholder="Nama Pegawai"
-                    class="w-full bg-white rounded-lg px-2.5 py-1.5 text-xs border border-gray-200 focus:border-[#0067AC] focus:outline-none font-semibold text-gray-900"
-                  />
-                </td>
-                <td class="py-2 px-3">
-                  <input
-                    type="text"
-                    v-model="p.branch"
-                    placeholder="Cabang / Unit Kerja"
-                    class="w-full bg-white rounded-lg px-2.5 py-1.5 text-xs border border-gray-200 focus:border-[#0067AC] focus:outline-none text-gray-700"
-                  />
-                </td>
-                <td class="py-2 px-3">
-                  <input
-                    type="text"
-                    v-model="p.position"
-                    placeholder="Jabatan"
-                    class="w-full bg-white rounded-lg px-2.5 py-1.5 text-xs border border-gray-200 focus:border-[#0067AC] focus:outline-none text-gray-700"
-                  />
-                </td>
-                <td class="py-2 px-2 text-center">
-                  <button
-                    type="button"
-                    @click="removeParticipantRow(idx)"
-                    class="text-gray-400 hover:text-rose-600 p-1 rounded transition cursor-pointer"
-                    title="Hapus Peserta"
-                  >
-                    <Trash2 class="w-3.5 h-3.5" />
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="form.participants.length === 0">
-                <td colspan="6" class="py-4 text-center text-gray-400 text-xs">
-                  Belum ada peserta yang dinominasikan. Klik "+ Tambah Peserta" atau "+ Muat Contoh Karyawan BWS".
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ============================================================= -->
-    <!-- BAGIAN 4: RINCIAN ANGGARAN BIAYA (RAB) KOMPREHENSIF           -->
-    <!-- ============================================================= -->
-    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-100 shadow-2xs space-y-5">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
-        <div>
-          <div class="flex items-center gap-2">
-            <Wallet class="w-4 h-4 text-[#0067AC]" />
-            <h2 class="text-sm font-bold text-gray-900">4. Rancangan Anggaran Biaya (RAB) Program Pelatihan</h2>
+          <!-- Table Variant 1: Approved Without Budget -->
+          <div v-if="form.approval_scenario === 'WITHOUT_BUDGET'" class="border border-gray-200 rounded-xl overflow-hidden shadow-2xs">
+            <div class="bg-gray-100 px-4 py-2 text-xs font-bold text-gray-700">Approved Without Budget</div>
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white font-bold text-[10px] uppercase tracking-wider">
+                  <th class="py-2.5 px-3">Approved Level</th>
+                  <th class="py-2.5 px-3">NIK</th>
+                  <th class="py-2.5 px-3">Name</th>
+                  <th class="py-2.5 px-3">Position</th>
+                  <th class="py-2.5 px-3">Remarks/Disposition</th>
+                  <th class="py-2.5 px-3 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="bg-white">
+                  <td class="py-2.5 px-3 font-semibold text-gray-900">Learning & Development Division Head</td>
+                  <td class="py-2.5 px-3 font-mono text-gray-500">990012</td>
+                  <td class="py-2.5 px-3 font-bold text-gray-800">Budi Setiawan</td>
+                  <td class="py-2.5 px-3 text-gray-600">Head of Learning & Development</td>
+                  <td class="py-2.5 px-3 text-gray-500 italic">Disposisi Pelaksanaan Diklat</td>
+                  <td class="py-2.5 px-3 text-center">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0067AC] border border-blue-200">
+                      Menunggu Disposisi
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <p class="text-[11px] text-gray-400 mt-0.5">
-            Breakdown komponen: Pembicara, Transportasi, Akomodasi, Makan Siang, Snack, Modul/ATK, Venue, Sertifikasi, dll.
-          </p>
+
+          <!-- Table Variant 2: Approved With Budget (3 Levels Berjenjang) -->
+          <div v-else-if="form.approval_scenario === 'WITH_BUDGET'" class="border border-gray-200 rounded-xl overflow-hidden shadow-2xs">
+            <div class="bg-gray-100 px-4 py-2 text-xs font-bold text-gray-700">Approved With Budget (3 Levels Berjenjang)</div>
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white font-bold text-[10px] uppercase tracking-wider">
+                  <th class="py-2.5 px-3">Approved Level</th>
+                  <th class="py-2.5 px-3">NIK</th>
+                  <th class="py-2.5 px-3">Name</th>
+                  <th class="py-2.5 px-3">Position</th>
+                  <th class="py-2.5 px-3">Remarks/Disposition</th>
+                  <th class="py-2.5 px-3 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 bg-white">
+                <tr>
+                  <td class="py-2.5 px-3 font-semibold text-gray-900">Level 1: Human Capital Div. Head</td>
+                  <td class="py-2.5 px-3 font-mono text-gray-500">990008</td>
+                  <td class="py-2.5 px-3 font-bold text-gray-800">Ahmad Fauzi</td>
+                  <td class="py-2.5 px-3 text-gray-600">Division Head of Human Capital</td>
+                  <td class="py-2.5 px-3 text-gray-500 italic">Persetujuan Otorisator 1</td>
+                  <td class="py-2.5 px-3 text-center">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#0067AC] border border-blue-200">
+                      Reviewer 1
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="py-2.5 px-3 font-semibold text-gray-900">Level 2: Learning & Development Div. Head</td>
+                  <td class="py-2.5 px-3 font-mono text-gray-500">990012</td>
+                  <td class="py-2.5 px-3 font-bold text-gray-800">Budi Setiawan</td>
+                  <td class="py-2.5 px-3 text-gray-600">Head of Learning & Development</td>
+                  <td class="py-2.5 px-3 text-gray-500 italic">Persetujuan Otorisator 2</td>
+                  <td class="py-2.5 px-3 text-center">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                      Reviewer 2
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="py-2.5 px-3 font-semibold text-gray-900">Level 3: People Development Dept. Head</td>
+                  <td class="py-2.5 px-3 font-mono text-gray-500">990025</td>
+                  <td class="py-2.5 px-3 font-bold text-gray-800">Siti Rahma</td>
+                  <td class="py-2.5 px-3 text-gray-600">Dept Head People Development</td>
+                  <td class="py-2.5 px-3 text-gray-500 italic">Verifikasi Teknis & Silabus</td>
+                  <td class="py-2.5 px-3 text-center">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-50 text-gray-600 border border-gray-200">
+                      Reviewer 3
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Table Variant 3: Approved With Approval Document -->
+          <div v-else class="border border-gray-200 rounded-xl overflow-hidden shadow-2xs flex flex-col gap-3 p-4 bg-white">
+            <div class="text-xs font-bold text-gray-700">Approved With Approval Document</div>
+            
+            <div class="flex items-center gap-3">
+              <label class="text-xs font-bold text-gray-700">Upload Document Persetujuan:</label>
+              <input ref="approvalDocInputRef" type="file" @change="onApprovalDocChange" class="hidden" />
+              <button
+                type="button"
+                @click="approvalDocInputRef?.click()"
+                class="px-3 py-1.5 rounded-xl bg-white hover:bg-gray-100 border border-gray-300 text-xs font-bold text-gray-700 transition flex items-center gap-1 cursor-pointer"
+              >
+                <FileUp class="w-3.5 h-3.5 text-[#0067AC]" />
+                <span>[Browse Document]</span>
+              </button>
+              <span class="text-xs text-gray-600 font-semibold truncate">
+                {{ approvalDocFile ? approvalDocFile.name : 'Belum ada dokumen diunggah' }}
+              </span>
+            </div>
+
+            <table class="w-full text-left text-xs border-collapse border border-gray-200 rounded-lg overflow-hidden mt-1">
+              <thead>
+                <tr class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white font-bold text-[10px] uppercase tracking-wider">
+                  <th class="py-2 px-3">Approved Level</th>
+                  <th class="py-2 px-3">NIK</th>
+                  <th class="py-2 px-3">Name</th>
+                  <th class="py-2 px-3">Position</th>
+                  <th class="py-2 px-3">Remarks/Disposition</th>
+                  <th class="py-2 px-3 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="bg-white">
+                  <td class="py-2.5 px-3 font-semibold text-gray-900">Learning & Development Division Head</td>
+                  <td class="py-2.5 px-3 font-mono text-gray-500">990012</td>
+                  <td class="py-2.5 px-3 font-bold text-gray-800">Budi Setiawan</td>
+                  <td class="py-2.5 px-3 text-gray-600">Head of Learning & Development</td>
+                  <td class="py-2.5 px-3 text-gray-500 italic">Disposisi Dokumen Persetujuan</td>
+                  <td class="py-2.5 px-3 text-center">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Disahkan Dokumen
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Bottom Note in Excel Template -->
+          <div class="text-[11px] text-gray-500 leading-relaxed bg-amber-50/60 p-3 rounded-xl border border-amber-200 text-amber-900">
+            <strong>Catatan Alur:</strong><br />
+            • Jika ada dokumen persetujuan, cukup melampirkan dokumen yang telah disetujui, dan Disposisi LD Div Head.<br />
+            • Jika baru diajukan persetujuan seperti di EHR: Berjenjang (3 level).
+          </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <!-- ACTION BUTTONS: SUBMIT & Cancel (Matching Excel Mockup) -->
+        <div class="flex items-center justify-between pt-4 border-t border-gray-200">
           <button
             type="button"
-            @click="populateStandardRabTemplate"
-            class="px-3.5 py-1.5 rounded-full bg-blue-50 hover:bg-blue-100 text-[#0067AC] font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs border border-blue-200"
+            @click="emit('back')"
+            class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold text-xs transition cursor-pointer"
           >
-            <Sparkles class="w-3.5 h-3.5" />
-            <span>+ Muat Template RAB Standar BWS</span>
+            Cancel
           </button>
+
           <button
             type="button"
-            @click="addBudgetItemRow"
-            class="px-3.5 py-1.5 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
-          >
-            <Plus class="w-3.5 h-3.5" />
-            <span>+ Tambah Komponen Biaya</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Tabel Multiple Add RAB -->
-      <div class="overflow-x-auto">
-        <table class="w-full text-xs text-left border-collapse">
-          <thead class="bg-[#F8FAFC] text-gray-700 font-bold border-b border-gray-200">
-            <tr>
-              <th class="py-3 px-3 text-center w-10">No</th>
-              <th class="py-3 px-3 w-56">Komponen / Peruntukan</th>
-              <th class="py-3 px-3">Uraian / Deskripsi Rincian</th>
-              <th class="py-3 px-2 text-center w-24">Vol (Qty)</th>
-              <th class="py-3 px-2 text-center w-24">Satuan</th>
-              <th class="py-3 px-3 text-right w-36">Harga Satuan (Rp)</th>
-              <th class="py-3 px-3 text-right w-40">Subtotal Biaya (Rp)</th>
-              <th class="py-3 px-2 text-center w-12">Aksi</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="(item, idx) in form.budget_items" :key="idx" class="hover:bg-gray-50/60 transition">
-              <td class="py-2.5 px-3 text-center font-bold text-gray-400 font-mono">{{ idx + 1 }}</td>
-              
-              <!-- Komponen Type Dropdown -->
-              <td class="py-2.5 px-3">
-                <select
-                  v-model="item.item_type"
-                  class="w-full bg-white rounded-xl px-2.5 py-1.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:outline-none font-bold"
-                >
-                  <option v-for="t in budgetItemTypes" :key="t.value" :value="t.value">
-                    {{ t.label }}
-                  </option>
-                </select>
-              </td>
-
-              <!-- Deskripsi Uraian -->
-              <td class="py-2.5 px-3">
-                <input
-                  type="text"
-                  v-model="item.description"
-                  placeholder="Keterangan rincian peruntukan biaya..."
-                  class="w-full bg-white rounded-xl px-2.5 py-1.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:outline-none font-medium"
-                />
-              </td>
-
-              <!-- Quantity -->
-              <td class="py-2.5 px-2 text-center">
-                <input
-                  type="number"
-                  v-model.number="item.quantity"
-                  min="0.1"
-                  step="any"
-                  class="w-full bg-white rounded-xl px-2 py-1.5 text-xs text-center font-bold text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:outline-none font-mono"
-                />
-              </td>
-
-              <!-- Satuan -->
-              <td class="py-2.5 px-2 text-center">
-                <select
-                  v-model="item.unit"
-                  class="w-full bg-white rounded-xl px-1.5 py-1.5 text-xs text-center font-semibold text-gray-700 border border-gray-200 focus:border-[#0067AC] focus:outline-none"
-                >
-                  <option value="Pax">Pax</option>
-                  <option value="Hari">Hari</option>
-                  <option value="Orang">Orang</option>
-                  <option value="Sesi">Sesi</option>
-                  <option value="Paket">Paket</option>
-                  <option value="Peserta">Peserta</option>
-                  <option value="Bulan">Bulan</option>
-                </select>
-              </td>
-
-              <!-- Unit Price -->
-              <td class="py-2.5 px-3 text-right">
-                <input
-                  type="number"
-                  v-model.number="item.unit_price"
-                  min="0"
-                  step="1000"
-                  class="w-full bg-white rounded-xl px-2.5 py-1.5 text-xs text-right font-bold text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:outline-none font-mono"
-                />
-                <span class="text-[10px] text-gray-400 block font-mono mt-0.5">
-                  {{ formatRupiah(item.unit_price) }}
-                </span>
-              </td>
-
-              <!-- Subtotal (Calculated) -->
-              <td class="py-2.5 px-3 text-right font-mono font-extrabold text-[#002855] text-xs">
-                {{ formatRupiah((Number(item.quantity) || 0) * (Number(item.unit_price) || 0)) }}
-              </td>
-
-              <!-- Delete Button -->
-              <td class="py-2.5 px-2 text-center">
-                <button
-                  type="button"
-                  @click="removeBudgetItemRow(idx)"
-                  class="text-gray-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-white transition cursor-pointer"
-                  title="Hapus Baris Biaya"
-                >
-                  <Trash2 class="w-3.5 h-3.5" />
-                </button>
-              </td>
-            </tr>
-            <tr v-if="form.budget_items.length === 0">
-              <td colspan="8" class="py-6 text-center text-gray-400">
-                Belum ada rincian biaya. Klik "+ Muat Template RAB Standar BWS" untuk mengisi otomatis.
-              </td>
-            </tr>
-          </tbody>
-          <tfoot class="bg-[#F8FAFC] border-t-2 border-gray-200 font-bold text-xs">
-            <tr>
-              <td colspan="5" class="py-3 px-4 text-right text-gray-700 font-extrabold">
-                Total Akumulasi Anggaran Program Pelatihan (RAB):
-              </td>
-              <td colspan="2" class="py-3 px-4 text-right font-mono text-base font-black text-[#0067AC]">
-                {{ formatRupiah(totalBudgetCalculated) }}
-              </td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      <!-- Cost Summary KPI Strip -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-[#EBF4FC]/40 border border-blue-100 text-xs">
-        <div>
-          <span class="text-gray-400 font-medium block">Total RAB Program:</span>
-          <span class="font-extrabold text-[#002855] text-sm font-mono">{{ formatRupiah(totalBudgetCalculated) }}</span>
-        </div>
-        <div>
-          <span class="text-gray-400 font-medium block">Estimasi Biaya per Peserta (Cost per Pax):</span>
-          <span class="font-extrabold text-[#0067AC] text-sm font-mono">
-            {{ formatRupiah(costPerParticipant) }} / Pegawai
-          </span>
-        </div>
-        <div>
-          <span class="text-gray-400 font-medium block">Alokasi Pagu TNA Terhubung:</span>
-          <span class="font-extrabold text-emerald-800 text-sm font-mono">
-            {{ selectedTnaItem ? formatRupiah(selectedTnaItem.budget) : (selectedTna ? formatRupiah(selectedTna.total_budget_requested) : 'Tidak terhubung TNA') }}
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <!-- ============================================================= -->
-    <!-- BAGIAN 5: METODE PENGESAHAN / OTORISASI (DUAL-APPROVAL)       -->
-    <!-- ============================================================= -->
-    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-100 shadow-2xs space-y-5">
-      <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-        <div class="flex items-center gap-2">
-          <ShieldCheck class="w-4 h-4 text-[#0067AC]" />
-          <h2 class="text-sm font-bold text-gray-900">5. Metode Pengesahan & Otorisasi Program Pelatihan</h2>
-        </div>
-        <span class="text-[11px] font-semibold text-gray-400">Pilih salah satu metode otorisasi</span>
-      </div>
-
-      <!-- 2 Pilihan Kartu Metode Approval -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        
-        <!-- Pilihan A: Approval by Document -->
-        <label
-          class="relative p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between"
-          :class="form.approval_type === 'DOCUMENT' ? 'border-[#0067AC] bg-[#EBF4FC]/40 ring-2 ring-[#0067AC]/10' : 'border-gray-200 hover:border-gray-300 bg-white'"
-        >
-          <div class="flex items-start gap-3">
-            <input
-              type="radio"
-              name="approval_type"
-              value="DOCUMENT"
-              v-model="form.approval_type"
-              class="mt-1 text-[#0067AC] focus:ring-[#0067AC]"
-            />
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="font-extrabold text-xs text-[#002855]">Approval via Dokumen Resmi</span>
-                <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">Langsung APPROVED</span>
-              </div>
-              <p class="text-[11px] text-gray-500 mt-1">
-                Persetujuan sudah tersedia secara offline berupa <strong>Memo Internal, Nota Dinas, atau Surat Keputusan (SK) Direksi</strong>. Cukup masukkan nomor surat dan lampirkan berkas fisik.
-              </p>
-            </div>
-          </div>
-          <div class="mt-3 pt-2 border-t border-gray-100 text-[11px] text-[#0067AC] font-semibold flex items-center gap-1">
-            <Check class="w-3.5 h-3.5" />
-            <span>Dokumen diunggah &amp; status program langsung disahkan</span>
-          </div>
-        </label>
-
-        <!-- Pilihan B: Persetujuan Berjenjang (Multi-Approval Workflow) -->
-        <label
-          class="relative p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between"
-          :class="form.approval_type === 'WORKFLOW' ? 'border-[#0067AC] bg-[#EBF4FC]/40 ring-2 ring-[#0067AC]/10' : 'border-gray-200 hover:border-gray-300 bg-white'"
-        >
-          <div class="flex items-start gap-3">
-            <input
-              type="radio"
-              name="approval_type"
-              value="WORKFLOW"
-              v-model="form.approval_type"
-              class="mt-1 text-[#0067AC] focus:ring-[#0067AC]"
-            />
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="font-extrabold text-xs text-[#002855]">Persetujuan Berjenjang Online (Workflow)</span>
-                <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-[#0067AC] font-bold">Multi-Approval</span>
-              </div>
-              <p class="text-[11px] text-gray-500 mt-1">
-                Mengikuti tahapan otorisasi berjenjang online di portal BWS LIS:
-                <strong>Step 1 (HCBP) &rarr; Step 2 (HC Learning Head) &rarr; Step 3 (Kadiv HC)</strong>.
-              </p>
-            </div>
-          </div>
-          <div class="mt-3 pt-2 border-t border-gray-100 text-[11px] text-gray-500 font-semibold flex items-center gap-1">
-            <Clock class="w-3.5 h-3.5 text-[#0067AC]" />
-            <span>Mengalir berjenjang ke otorisator berwenang</span>
-          </div>
-        </label>
-
-      </div>
-
-      <!-- Detail Input jika Memilih Approval by Document -->
-      <div v-if="form.approval_type === 'DOCUMENT'" class="p-5 rounded-2xl bg-gray-50/80 border border-gray-200 space-y-4">
-        <div class="flex items-center gap-2 text-[#002855]">
-          <FileCheck2 class="w-4 h-4 text-[#0067AC]" />
-          <h3 class="text-xs font-bold uppercase tracking-wider">Identitas & Berkas Dokumen Persetujuan</h3>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-          <div class="space-y-1">
-            <label class="font-bold text-gray-700">Nomor Dokumen / Memo Pengesahan *</label>
-            <input
-              type="text"
-              v-model="form.approval_doc_number"
-              placeholder="Contoh: MEMO/HC/2026/088/BWS"
-              class="w-full bg-white rounded-xl px-3 py-2 text-xs border border-gray-200 focus:border-[#0067AC] focus:outline-none font-semibold font-mono"
-            />
-          </div>
-
-          <div class="space-y-1">
-            <label class="font-bold text-gray-700">Tanggal Pengesahan Dokumen *</label>
-            <input
-              type="date"
-              v-model="form.approval_doc_date"
-              class="w-full bg-white rounded-xl px-3 py-2 text-xs border border-gray-200 focus:border-[#0067AC] focus:outline-none font-semibold"
-            />
-          </div>
-
-          <div class="space-y-1">
-            <label class="font-bold text-gray-700">Pejabat Penandatangan / Pengesah *</label>
-            <input
-              type="text"
-              v-model="form.approval_doc_signer"
-              placeholder="Contoh: Direktur Human Capital / Kadiv HC"
-              class="w-full bg-white rounded-xl px-3 py-2 text-xs border border-gray-200 focus:border-[#0067AC] focus:outline-none font-semibold"
-            />
-          </div>
-        </div>
-
-        <!-- File Upload Dropzone Dokumen Persetujuan -->
-        <div class="space-y-2 pt-1">
-          <label class="font-bold text-gray-700 text-xs block">Unggah Berkas Scan Dokumen / SK Persetujuan (PDF / DOCX)</label>
-          
-          <!-- Existing File Indicator when Editing -->
-          <div
-            v-if="existingDocFile && !selectedDocFile"
-            class="flex items-center justify-between p-3.5 rounded-2xl bg-[#EBF4FC] border border-blue-200"
-          >
-            <div class="flex items-center gap-2.5">
-              <Paperclip class="w-4 h-4 text-[#0067AC]" />
-              <div>
-                <span class="text-[10px] font-bold uppercase text-gray-500 block">Lampiran Dokumen Pengesahan Tersimpan</span>
-                <span class="text-xs font-bold text-gray-900">{{ existingDocFile.name }}</span>
-                <span class="text-[10px] text-gray-400 font-mono ml-2">({{ formatFileSize(existingDocFile.size) }})</span>
-              </div>
-            </div>
-            <span class="text-[11px] text-[#0067AC] font-semibold italic">Pilih file baru di bawah jika ingin mengganti</span>
-          </div>
-
-          <!-- File Upload Dropzone -->
-          <div
-            v-if="!selectedDocFile"
-            @click="$refs.docFileInputRef.click()"
-            class="border-2 border-dashed border-gray-200 hover:border-[#0067AC] bg-white hover:bg-blue-50/20 rounded-2xl p-5 text-center cursor-pointer transition group"
-          >
-            <input
-              ref="docFileInputRef"
-              type="file"
-              class="hidden"
-              accept=".pdf,.doc,.docx,.xls,.xlsx"
-              @change="onDocFileSelected"
-            />
-            <div class="flex flex-col items-center gap-1.5">
-              <div class="w-10 h-10 rounded-xl bg-[#EBF4FC] text-[#0067AC] flex items-center justify-center">
-                <Paperclip class="w-5 h-5" />
-              </div>
-              <p class="text-xs font-bold text-gray-800">Klik untuk memilih berkas dokumen persetujuan</p>
-              <p class="text-[10px] text-gray-400">Format PDF, DOCX (Maksimal 15 MB)</p>
-            </div>
-          </div>
-
-          <!-- Attached File Preview -->
-          <div
-            v-else
-            class="flex items-center justify-between p-3.5 rounded-2xl bg-[#EBF4FC] border border-blue-200"
-          >
-            <div class="flex items-center gap-2.5">
-              <FileCheck2 class="w-5 h-5 text-[#0067AC]" />
-              <div>
-                <p class="text-xs font-bold text-[#002855]">{{ selectedDocFile.name }}</p>
-                <p class="text-[10px] text-[#0067AC] font-medium">{{ formatFileSize(selectedDocFile.size) }} • Berkas Dokumen Siap Diunggah</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              @click="removeDocAttachment"
-              class="text-gray-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-white transition cursor-pointer"
-            >
-              <X class="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-
-    <!-- ============================================================= -->
-    <!-- STICKY BOTTOM ACTION BAR                                      -->
-    <!-- ============================================================= -->
-    <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-xl px-4 py-3 sm:px-8">
-      <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-        
-        <!-- Live Summary Metrics -->
-        <div class="flex items-center gap-5 sm:gap-8 text-left">
-          <div>
-            <span class="text-[10px] text-gray-400 font-medium uppercase tracking-wider block">Total Anggaran (RAB)</span>
-            <span class="text-base font-black text-[#0067AC] font-mono">{{ formatRupiah(totalBudgetCalculated) }}</span>
-          </div>
-          <div class="h-6 w-px bg-gray-200"></div>
-          <div>
-            <span class="text-[10px] text-gray-400 font-medium uppercase tracking-wider block">Target Peserta</span>
-            <span class="text-sm font-extrabold text-[#002855]">{{ form.target_participants_count }} Pegawai</span>
-          </div>
-          <div class="h-6 w-px bg-gray-200"></div>
-          <div>
-            <span class="text-[10px] text-gray-400 font-medium uppercase tracking-wider block">Metode Pengesahan</span>
-            <span class="text-xs font-bold text-gray-800">
-              {{ form.approval_type === 'DOCUMENT' ? 'Dokumen Memo / SK' : 'Multi-Approval Online' }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Submission Buttons -->
-        <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-          <button
-            type="button"
+            @click="submitProgram"
             :disabled="isSubmitting"
-            @click="submitForm(false)"
-            class="flex-1 sm:flex-none px-4 py-2.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+            class="px-8 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md hover:shadow-lg transition flex items-center gap-2 cursor-pointer disabled:opacity-50 uppercase tracking-wider"
           >
-            <Save class="w-3.5 h-3.5" />
-            <span>Simpan DRAFT</span>
-          </button>
-
-          <button
-            type="button"
-            :disabled="isSubmitting"
-            @click="submitForm(true)"
-            class="flex-1 sm:flex-none px-6 py-2.5 rounded-full bg-[#002855] hover:bg-[#003876] text-white text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <Send class="w-3.5 h-3.5" />
-            <span>
-              {{ isSubmitting ? 'Memproses...' : (form.approval_type === 'DOCUMENT' ? 'Sahkan via Dokumen' : 'Ajukan ke Multi-Approval') }}
-            </span>
+            <Send class="w-4 h-4" />
+            <span>{{ isSubmitting ? 'MEMPROSES...' : 'SUBMIT' }}</span>
           </button>
         </div>
 
       </div>
+
     </div>
 
   </div>

@@ -447,5 +447,8 @@ class DatabaseSeeder extends Seeder
 
             $prevHash = $hash;
         }
+
+        $this->call(AlignExcelWireframeSeeder::class);
     }
 }
+

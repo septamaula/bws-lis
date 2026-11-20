@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import {
   ClipboardList,
   Plus,
@@ -12,14 +12,18 @@ import {
   ChevronRight,
   ShieldCheck,
   AlertTriangle,
-  Filter,
   RotateCcw,
   Calendar,
   Layers,
-  ChevronDown,
+  Eye,
+  Edit3,
+  Trash2,
+  Download,
+  CheckCircle2,
+  TrendingUp,
   X
 } from 'lucide-vue-next'
-import DataTable from '@/components/DataTable.vue'
+import apiClient from '@/api/client'
 
 const props = defineProps({
   tnaProposals: {
@@ -32,102 +36,14 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['open-tna-modal', 'create-tna', 'view-tna-detail'])
+const emit = defineEmits(['create-tna', 'view-tna-detail', 'edit-tna', 'refresh-list'])
 
-// ==========================================
-// FILTER STATE
-// ==========================================
-const selectedStatusFilter = ref('ALL')
-const selectedDepartmentFilter = ref('ALL')
-const selectedYearFilter = ref('ALL')
-const selectedBudgetRange = ref('ALL')
-
-// Distinct Departments
-const departmentList = computed(() => {
-  const set = new Set()
-  props.tnaProposals.forEach(p => {
-    if (p.department) set.add(p.department)
-  })
-  return Array.from(set).sort()
-})
-
-// Distinct Years
-const yearList = computed(() => {
-  const set = new Set()
-  props.tnaProposals.forEach(p => {
-    if (p.year) set.add(p.year)
-  })
-  return Array.from(set).sort((a, b) => b - a)
-})
-
-// Status Breakdown Counts
-const statusCounts = computed(() => {
-  const total = props.tnaProposals.length
-  const pending = props.tnaProposals.filter(p => ['SUBMITTED', 'CHECKER_REVIEW', 'APPROVER_REVIEW'].includes(p.status)).length
-  const approved = props.tnaProposals.filter(p => p.status === 'APPROVED').length
-  const revised = props.tnaProposals.filter(p => p.status === 'REVISED').length
-  const rejected = props.tnaProposals.filter(p => p.status === 'REJECTED').length
-  return { total, pending, approved, revised, rejected }
-})
-
-// Filter Pipeline
-const filteredTnaProposals = computed(() => {
-  return props.tnaProposals.filter(item => {
-    // 1. Status Filter
-    if (selectedStatusFilter.value !== 'ALL') {
-      if (selectedStatusFilter.value === 'PENDING') {
-        if (!['SUBMITTED', 'CHECKER_REVIEW', 'APPROVER_REVIEW'].includes(item.status)) return false
-      } else if (item.status !== selectedStatusFilter.value) {
-        return false
-      }
-    }
-
-    // 2. Department Filter
-    if (selectedDepartmentFilter.value !== 'ALL' && item.department !== selectedDepartmentFilter.value) {
-      return false
-    }
-
-    // 3. Year Filter
-    if (selectedYearFilter.value !== 'ALL' && String(item.year) !== String(selectedYearFilter.value)) {
-      return false
-    }
-
-    // 4. Budget Range Filter
-    if (selectedBudgetRange.value !== 'ALL') {
-      const budget = Number(item.total_budget_requested || 0)
-      if (selectedBudgetRange.value === 'under_100m' && budget >= 100000000) return false
-      if (selectedBudgetRange.value === '100m_to_500m' && (budget < 100000000 || budget > 500000000)) return false
-      if (selectedBudgetRange.value === 'above_500m' && budget <= 500000000) return false
-    }
-
-    return true
-  })
-})
-
-const isFilterActive = computed(() => {
-  return (
-    selectedStatusFilter.value !== 'ALL' ||
-    selectedDepartmentFilter.value !== 'ALL' ||
-    selectedYearFilter.value !== 'ALL' ||
-    selectedBudgetRange.value !== 'ALL'
-  )
-})
-
-const activeFilterCount = computed(() => {
-  let count = 0
-  if (selectedStatusFilter.value !== 'ALL') count++
-  if (selectedDepartmentFilter.value !== 'ALL') count++
-  if (selectedYearFilter.value !== 'ALL') count++
-  if (selectedBudgetRange.value !== 'ALL') count++
-  return count
-})
-
-function resetFilters() {
-  selectedStatusFilter.value = 'ALL'
-  selectedDepartmentFilter.value = 'ALL'
-  selectedYearFilter.value = 'ALL'
-  selectedBudgetRange.value = 'ALL'
-}
+const loading = ref(false)
+const localProposals = ref([])
+const deletingId = ref(null)
+const deleteModalOpen = ref(false)
+const targetDeleteProposal = ref(null)
+const flashMessage = ref({ type: '', text: '' })
 
 function formatRupiah(num) {
   if (num === null || num === undefined) return 'Rp 0'
@@ -138,316 +54,397 @@ function formatRupiah(num) {
   }).format(num)
 }
 
-const totalRequested = computed(() => {
-  return props.tnaProposals.reduce((sum, item) => sum + Number(item.total_budget_requested || 0), 0)
-})
-
-const totalApproved = computed(() => {
-  return props.tnaProposals
-    .filter(item => item.status === 'APPROVED' || item.total_budget_approved)
-    .reduce((sum, item) => sum + Number(item.total_budget_approved || 0), 0)
-})
-
-const totalProgramCount = computed(() => {
-  return props.tnaProposals.reduce((sum, item) => sum + (item.items ? item.items.length : 0), 0)
-})
-
-const tnaColumns = [
-  { key: 'proposal_code', label: 'Kode Proposal', sortable: true },
-  { key: 'department', label: 'Divisi / Departemen', sortable: true },
-  { key: 'year', label: 'Tahun', sortable: true, align: 'center' },
-  { key: 'proposer.name', label: 'Pengaju (Dept Head)', sortable: true },
-  {
-    key: 'total_budget_requested',
-    label: 'Pagu Diusulkan',
-    sortable: true,
-    align: 'right',
-    format: (val) => formatRupiah(val)
-  },
-  {
-    key: 'total_budget_approved',
-    label: 'Disetujui Otorisator',
-    sortable: true,
-    align: 'right',
-    format: (val) => val ? formatRupiah(val) : '-'
-  },
-  { key: 'status', label: 'Status Dokumen & Tahapan Approval', sortable: true, align: 'center' },
-  {
-    key: 'created_at',
-    label: 'Tgl Pengajuan',
-    sortable: true,
-    format: (val) => val ? val.substring(0, 10) : '-'
+async function loadTnaList() {
+  loading.value = true
+  try {
+    const { data } = await apiClient.get('/tna')
+    localProposals.value = data.proposals || []
+  } catch (err) {
+    console.error('Failed to load TNA list:', err)
+    localProposals.value = props.tnaProposals
+  } finally {
+    loading.value = false
   }
-]
+}
+
+onMounted(() => {
+  loadTnaList()
+})
+
+const annualTnaList = computed(() => {
+  const list = localProposals.value.length > 0 ? localProposals.value : props.tnaProposals
+  // Urutkan tahun dari yang terbaru
+  return [...list].sort((a, b) => Number(b.year) - Number(a.year))
+})
+
+// KPI Metrics
+const totalInvestment = computed(() => {
+  return annualTnaList.value.reduce((sum, item) => sum + Number(item.total_budget_requested || 0), 0)
+})
+
+const totalRealization = computed(() => {
+  return annualTnaList.value.reduce((sum, item) => sum + Number(item.realization_amount || 0), 0)
+})
+
+const totalRemaining = computed(() => {
+  return Math.max(0, totalInvestment.value - totalRealization.value)
+})
+
+const overallPercentage = computed(() => {
+  if (totalInvestment.value <= 0) return 0
+  return Math.round((totalRealization.value / totalInvestment.value) * 100)
+})
+
+function confirmDelete(proposal) {
+  targetDeleteProposal.value = proposal
+  deleteModalOpen.value = true
+}
+
+async function executeDelete() {
+  if (!targetDeleteProposal.value) return
+  deletingId.value = targetDeleteProposal.value.id
+  try {
+    const { data } = await apiClient.delete(`/tna/${targetDeleteProposal.value.id}`)
+    flashMessage.value = {
+      type: 'success',
+      text: data.message || `Dokumen TNA Tahun ${targetDeleteProposal.value.year} berhasil dihapus.`
+    }
+    deleteModalOpen.value = false
+    targetDeleteProposal.value = null
+    await loadTnaList()
+    emit('refresh-list')
+    setTimeout(() => {
+      flashMessage.value = { type: '', text: '' }
+    }, 5000)
+  } catch (err) {
+    flashMessage.value = {
+      type: 'error',
+      text: err.response?.data?.message || 'Gagal menghapus dokumen TNA.'
+    }
+  } finally {
+    deletingId.value = null
+  }
+}
 </script>
 
 <template>
-  <div class="flex flex-col gap-5">
-    
-    <!-- Top Summary Statistics Cards (Standard BWS Strip) -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
-          <ClipboardList class="w-5 h-5" />
-        </div>
-        <div>
-          <p class="text-[11px] text-gray-400 font-medium">Total Usulan TNA</p>
-          <p class="text-xl font-extrabold text-gray-900">{{ tnaProposals.length }} Proposal</p>
+  <div class="flex flex-col gap-6">
+
+    <!-- Top Alert Notification -->
+    <div
+      v-if="flashMessage.text"
+      class="p-4 rounded-xl text-xs font-semibold flex items-center justify-between shadow-xs transition animate-fadeIn"
+      :class="flashMessage.type === 'error' ? 'bg-rose-50 text-rose-800 border border-rose-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'"
+    >
+      <div class="flex items-center gap-2">
+        <CheckCircle2 v-if="flashMessage.type !== 'error'" class="w-4 h-4 text-emerald-600" />
+        <AlertTriangle v-else class="w-4 h-4 text-rose-600" />
+        <span>{{ flashMessage.text }}</span>
+      </div>
+      <button @click="flashMessage = { type: '', text: '' }" class="hover:opacity-75">
+        <X class="w-4 h-4" />
+      </button>
+    </div>
+
+    <!-- Header Section with Title & Rule Notice -->
+    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0067AC] to-[#002855] text-white flex items-center justify-center shadow-xs">
+            <ClipboardList class="w-5 h-5" />
+          </div>
+          <div>
+            <h1 class="text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+              <span>Training Need Analysis (TNA)</span>
+              <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0067AC] border border-blue-100">
+                1 Dokumen per Tahun
+              </span>
+            </h1>
+            <p class="text-xs text-gray-500 mt-0.5">
+              Dashboard Tahunan Perencanaan & Realisasi Investasi Diklat Bank Woori Saudara (Enterprise Plan)
+            </p>
+          </div>
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
+      <!-- Action Button: Create TNA [+] -->
+      <div class="flex items-center gap-2.5">
+        <button
+          @click="loadTnaList"
+          class="p-2.5 rounded-xl border border-gray-200 text-gray-600 hover:text-[#0067AC] hover:border-[#0067AC] bg-white transition shadow-2xs"
+          title="Muat Ulang Data"
+        >
+          <RotateCcw class="w-4 h-4" :class="{ 'animate-spin': loading }" />
+        </button>
+
+        <button
+          v-if="canManageTna"
+          @click="emit('create-tna')"
+          class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm hover:shadow-md transition flex items-center gap-2 cursor-pointer"
+        >
+          <Plus class="w-4 h-4" />
+          <span>Create TNA [+]</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary KPI Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-white rounded-2xl p-4 shadow-2xs border border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
+          <Calendar class="w-5 h-5" />
+        </div>
+        <div>
+          <p class="text-[11px] text-gray-400 font-medium">Tahun Terdata</p>
+          <p class="text-lg font-extrabold text-gray-900">{{ annualTnaList.length }} Tahun Anggaran</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 shadow-2xs border border-gray-100 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
           <Wallet class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Pagu Diusulkan</p>
-          <p class="text-xl font-extrabold text-gray-900 font-mono">{{ formatRupiah(totalRequested) }}</p>
+          <p class="text-[11px] text-gray-400 font-medium">Total Proyeksi Investasi</p>
+          <p class="text-lg font-extrabold text-gray-900 font-mono">{{ formatRupiah(totalInvestment) }}</p>
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+      <div class="bg-white rounded-2xl p-4 shadow-2xs border border-gray-100 flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
           <CheckCircle class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Pagu Disahkan</p>
-          <p class="text-xl font-extrabold text-[#0067AC] font-mono">{{ formatRupiah(totalApproved) }}</p>
+          <p class="text-[11px] text-gray-400 font-medium">Total Realisasi Kumulatif</p>
+          <p class="text-lg font-extrabold text-emerald-700 font-mono">{{ formatRupiah(totalRealization) }}</p>
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+      <div class="bg-white rounded-2xl p-4 shadow-2xs border border-gray-100 flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-          <Building2 class="w-5 h-5" />
+          <TrendingUp class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Kebutuhan Diklat</p>
-          <p class="text-xl font-extrabold text-gray-900">{{ totalProgramCount || 34 }} Program Kerja</p>
+          <p class="text-[11px] text-gray-400 font-medium">Rata-rata Capaian Realisasi</p>
+          <div class="flex items-center gap-2">
+            <p class="text-lg font-extrabold text-gray-900 font-mono">{{ overallPercentage }}%</p>
+            <span class="text-[10px] text-gray-400">Sisa {{ formatRupiah(totalRemaining) }}</span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Quick Status Filter Segmented Bar -->
-    <div class="flex items-center justify-between gap-3 flex-wrap">
-      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
-        <button
-          @click="selectedStatusFilter = 'ALL'"
-          :class="[
-            selectedStatusFilter === 'ALL'
-              ? 'bg-[#0067AC] text-white shadow-sm ring-2 ring-[#0067AC]/20'
-              : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 hover:border-gray-300'
-          ]"
-          class="px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer"
-        >
-          <span>Semua Usulan</span>
-          <span
-            :class="selectedStatusFilter === 'ALL' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'"
-            class="px-1.5 py-0.5 rounded-full text-[10px] font-semibold font-mono"
-          >{{ statusCounts.total }}</span>
-        </button>
-
-        <button
-          @click="selectedStatusFilter = 'PENDING'"
-          :class="[
-            selectedStatusFilter === 'PENDING'
-              ? 'bg-amber-500 text-white shadow-sm ring-2 ring-amber-500/20'
-              : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 hover:border-gray-300'
-          ]"
-          class="px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer"
-        >
-          <Clock class="w-3.5 h-3.5" />
-          <span>Menunggu Review</span>
-          <span
-            :class="selectedStatusFilter === 'PENDING' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700'"
-            class="px-1.5 py-0.5 rounded-full text-[10px] font-semibold font-mono"
-          >{{ statusCounts.pending }}</span>
-        </button>
-
-        <button
-          @click="selectedStatusFilter = 'APPROVED'"
-          :class="[
-            selectedStatusFilter === 'APPROVED'
-              ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/20'
-              : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 hover:border-gray-300'
-          ]"
-          class="px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer"
-        >
-          <CheckCircle class="w-3.5 h-3.5" />
-          <span>Disetujui Final</span>
-          <span
-            :class="selectedStatusFilter === 'APPROVED' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700'"
-            class="px-1.5 py-0.5 rounded-full text-[10px] font-semibold font-mono"
-          >{{ statusCounts.approved }}</span>
-        </button>
-
-        <button
-          @click="selectedStatusFilter = 'REVISED'"
-          :class="[
-            selectedStatusFilter === 'REVISED'
-              ? 'bg-amber-600 text-white shadow-sm ring-2 ring-amber-600/20'
-              : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 hover:border-gray-300'
-          ]"
-          class="px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer"
-        >
-          <AlertTriangle class="w-3.5 h-3.5" />
-          <span>Perlu Revisi</span>
-          <span
-            :class="selectedStatusFilter === 'REVISED' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-700'"
-            class="px-1.5 py-0.5 rounded-full text-[10px] font-semibold font-mono"
-          >{{ statusCounts.revised }}</span>
-        </button>
-
-        <button
-          @click="selectedStatusFilter = 'REJECTED'"
-          :class="[
-            selectedStatusFilter === 'REJECTED'
-              ? 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-600/20'
-              : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 hover:border-gray-300'
-          ]"
-          class="px-3.5 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer"
-        >
-          <X class="w-3.5 h-3.5" />
-          <span>Ditolak</span>
-          <span
-            :class="selectedStatusFilter === 'REJECTED' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700'"
-            class="px-1.5 py-0.5 rounded-full text-[10px] font-semibold font-mono"
-          >{{ statusCounts.rejected }}</span>
-        </button>
-      </div>
-
-      <!-- Reset Filter Quick Action -->
-      <button
-        v-if="isFilterActive"
-        @click="resetFilters"
-        class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition cursor-pointer shrink-0"
-        title="Reset semua filter ke kondisi awal"
-      >
-        <RotateCcw class="w-3.5 h-3.5" />
-        <span>Reset Filter ({{ activeFilterCount }} aktif)</span>
-      </button>
-    </div>
-
-    <!-- TNA Proposals Standard Table Component -->
-    <DataTable
-      :data="filteredTnaProposals"
-      :columns="tnaColumns"
-      date-key="created_at"
-      export-filename="usulan_tna_bws_2026"
-      :default-per-page="10"
-    >
-      <!-- Filters Slot for Specific Criteria -->
-      <template #filters>
-        <!-- Department / Divisi Filter -->
-        <div class="relative inline-flex items-center">
-          <select
-            v-model="selectedDepartmentFilter"
-            class="bg-white text-xs font-semibold text-gray-700 pl-3 pr-8 py-2 rounded-full border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs appearance-none cursor-pointer hover:border-gray-300"
-            title="Filter berdasarkan Divisi / Unit Kerja"
-          >
-            <option value="ALL">Semua Divisi</option>
-            <option v-for="dept in departmentList" :key="dept" :value="dept">
-              {{ dept }}
-            </option>
-          </select>
-          <ChevronDown class="w-3.5 h-3.5 text-gray-400 absolute right-2.5 pointer-events-none" />
-        </div>
-
-        <!-- Fiscal Year Filter -->
-        <div class="relative inline-flex items-center">
-          <select
-            v-model="selectedYearFilter"
-            class="bg-white text-xs font-semibold text-gray-700 pl-3 pr-8 py-2 rounded-full border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs appearance-none cursor-pointer hover:border-gray-300"
-            title="Filter berdasarkan Tahun Anggaran"
-          >
-            <option value="ALL">Semua Tahun</option>
-            <option v-for="yr in yearList" :key="yr" :value="yr">
-              Tahun {{ yr }}
-            </option>
-          </select>
-          <ChevronDown class="w-3.5 h-3.5 text-gray-400 absolute right-2.5 pointer-events-none" />
-        </div>
-
-        <!-- Budget Range Filter -->
-        <div class="relative inline-flex items-center">
-          <select
-            v-model="selectedBudgetRange"
-            class="bg-white text-xs font-semibold text-gray-700 pl-3 pr-8 py-2 rounded-full border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs appearance-none cursor-pointer hover:border-gray-300"
-            title="Filter berdasarkan Rentang Pagu Anggaran"
-          >
-            <option value="ALL">Semua Pagu Anggaran</option>
-            <option value="under_100m">&lt; Rp 100 Juta</option>
-            <option value="100m_to_500m">Rp 100 Jt - Rp 500 Jt</option>
-            <option value="above_500m">&gt; Rp 500 Juta</option>
-          </select>
-          <ChevronDown class="w-3.5 h-3.5 text-gray-400 absolute right-2.5 pointer-events-none" />
-        </div>
-      </template>
-
-      <!-- Custom Cell: Proposal Code -->
-      <template #cell-proposal_code="{ row }">
-        <button
-          @click="emit('view-tna-detail', row.id)"
-          class="text-left group cursor-pointer"
-          title="Klik untuk membuka Rincian Dokumen TNA"
-        >
-          <span class="font-mono text-xs font-extrabold text-[#0067AC] group-hover:underline flex items-center gap-1">
-            <span>{{ row.proposal_code }}</span>
-            <ExternalLink class="w-3 h-3 opacity-0 group-hover:opacity-100 transition" />
-          </span>
-          <span class="text-[11px] text-gray-400 block">Revisi {{ row.revision_count || 0 }}</span>
-        </button>
-      </template>
-
-      <!-- Custom Cell: Department -->
-      <template #cell-department="{ row }">
+    <!-- MAIN TABLE: List TNA (Identical to Excel Template) -->
+    <div class="bg-white rounded-2xl border border-gray-200/90 shadow-sm overflow-hidden">
+      
+      <!-- Table Header Bar -->
+      <div class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white px-5 py-3.5 flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600 shrink-0">
-            <Building2 class="w-3.5 h-3.5 text-[#0067AC]" />
+          <ClipboardList class="w-4 h-4 text-white/80" />
+          <h2 class="text-sm font-bold tracking-wide uppercase">List TNA (Rencana Tahunan)</h2>
+        </div>
+        <span class="text-xs text-white/80 font-medium">
+          {{ annualTnaList.length }} Tahun Dokumen
+        </span>
+      </div>
+
+      <!-- Table Content -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-gray-50/80 border-b border-gray-200 text-gray-700 font-bold uppercase tracking-wider text-[11px]">
+              <th class="py-3 px-4 w-28 text-center">Tahun</th>
+              <th class="py-3 px-4 text-right">Investment (Projection)</th>
+              <th class="py-3 px-4 text-right">Realization</th>
+              <th class="py-3 px-4 text-center w-36">%Percentage</th>
+              <th class="py-3 px-4 text-right hidden lg:table-cell">Regulator Target (Min)</th>
+              <th class="py-3 px-4 text-center hidden md:table-cell">Status Dokumen</th>
+              <th class="py-3 px-4 text-center w-48">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr
+              v-for="item in annualTnaList"
+              :key="item.id"
+              class="hover:bg-blue-50/40 transition group"
+            >
+              <!-- 1. Tahun -->
+              <td class="py-3.5 px-4 text-center font-bold text-gray-900 font-mono">
+                <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-extrabold"
+                  :class="item.year === 2026 ? 'bg-[#0067AC] text-white shadow-2xs' : 'bg-gray-100 text-gray-700'"
+                >
+                  {{ item.year }}
+                </span>
+              </td>
+
+              <!-- 2. Investment (Projection) -->
+              <td class="py-3.5 px-4 text-right font-mono font-bold text-gray-900">
+                {{ formatRupiah(item.total_budget_requested) }}
+              </td>
+
+              <!-- 3. Realization -->
+              <td class="py-3.5 px-4 text-right font-mono font-bold text-emerald-700">
+                {{ formatRupiah(item.realization_amount) }}
+              </td>
+
+              <!-- 4. %Percentage -->
+              <td class="py-3.5 px-4 text-center">
+                <div class="flex items-center justify-center gap-2">
+                  <div class="w-16 bg-gray-100 rounded-full h-2 overflow-hidden hidden sm:block">
+                    <div
+                      class="h-2 rounded-full transition-all duration-500"
+                      :class="[
+                        Number(item.realization_percentage) >= 90 ? 'bg-emerald-500' :
+                        Number(item.realization_percentage) >= 50 ? 'bg-[#0067AC]' : 'bg-amber-500'
+                      ]"
+                      :style="{ width: `${Math.min(100, item.realization_percentage || 0)}%` }"
+                    ></div>
+                  </div>
+                  <span
+                    class="font-mono font-extrabold text-xs px-2 py-0.5 rounded-full"
+                    :class="[
+                      Number(item.realization_percentage) >= 90 ? 'bg-emerald-50 text-emerald-700' :
+                      Number(item.realization_percentage) >= 50 ? 'bg-blue-50 text-[#0067AC]' : 'bg-amber-50 text-amber-700'
+                    ]"
+                  >
+                    {{ item.realization_percentage || (item.total_budget_requested ? Math.round((Number(item.realization_amount)/Number(item.total_budget_requested))*100) : 0) }}%
+                  </span>
+                </div>
+              </td>
+
+              <!-- 5. Regulator Target (Min) -->
+              <td class="py-3.5 px-4 text-right font-mono text-gray-500 hidden lg:table-cell">
+                {{ item.minimum_regulator_investment ? formatRupiah(item.minimum_regulator_investment) : '-' }}
+              </td>
+
+              <!-- 6. Status Dokumen -->
+              <td class="py-3.5 px-4 text-center hidden md:table-cell">
+                <span
+                  class="inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap"
+                  :class="[
+                    item.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                    item.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                    item.status === 'REVISED' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                    'bg-blue-50 text-[#0067AC] border border-blue-200'
+                  ]"
+                >
+                  <span
+                    class="w-1.5 h-1.5 rounded-full shrink-0"
+                    :class="item.status === 'APPROVED' ? 'bg-emerald-500' : 'bg-[#0067AC] animate-pulse'"
+                  ></span>
+                  {{ item.approval_status_badge || (item.status === 'APPROVED' ? 'Disetujui Final' : 'Menunggu Review') }}
+                </span>
+              </td>
+
+              <!-- 7. Action: View / Edit / Delete (Matching Excel wireframe) -->
+              <td class="py-3.5 px-4 text-center">
+                <div class="inline-flex items-center gap-1 justify-center bg-gray-50 p-1 rounded-xl border border-gray-200">
+                  <!-- View Button -->
+                  <button
+                    @click="emit('view-tna-detail', item.id)"
+                    class="px-2.5 py-1 rounded-lg text-xs font-bold text-[#0067AC] hover:bg-[#0067AC] hover:text-white transition flex items-center gap-1 cursor-pointer"
+                    title="View TNA (Lihat Rincian Program & Sisa Anggaran)"
+                  >
+                    <Eye class="w-3.5 h-3.5" />
+                    <span>View</span>
+                  </button>
+
+                  <span class="text-gray-300">|</span>
+
+                  <!-- Edit Button -->
+                  <button
+                    v-if="canManageTna"
+                    @click="emit('edit-tna', item.id)"
+                    class="px-2.5 py-1 rounded-lg text-xs font-bold text-amber-700 hover:bg-amber-600 hover:text-white transition flex items-center gap-1 cursor-pointer"
+                    title="Edit TNA (Ubah Pagu & Program)"
+                  >
+                    <Edit3 class="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </button>
+
+                  <span v-if="canManageTna" class="text-gray-300">|</span>
+
+                  <!-- Delete Button -->
+                  <button
+                    v-if="canManageTna"
+                    @click="confirmDelete(item)"
+                    class="px-2.5 py-1 rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-600 hover:text-white transition flex items-center gap-1 cursor-pointer"
+                    title="Delete TNA (Hapus Rencana Tahunan)"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <tr v-if="annualTnaList.length === 0">
+              <td colspan="7" class="py-12 text-center text-gray-400">
+                <ClipboardList class="w-12 h-12 mx-auto text-gray-300 mb-2 stroke-1" />
+                <p class="font-bold text-sm text-gray-700">Belum Ada Dokumen TNA Tahunan</p>
+                <p class="text-xs text-gray-400 mt-1">Silakan klik tombol "Create TNA [+]" di atas untuk membuat rencana tahunan.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Table Bottom Action Bar (Matching Excel Button Placement) -->
+      <div class="p-4 bg-gray-50/70 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+        <p class="text-xs text-gray-500">
+          Catatan: Setiap tahun anggaran hanya memiliki 1 usulan TNA Induk bank-wide sesuai regulasi OJK & standar BWS.
+        </p>
+        <button
+          v-if="canManageTna"
+          @click="emit('create-tna')"
+          class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm hover:shadow-md transition flex items-center gap-2 cursor-pointer ml-auto"
+        >
+          <Plus class="w-4 h-4" />
+          <span>Create TNA [+]</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div
+      v-if="deleteModalOpen"
+      class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+    >
+      <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 flex flex-col gap-4 animate-scaleUp">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold shrink-0">
+            <Trash2 class="w-6 h-6" />
           </div>
           <div>
-            <p class="font-bold text-xs text-gray-900">{{ row.department }}</p>
-            <p class="text-[10px] text-gray-400">{{ (row.items && row.items.length) || 0 }} Kebutuhan Skill</p>
+            <h3 class="text-base font-extrabold text-gray-900">Hapus Dokumen TNA</h3>
+            <p class="text-xs text-gray-500">Konfirmasi Penghapusan Rencana Tahunan</p>
           </div>
         </div>
-      </template>
 
-      <!-- Custom Cell: Status & Multi-Approval Badge -->
-      <template #cell-status="{ row }">
-        <span
-          class="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full whitespace-nowrap"
-          :class="[
-            row.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
-            row.status === 'REJECTED' ? 'bg-rose-50 text-rose-800 border border-rose-200' :
-            row.status === 'REVISED' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
-            row.status === 'CHECKER_REVIEW' ? 'bg-[#EBF4FC] text-[#0067AC] border border-blue-200' :
-            'bg-sky-50 text-sky-800 border border-sky-200'
-          ]"
-        >
-          <span
-            class="w-1.5 h-1.5 rounded-full shrink-0"
-            :class="[
-              row.status === 'APPROVED' ? 'bg-emerald-500' :
-              row.status === 'REJECTED' ? 'bg-rose-500' :
-              row.status === 'REVISED' ? 'bg-amber-500' :
-              'bg-[#0067AC] animate-pulse'
-            ]"
-          ></span>
-          {{ row.approval_status_badge || (row.status === 'APPROVED' ? 'Disetujui Final' : 'Menunggu Review') }}
-        </span>
-      </template>
+        <div class="bg-rose-50/70 p-3.5 rounded-2xl border border-rose-100 text-xs text-rose-800 leading-relaxed">
+          Apakah Anda yakin ingin menghapus dokumen TNA <strong>Tahun {{ targetDeleteProposal?.year }}</strong> ({{ targetDeleteProposal?.proposal_code }})?
+          <br><br>
+          <span class="font-bold">Peringatan:</span> Seluruh rincian program kerja pelatihan dan pagu anggaran untuk tahun ini akan dihapus dari sistem.
+        </div>
 
-      <!-- Action Column Slot -->
-      <template #action="{ row }">
-        <button
-          @click="emit('view-tna-detail', row.id)"
-          class="px-3.5 py-1.5 rounded-full bg-[#EBF4FC] hover:bg-[#0067AC] text-[#0067AC] hover:text-white text-xs font-bold transition flex items-center gap-1 shadow-2xs"
-          title="Buka Halaman Rincian & Multi-Approval"
-        >
-          <span>Rincian</span>
-          <ChevronRight class="w-3 h-3" />
-        </button>
-      </template>
-    </DataTable>
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+          <button
+            @click="deleteModalOpen = false; targetDeleteProposal = null"
+            class="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+          >
+            Batal
+          </button>
+          <button
+            @click="executeDelete"
+            :disabled="!!deletingId"
+            class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+          >
+            <Trash2 class="w-3.5 h-3.5" />
+            <span>{{ deletingId ? 'Menghapus...' : 'Ya, Hapus Sekarang' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
   </div>
 </template>

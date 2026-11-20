@@ -1366,6 +1366,8 @@ const totalPendingApprovalsForUser = computed(() => {
                 :can-manage-tna="canManageTna"
                 @create-tna="tnaViewMode = 'create'"
                 @view-tna-detail="openTnaDetail"
+                @edit-tna="openTnaEdit"
+                @refresh-list="fetchDashboard"
               />
             </template>
 

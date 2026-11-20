@@ -33,7 +33,7 @@ class DashboardApiController extends Controller
         $pendingCheckerApprovals = $pendingClassesCount + $pendingFinancialsCount + $pendingTnaCount;
 
         $tnaProposals = TnaProposal::with(['items', 'proposer', 'approver', 'approvalHistories'])
-            ->orderByDesc('id')
+            ->orderByDesc('year')
             ->get();
 
         $trainingPrograms = TrainingProgram::with('creator')

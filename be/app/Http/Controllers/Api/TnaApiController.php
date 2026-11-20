@@ -24,11 +24,12 @@ class TnaApiController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $year = $request->query('year', 2026);
-
         $query = TnaProposal::with(['items.category', 'items.subCategory', 'proposer', 'fiscalYear'])
-            ->where('year', $year)
-            ->orderByDesc('id');
+            ->orderByDesc('year');
+
+        if ($request->filled('year') && $request->year !== 'ALL') {
+            $query->where('year', (int) $request->year);
+        }
 
         if ($request->filled('department') && $request->department !== 'ALL') {
             $query->where('department', $request->department);
@@ -43,6 +44,7 @@ class TnaApiController extends Controller
         $stats = [
             'total_proposals' => $proposals->count(),
             'total_requested' => (float) $proposals->sum('total_budget_requested'),
+            'total_realization' => (float) $proposals->sum('realization_amount'),
             'total_approved' => (float) $proposals->where('status', 'APPROVED')->sum('total_budget_approved'),
             'total_items_count' => (int) $proposals->sum(fn($p) => $p->items->count()),
         ];
@@ -100,12 +102,14 @@ class TnaApiController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'department' => 'required|string|max:100',
+            'department' => 'nullable|string|max:100',
             'year' => 'required|integer|min:2020|max:2040',
+            'minimum_regulator_investment' => 'nullable|numeric|min:0',
+            'realization_amount' => 'nullable|numeric|min:0',
             'priority' => 'nullable|in:Critical,High,Medium,Low',
             'target_quarter' => 'nullable|string|max:50',
-            'strategic_objective' => 'required|string',
-            'is_submit' => 'required|boolean',
+            'strategic_objective' => 'nullable|string',
+            'is_submit' => 'nullable|boolean',
             'attachment' => 'nullable|file|max:15360',
             'attachment_name' => 'nullable|string|max:255',
             'attachment_size' => 'nullable|integer',
@@ -115,6 +119,7 @@ class TnaApiController extends Controller
             'items.*.sub_category_id' => 'nullable|exists:sub_categories,id',
             'items.*.sub_category_name' => 'nullable|string',
             'items.*.budget' => 'nullable|numeric|min:0',
+            'items.*.realization_amount' => 'nullable|numeric|min:0',
             'items.*.execution_quarter' => 'nullable|string|max:50',
             'items.*.target_participants_count' => 'nullable|integer|min:1',
             'items.*.job_family' => 'nullable|string|max:100',
@@ -127,7 +132,18 @@ class TnaApiController extends Controller
             'items.*.impact_kpi' => 'nullable|string',
         ]);
 
+        $year = (int) $validated['year'];
+        $existing = TnaProposal::where('year', $year)->first();
+        if ($existing) {
+            return response()->json([
+                'message' => "TNA untuk Tahun Anggaran {$year} sudah terdaftar ({$existing->proposal_code}). Dalam 1 tahun anggaran hanya terdapat 1 dokumen TNA Induk.",
+                'proposal_id' => $existing->id,
+            ], 422);
+        }
+
         $user = $request->user();
+        $department = $validated['department'] ?? 'Human Capital & Corporate Academy';
+        $strategicObjective = $validated['strategic_objective'] ?? "Rencana Induk Kebutuhan Diklat & Kompetensi Perbankan Tahun {$year}";
 
         // Handle File Attachment
         $attachmentPath = null;
@@ -144,7 +160,7 @@ class TnaApiController extends Controller
         }
 
         // Find fiscal year
-        $fiscalYear = \App\Models\FiscalYear::where('year', $validated['year'])->first();
+        $fiscalYear = \App\Models\FiscalYear::where('year', $year)->first();
 
         // Hitung total anggaran
         $totalRequested = 0;
@@ -155,31 +171,29 @@ class TnaApiController extends Controller
             $totalRequested += $budget;
         }
 
-        // Generate nomor kode proposal unik perbankan
-        $deptShort = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $validated['department']), 0, 3));
-        $count = TnaProposal::where('year', $validated['year'])->count() + 1;
-        $proposalCode = 'TNA-' . $validated['year'] . '-' . $deptShort . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
-
-        $isSubmit = $validated['is_submit'];
+        $proposalCode = 'TNA-' . $year . '-BWS';
+        $isSubmit = $request->boolean('is_submit', true);
         $status = $isSubmit ? 'SUBMITTED' : 'DRAFT';
         $badge = $isSubmit ? 'Menunggu Review HCBP' : 'Draft Usulan';
         $priority = $validated['priority'] ?? 'High';
-        $targetQuarter = $validated['target_quarter'] ?? 'Q1 - Q2 ' . $validated['year'];
+        $targetQuarter = $validated['target_quarter'] ?? 'Q1 - Q4 ' . $year;
 
         try {
             DB::beginTransaction();
 
             $proposal = TnaProposal::create([
                 'proposal_code' => $proposalCode,
-                'department' => $validated['department'],
-                'year' => $validated['year'],
+                'department' => $department,
+                'year' => $year,
                 'fiscal_year_id' => $fiscalYear?->id,
-                'proposed_by' => $user->id,
+                'proposed_by' => $user?->id ?? 1,
                 'priority' => $priority,
                 'total_budget_requested' => $totalRequested,
                 'total_budget_approved' => null,
+                'minimum_regulator_investment' => $validated['minimum_regulator_investment'] ?? 0,
+                'realization_amount' => $validated['realization_amount'] ?? 0,
                 'status' => $status,
-                'strategic_objective' => $validated['strategic_objective'],
+                'strategic_objective' => $strategicObjective,
                 'target_quarter' => $targetQuarter,
                 'current_step_order' => 1,
                 'approval_status_badge' => $badge,
@@ -594,20 +608,15 @@ class TnaApiController extends Controller
     {
         $proposal = TnaProposal::findOrFail($id);
 
-        if ($proposal->status === 'APPROVED') {
-            return response()->json([
-                'message' => 'Usulan TNA yang telah berstatus Disetujui Final tidak dapat dihapus.',
-            ], 422);
-        }
-
         try {
             DB::beginTransaction();
 
             $code = $proposal->proposal_code;
+            $year = $proposal->year;
 
-            // Soft delete items dan proposal
-            $proposal->items()->delete();
-            $proposal->delete();
+            // Delete items dan proposal
+            $proposal->items()->forceDelete();
+            $proposal->forceDelete();
 
             AuditLog::create([
                 'user_id' => $request->user()?->id ?? 1,
@@ -615,13 +624,13 @@ class TnaApiController extends Controller
                 'entity_type' => 'TnaProposal',
                 'entity_id' => $id,
                 'ip_address' => $request->ip(),
-                'details' => json_encode(['proposal_code' => $code]),
+                'details' => json_encode(['proposal_code' => $code, 'year' => $year]),
             ]);
 
             DB::commit();
 
             return response()->json([
-                'message' => "Usulan TNA {$code} berhasil dihapus dari sistem.",
+                'message' => "Dokumen TNA Tahun Anggaran {$year} ({$code}) berhasil dihapus.",
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
