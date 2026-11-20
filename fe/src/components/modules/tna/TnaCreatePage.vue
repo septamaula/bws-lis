@@ -289,7 +289,7 @@ async function submitForm() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 max-w-5xl mx-auto pb-12">
+  <div class="flex flex-col gap-6 w-full pb-12">
 
     <!-- Top Navigation Bar -->
     <div class="flex items-center justify-between">

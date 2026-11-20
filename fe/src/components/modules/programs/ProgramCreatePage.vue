@@ -297,7 +297,7 @@ async function submitProgram() {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 max-w-5xl mx-auto pb-16">
+  <div class="flex flex-col gap-6 w-full pb-16">
 
     <!-- Top Navigation Bar -->
     <div class="flex items-center justify-between">

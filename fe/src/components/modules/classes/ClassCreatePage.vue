@@ -256,7 +256,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 max-w-5xl mx-auto pb-16">
+  <div class="flex flex-col gap-6 w-full pb-16">
     
     <!-- Top Action Bar & Navigation Breadcrumbs -->
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-gray-100 shadow-2xs">

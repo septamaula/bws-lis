@@ -320,7 +320,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 max-w-6xl mx-auto pb-16">
+  <div class="flex flex-col gap-6 w-full pb-16">
 
     <!-- Loading State -->
     <div v-if="loading" class="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-2xs">
