@@ -1131,7 +1131,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition"
               >
                 <Plus class="w-3.5 h-3.5" />
-                <span>+ Usulan TNA Baru</span>
+                <span>Usulan TNA Baru</span>
               </button>
               <button
                 v-else-if="tnaViewMode === 'edit'"
@@ -1158,7 +1158,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition cursor-pointer"
               >
                 <Plus class="w-3.5 h-3.5" />
-                <span>+ Buat Program Baru</span>
+                <span>Buat Program Baru</span>
               </button>
             </div>
 
@@ -1178,7 +1178,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition cursor-pointer"
               >
                 <Plus class="w-3.5 h-3.5" />
-                <span>+ Buat Batch Kelas (Maker)</span>
+                <span>Buat Batch Kelas (Maker)</span>
               </button>
             </div>
 
