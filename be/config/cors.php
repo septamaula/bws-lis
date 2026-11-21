@@ -28,7 +28,10 @@ return [
         'http://localhost:4174',
     ],
 
-    'allowed_origins_patterns' => ['#^https?://.*\.test$#'],
+    'allowed_origins_patterns' => [
+        '#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#',
+        '#^https?://.*\.test$#',
+    ],
 
     'allowed_headers' => ['*'],
 

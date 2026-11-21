@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import apiClient from '@/api/client'
@@ -222,13 +222,29 @@ async function fetchDashboard() {
   }
 }
 
-onMounted(() => {
-  fetchDashboard()
-})
-
-// Role Switcher Dropdown
+// Role Switcher & Profile Dropdown
 const showRoleDropdown = ref(false)
 const showProfileDropdown = ref(false)
+const roleDropdownRef = ref(null)
+const profileDropdownRef = ref(null)
+
+function handleOutsideClick(e) {
+  if (roleDropdownRef.value && !roleDropdownRef.value.contains(e.target)) {
+    showRoleDropdown.value = false
+  }
+  if (profileDropdownRef.value && !profileDropdownRef.value.contains(e.target)) {
+    showProfileDropdown.value = false
+  }
+}
+
+onMounted(() => {
+  fetchDashboard()
+  document.addEventListener('click', handleOutsideClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleOutsideClick)
+})
 
 async function handleSwitchRole(roleName) {
   showRoleDropdown.value = false
@@ -378,16 +394,18 @@ const totalPendingApprovalsForUser = computed(() => {
       <!-- ========================================================== -->
       <!-- CLEAN TOP NAVBAR (BWS CORPORATE BRANDING)                   -->
       <!-- ========================================================== -->
-      <header class="bg-white rounded-full px-5 py-2.5 flex items-center justify-between shadow-sm sticky top-2 z-40 border border-gray-100 relative overflow-hidden">
+      <header class="bg-white rounded-full px-5 py-2.5 flex items-center justify-between shadow-sm sticky top-2 z-40 border border-gray-100 relative">
         
         <!-- BWS Signature Corporate Wave Accent (Supergraphic Pemanis - Ultra-Ringan 0ms Lag) -->
-        <div class="absolute right-0 top-0 bottom-0 w-72 md:w-96 pointer-events-none overflow-hidden rounded-r-full select-none opacity-25">
-          <svg class="w-full h-full object-cover" viewBox="0 0 380 60" fill="none" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Curve 1: Sky Cyan / Sunrise Gradation tint -->
-            <path d="M 60 60 C 140 60 190 8 380 0 L 380 60 Z" fill="#00A0E9" />
-            <!-- Curve 2: BWS Main Royal Blue (Pantone 7462 PC #0067AC) -->
-            <path d="M 140 60 C 210 60 250 16 380 6 L 380 60 Z" fill="#0067AC" />
-          </svg>
+        <div class="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
+          <div class="absolute right-0 top-0 bottom-0 w-72 md:w-96 select-none opacity-25">
+            <svg class="w-full h-full object-cover" viewBox="0 0 380 60" fill="none" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Curve 1: Sky Cyan / Sunrise Gradation tint -->
+              <path d="M 60 60 C 140 60 190 8 380 0 L 380 60 Z" fill="#00A0E9" />
+              <!-- Curve 2: BWS Main Royal Blue (Pantone 7462 PC #0067AC) -->
+              <path d="M 140 60 C 210 60 250 16 380 6 L 380 60 Z" fill="#0067AC" />
+            </svg>
+          </div>
         </div>
 
         <!-- Left: Official BWS Logo + LIS Information -->
@@ -436,7 +454,7 @@ const totalPendingApprovalsForUser = computed(() => {
           </button>
 
           <!-- Role Switcher Pill -->
-          <div class="relative">
+          <div ref="roleDropdownRef" class="relative">
             <button
               @click="showRoleDropdown = !showRoleDropdown"
               class="flex items-center gap-1.5 bg-[#f4f6f5] hover:bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200/80 transition text-xs font-semibold text-gray-700"
@@ -482,7 +500,7 @@ const totalPendingApprovalsForUser = computed(() => {
           </button>
 
           <!-- Profile Pill -->
-          <div class="relative">
+          <div ref="profileDropdownRef" class="relative">
             <div
               @click="showProfileDropdown = !showProfileDropdown"
               class="flex items-center gap-2 pl-1 cursor-pointer group"
