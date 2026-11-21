@@ -28,13 +28,24 @@ const props = defineProps({
   trainingPrograms: {
     type: Array,
     default: () => []
+  },
+  viewMode: {
+    type: String,
+    default: 'list'
   }
 })
 
-const emit = defineEmits(['open-class-create'])
+const emit = defineEmits(['open-class-create', 'update:viewMode'])
 
 // Sub-View Modes: 'list' | 'create' | 'detail' | 'edit'
-const programViewMode = ref('list')
+const internalViewMode = ref('list')
+const programViewMode = computed({
+  get: () => props.viewMode !== undefined && props.viewMode !== null ? props.viewMode : internalViewMode.value,
+  set: (val) => {
+    internalViewMode.value = val
+    emit('update:viewMode', val)
+  }
+})
 const selectedProgramId = ref(null)
 
 const loading = ref(false)
@@ -211,32 +222,6 @@ async function executeDelete() {
         </div>
         <button @click="flashError = ''" class="hover:opacity-75">
           <X class="w-4 h-4" />
-        </button>
-      </div>
-
-      <!-- Header Section -->
-      <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0067AC] to-[#002855] text-white flex items-center justify-center shadow-xs">
-            <BookOpen class="w-5 h-5" />
-          </div>
-          <div>
-            <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">
-              Program Pelatihan
-            </h1>
-            <p class="text-xs text-gray-500 mt-0.5">
-              Program List & Rencana Anggaran Biaya (RAB) Diklat Bank Woori Saudara
-            </p>
-          </div>
-        </div>
-
-        <!-- Create Program [+] Button -->
-        <button
-          @click="openCreate"
-          class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm hover:shadow-md transition flex items-center gap-2 cursor-pointer shrink-0"
-        >
-          <Plus class="w-4 h-4" />
-          <span>Create Program [+]</span>
         </button>
       </div>
 

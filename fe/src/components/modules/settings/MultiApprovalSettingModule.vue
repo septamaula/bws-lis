@@ -150,67 +150,50 @@ onMounted(() => {
 <template>
   <div class="space-y-6">
 
-    <!-- Header Description Card -->
-    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-100 shadow-2xs space-y-3">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-[#EBF4FC] text-[#0067AC] flex items-center justify-center font-bold">
-            <Sliders class="w-5 h-5" />
-          </div>
-          <div>
-            <h2 class="text-base sm:text-lg font-extrabold text-[#002855]">
-              Pengaturan Alur Multi-Approval Modul
-            </h2>
-            <p class="text-xs text-gray-400">
-              Konfigurasi tahapan verifikasi, batas plafon nominal, SLA respon, dan peran approver per modul operasional.
-            </p>
-          </div>
+    <!-- Alert Banner -->
+    <div v-if="feedback.message" class="w-full">
+      <div
+        class="p-3.5 rounded-2xl text-xs flex items-center justify-between border"
+        :class="feedback.type === 'success' ? 'bg-[#EBF4FC] border-blue-200 text-[#0067AC]' : 'bg-rose-50 border-rose-200 text-rose-700'"
+      >
+        <div class="flex items-center gap-2">
+          <CheckCircle2 v-if="feedback.type === 'success'" class="w-4 h-4 shrink-0" />
+          <AlertCircle v-else class="w-4 h-4 shrink-0" />
+          <span class="font-semibold">{{ feedback.message }}</span>
         </div>
-
-        <button
-          @click="openCreateStepModal"
-          class="bg-[#0067AC] hover:bg-[#00528c] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
-        >
-          <Plus class="w-3.5 h-3.5" />
-          <span>+ Tambah Tahapan Approval</span>
-        </button>
-      </div>
-
-      <!-- Alert Banner -->
-      <div v-if="feedback.message" class="w-full pt-2">
-        <div
-          class="p-3.5 rounded-2xl text-xs flex items-center justify-between border"
-          :class="feedback.type === 'success' ? 'bg-[#EBF4FC] border-blue-200 text-[#0067AC]' : 'bg-rose-50 border-rose-200 text-rose-700'"
-        >
-          <div class="flex items-center gap-2">
-            <CheckCircle2 v-if="feedback.type === 'success'" class="w-4 h-4 shrink-0" />
-            <AlertCircle v-else class="w-4 h-4 shrink-0" />
-            <span class="font-semibold">{{ feedback.message }}</span>
-          </div>
-          <button @click="feedback.message = ''" class="font-bold">&times;</button>
-        </div>
+        <button @click="feedback.message = ''" class="font-bold">&times;</button>
       </div>
     </div>
 
-    <!-- Module Selector Tabs -->
-    <div class="flex items-center gap-2 overflow-x-auto pb-1">
-      <button
-        v-for="m in modules"
-        :key="m.module_code"
-        @click="selectedModuleCode = m.module_code"
-        class="px-4 py-2.5 rounded-2xl text-xs font-bold transition flex items-center gap-2 shrink-0 border"
-        :class="selectedModuleCode === m.module_code
-          ? 'bg-[#002855] text-white border-[#002855] shadow-sm'
-          : 'bg-white text-gray-700 border-gray-200 hover:border-[#0067AC] hover:text-[#0067AC]'"
-      >
-        <Layers class="w-3.5 h-3.5" />
-        <span>{{ m.module_name }}</span>
-        <span
-          class="text-[10px] px-1.5 py-0.2 rounded-full font-mono"
-          :class="selectedModuleCode === m.module_code ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'"
+    <!-- Module Selector Tabs & Actions -->
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div class="flex items-center gap-2 overflow-x-auto pb-1">
+        <button
+          v-for="m in modules"
+          :key="m.module_code"
+          @click="selectedModuleCode = m.module_code"
+          class="px-4 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 shrink-0 border cursor-pointer"
+          :class="selectedModuleCode === m.module_code
+            ? 'bg-[#002855] text-white border-[#002855] shadow-xs'
+            : 'bg-white text-gray-700 border-gray-200 hover:border-[#0067AC] hover:text-[#0067AC]'"
         >
-          {{ m.flow_steps?.length || 0 }} Step
-        </span>
+          <Layers class="w-3.5 h-3.5" />
+          <span>{{ m.module_name }}</span>
+          <span
+            class="text-[10px] px-1.5 py-0.2 rounded-full font-mono"
+            :class="selectedModuleCode === m.module_code ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'"
+          >
+            {{ m.flow_steps?.length || 0 }} Step
+          </span>
+        </button>
+      </div>
+
+      <button
+        @click="openCreateStepModal"
+        class="bg-[#0067AC] hover:bg-[#00528c] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 transition shadow-xs shrink-0 cursor-pointer"
+      >
+        <Plus class="w-3.5 h-3.5" />
+        <span>+ Tambah Tahapan Approval</span>
       </button>
     </div>
 

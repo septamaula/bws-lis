@@ -32,13 +32,24 @@ const props = defineProps({
   canCreateClass: {
     type: Boolean,
     default: true
+  },
+  viewMode: {
+    type: String,
+    default: 'list'
   }
 })
 
-const emit = defineEmits(['open-class-modal', 'approve-class'])
+const emit = defineEmits(['open-class-modal', 'approve-class', 'update:viewMode'])
 
 // Sub-View Modes: 'list' | 'create' | 'detail'
-const classViewMode = ref('list')
+const internalClassViewMode = ref('list')
+const classViewMode = computed({
+  get: () => props.viewMode !== undefined && props.viewMode !== null ? props.viewMode : internalClassViewMode.value,
+  set: (val) => {
+    internalClassViewMode.value = val
+    emit('update:viewMode', val)
+  }
+})
 const selectedClassId = ref(null)
 const preselectedProgramId = ref(null)
 
@@ -193,36 +204,9 @@ defineExpose({
         </div>
       </div>
 
-      <!-- Header & Filter Bar -->
-      <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-2xs space-y-4">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC] uppercase tracking-wider">
-                Class Implementation &amp; Execution
-              </span>
-              <span class="text-xs text-gray-400">• BWS Learning Integrated System</span>
-            </div>
-            <h2 class="text-lg font-extrabold text-[#002855] mt-1">
-              Jadwal Kelas Pelatihan, Modul Presensi &amp; Evaluasi Hasil Belajar
-            </h2>
-            <p class="text-xs text-gray-500 mt-0.5">
-              1 Program dapat memiliki beberapa batch kelas. Kelola sesi, absensi harian, dan nilai ujian di halaman detail batch.
-            </p>
-          </div>
-
-          <button
-            v-if="canCreateClass"
-            @click="openCreate()"
-            class="bg-[#0067AC] hover:bg-[#00528c] text-white px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-2 transition shadow-sm cursor-pointer shrink-0"
-          >
-            <Plus class="w-4 h-4" />
-            <span>+ Buka Batch Kelas Baru</span>
-          </button>
-        </div>
-
-        <!-- Filter Row -->
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-3 border-t border-gray-100 text-xs">
+      <!-- Filter Bar -->
+      <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
           <div class="sm:col-span-2">
             <select
               v-model="filterProgramId"

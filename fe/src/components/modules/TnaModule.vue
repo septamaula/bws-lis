@@ -146,48 +146,6 @@ async function executeDelete() {
       </button>
     </div>
 
-    <!-- Header Section with Title & Rule Notice -->
-    <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div>
-        <div class="flex items-center gap-2.5">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0067AC] to-[#002855] text-white flex items-center justify-center shadow-xs">
-            <ClipboardList class="w-5 h-5" />
-          </div>
-          <div>
-            <h1 class="text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
-              <span>Training Need Analysis (TNA)</span>
-              <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0067AC] border border-blue-100">
-                1 Dokumen per Tahun
-              </span>
-            </h1>
-            <p class="text-xs text-gray-500 mt-0.5">
-              Dashboard Tahunan Perencanaan & Realisasi Investasi Diklat Bank Woori Saudara (Enterprise Plan)
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Action Button: Create TNA [+] -->
-      <div class="flex items-center gap-2.5">
-        <button
-          @click="loadTnaList"
-          class="p-2.5 rounded-xl border border-gray-200 text-gray-600 hover:text-[#0067AC] hover:border-[#0067AC] bg-white transition shadow-2xs"
-          title="Muat Ulang Data"
-        >
-          <RotateCcw class="w-4 h-4" :class="{ 'animate-spin': loading }" />
-        </button>
-
-        <button
-          v-if="canManageTna"
-          @click="emit('create-tna')"
-          class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm hover:shadow-md transition flex items-center gap-2 cursor-pointer"
-        >
-          <Plus class="w-4 h-4" />
-          <span>Create TNA [+]</span>
-        </button>
-      </div>
-    </div>
-
     <!-- Summary KPI Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="bg-white rounded-2xl p-4 shadow-2xs border border-gray-100 flex items-center gap-3">

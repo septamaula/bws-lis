@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import apiClient from '@/api/client'
@@ -98,11 +98,26 @@ const activeTab = ref('dashboard')
 const rbacSubTab = ref('users')
 const activeFiscalYear = ref(2026)
 
-// TNA View State: 'list' | 'create' | 'detail' | 'edit'
+// TNA, Program, and Class View State: 'list' | 'create' | 'detail' | 'edit'
 const tnaViewMode = ref('list')
+const programViewMode = ref('list')
+const classViewMode = ref('list')
 const selectedTnaProposalId = ref(null)
 const programModuleRef = ref(null)
 const classModuleRef = ref(null)
+
+const isSubViewActive = computed(() => {
+  if (activeTab.value === 'tna' && tnaViewMode.value !== 'list') return true
+  if (activeTab.value === 'program' && programViewMode.value !== 'list') return true
+  if (activeTab.value === 'class' && classViewMode.value !== 'list') return true
+  return false
+})
+
+watch(activeTab, () => {
+  tnaViewMode.value = 'list'
+  programViewMode.value = 'list'
+  classViewMode.value = 'list'
+})
 
 function openTnaDetail(proposalId) {
   selectedTnaProposalId.value = proposalId
@@ -1062,7 +1077,7 @@ const totalPendingApprovalsForUser = computed(() => {
         <div class="flex-1 min-w-0 flex flex-col gap-5">
 
           <!-- Page Sub-header (Title + Contextual Quick Actions) -->
-          <div id="page-subheader" class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 px-1">
+          <div v-if="!isSubViewActive" id="page-subheader" class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 px-1">
             <div>
               <h1 id="page-title" class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900">
                 {{ currentTabTitle }}
@@ -1392,6 +1407,7 @@ const totalPendingApprovalsForUser = computed(() => {
             <ProgramModule
               v-else-if="activeTab === 'program'"
               ref="programModuleRef"
+              v-model:view-mode="programViewMode"
               :training-programs="trainingPrograms"
               @open-class-create="handleOpenClassCreateFromProgram"
             />
@@ -1399,6 +1415,7 @@ const totalPendingApprovalsForUser = computed(() => {
             <ClassModule
               v-else-if="activeTab === 'class'"
               ref="classModuleRef"
+              v-model:view-mode="classViewMode"
               :training-classes="trainingClasses"
               :is-checker-role="isCheckerRole"
               :can-create-class="canCreateClass"
