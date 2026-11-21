@@ -128,127 +128,145 @@ async function downloadDocument() {
       </template>
     </SubpageHeader>
 
-    <!-- MAIN VIEW CONTAINER: View TNA -->
-    <div v-if="proposal" class="bg-white rounded-3xl border border-gray-200/90 shadow-sm overflow-hidden">
+    <!-- 1. Top Information Card: Year, Document, Regulator Target -->
+    <div v-if="proposal" class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
       
-      <!-- Top Information Strip matching Excel Wireframe -->
-      <div class="p-6 bg-gray-50/70 border-b border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-4">
-        
-        <!-- Year -->
-        <div class="flex flex-col">
-          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Year</span>
-          <span class="text-xl font-extrabold text-gray-900 font-mono mt-0.5">{{ proposal.year }}</span>
+      <!-- Year -->
+      <div class="flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-2xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold shrink-0">
+          <Calendar class="w-5 h-5" />
         </div>
+        <div>
+          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Tahun Anggaran</span>
+          <span class="text-xl font-extrabold text-gray-900 font-mono">{{ proposal.year }}</span>
+        </div>
+      </div>
 
-        <!-- Document [View] -->
-        <div class="flex flex-col">
-          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Document</span>
-          <div class="mt-1 flex items-center gap-2">
+      <!-- Document [View] -->
+      <div class="flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-2xl bg-gray-50 text-gray-700 flex items-center justify-center font-bold shrink-0 border border-gray-100">
+          <FileText class="w-5 h-5 text-[#0067AC]" />
+        </div>
+        <div class="min-w-0">
+          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Dokumen Lampiran</span>
+          <div class="mt-0.5">
             <button
               v-if="proposal.attachment_name"
               @click="downloadDocument"
-              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 text-[#0067AC] hover:bg-[#0067AC] hover:text-white font-bold text-xs transition border border-blue-200 cursor-pointer shadow-2xs"
+              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 text-[#0067AC] hover:bg-[#0067AC] hover:text-white font-bold text-xs transition border border-blue-200 cursor-pointer shadow-2xs truncate max-w-full"
+              :title="proposal.attachment_name"
             >
-              <FileText class="w-3.5 h-3.5" />
               <span>[View] {{ proposal.attachment_name }}</span>
             </button>
             <span v-else class="text-xs text-gray-400 italic">Tidak ada dokumen dilampirkan</span>
           </div>
         </div>
-
-        <!-- Minimum Regulator Investment -->
-        <div class="flex flex-col">
-          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Regulator Statement (Min)</span>
-          <span class="text-base font-extrabold text-[#0067AC] font-mono mt-0.5">
-            {{ formatRupiah(proposal.minimum_regulator_investment || 1000000000) }}
-          </span>
-        </div>
-
       </div>
 
-      <!-- Standard Detail Table: View TNA (Category | Training Program | Investment (Projection) | Realization | Remaining Budget) -->
-      <DetailTable :columns="detailColumns">
-        <template #tbody>
-          <template v-for="(items, categoryName) in groupedItems" :key="categoryName">
-            <tr
-              v-for="(row, idx) in items"
-              :key="row.id || idx"
-              class="hover:bg-blue-50/30 transition"
-            >
-              <!-- Grouped Category: Rowspan or distinct category styling -->
-              <td
-                v-if="idx === 0"
-                :rowspan="items.length"
-                class="py-3 px-4 font-extrabold text-gray-900 border-r border-gray-100 align-top bg-gray-50/40"
-              >
-                <div class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-[#0067AC]"></span>
-                  <span>{{ categoryName }}</span>
-                </div>
-                <span class="text-[10px] text-gray-400 font-normal block ml-4 mt-0.5">
-                  {{ items.length }} Program Pelatihan
-                </span>
-              </td>
-
-              <!-- Training Program -->
-              <td class="py-3 px-4 font-semibold text-gray-800">
-                {{ row.recommended_program || row.sub_category_name || 'Program Pelatihan' }}
-              </td>
-
-              <!-- Investment (Projection) -->
-              <td class="py-3 px-4 text-right font-mono font-bold text-gray-900">
-                {{ formatRupiah(row.budget || row.estimated_cost) }}
-              </td>
-
-              <!-- Realization -->
-              <td class="py-3 px-4 text-right font-mono font-bold text-emerald-700">
-                {{ formatRupiah(row.realization_amount) }}
-              </td>
-
-              <!-- Remaining Budget -->
-              <td class="py-3 px-4 text-right font-mono font-bold text-amber-700">
-                {{ formatRupiah(row.remaining_budget !== undefined ? row.remaining_budget : Math.max(0, (row.budget || row.estimated_cost) - (row.realization_amount || 0))) }}
-              </td>
-            </tr>
-          </template>
-        </template>
-
-        <!-- Table Footer matching Excel Total Row -->
-        <template #tfoot>
-          <tr class="bg-[#f8faf9] border-t-2 border-gray-300 font-extrabold text-xs">
-            <td colspan="2" class="py-3.5 px-4 text-right text-gray-900 uppercase tracking-wider text-xs">
-              Total
-            </td>
-            <td class="py-3.5 px-4 text-right font-mono text-sm text-[#0067AC]">
-              {{ formatRupiah(totalInvestment) }}
-            </td>
-            <td class="py-3.5 px-4 text-right font-mono text-sm text-emerald-700">
-              {{ formatRupiah(totalRealization) }}
-            </td>
-            <td class="py-3.5 px-4 text-right font-mono text-sm text-amber-700">
-              {{ formatRupiah(totalRemaining) }}
-            </td>
-          </tr>
-        </template>
-      </DetailTable>
-
-      <!-- Bottom Card Information: Realization Progress Bar -->
-      <div class="p-6 bg-gray-50/50 border-t border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
-            <TrendingUp class="w-5 h-5" />
-          </div>
-          <div>
-            <p class="text-[11px] text-gray-400 font-semibold uppercase">Tingkat Capaian Realisasi Anggaran</p>
-            <div class="flex items-center gap-2 mt-0.5">
-              <span class="text-lg font-extrabold text-emerald-700 font-mono">{{ realizationPercentage }}%</span>
-              <span class="text-xs text-gray-500 font-medium">dari total proyeksi {{ formatRupiah(totalInvestment) }}</span>
-            </div>
-          </div>
+      <!-- Minimum Regulator Investment -->
+      <div class="flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold shrink-0">
+          <Wallet class="w-5 h-5" />
+        </div>
+        <div>
+          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Regulator Target (Min)</span>
+          <span class="text-base font-extrabold text-[#0067AC] font-mono">
+            {{ formatRupiah(proposal.minimum_regulator_investment || 1000000000) }}
+          </span>
         </div>
       </div>
 
     </div>
+
+    <!-- 2. Standard Detail Table: Breakdown Anggaran & Program -->
+    <DetailTable
+      v-if="proposal"
+      title="Rincian Alokasi Program & Realisasi Anggaran"
+      subtitle="Breakdown usulan pagu investasi dan realisasi per kategori kompetensi"
+      badge="Breakdown Tahunan"
+      :columns="detailColumns"
+    >
+      <template #tbody>
+        <template v-for="(items, categoryName) in groupedItems" :key="categoryName">
+          <tr
+            v-for="(row, idx) in items"
+            :key="row.id || idx"
+            class="hover:bg-blue-50/30 transition"
+          >
+            <!-- Grouped Category: Rowspan or distinct category styling -->
+            <td
+              v-if="idx === 0"
+              :rowspan="items.length"
+              class="py-3 px-4 font-extrabold text-gray-900 border-r border-gray-100 align-top bg-gray-50/40"
+            >
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-[#0067AC]"></span>
+                <span>{{ categoryName }}</span>
+              </div>
+              <span class="text-[10px] text-gray-400 font-normal block ml-4 mt-0.5">
+                {{ items.length }} Program Pelatihan
+              </span>
+            </td>
+
+            <!-- Training Program -->
+            <td class="py-3 px-4 font-semibold text-gray-800">
+              {{ row.recommended_program || row.sub_category_name || 'Program Pelatihan' }}
+            </td>
+
+            <!-- Investment (Projection) -->
+            <td class="py-3 px-4 text-right font-mono font-bold text-gray-900">
+              {{ formatRupiah(row.budget || row.estimated_cost) }}
+            </td>
+
+            <!-- Realization -->
+            <td class="py-3 px-4 text-right font-mono font-bold text-emerald-700">
+              {{ formatRupiah(row.realization_amount) }}
+            </td>
+
+            <!-- Remaining Budget -->
+            <td class="py-3 px-4 text-right font-mono font-bold text-amber-700">
+              {{ formatRupiah(row.remaining_budget !== undefined ? row.remaining_budget : Math.max(0, (row.budget || row.estimated_cost) - (row.realization_amount || 0))) }}
+            </td>
+          </tr>
+        </template>
+      </template>
+
+      <!-- Table Footer matching Excel Total Row -->
+      <template #tfoot>
+        <tr class="bg-[#f8faf9] border-t-2 border-gray-300 font-extrabold text-xs">
+          <td colspan="2" class="py-3.5 px-4 text-right text-gray-900 uppercase tracking-wider text-xs">
+            Total
+          </td>
+          <td class="py-3.5 px-4 text-right font-mono text-sm text-[#0067AC]">
+            {{ formatRupiah(totalInvestment) }}
+          </td>
+          <td class="py-3.5 px-4 text-right font-mono text-sm text-emerald-700">
+            {{ formatRupiah(totalRealization) }}
+          </td>
+          <td class="py-3.5 px-4 text-right font-mono text-sm text-amber-700">
+            {{ formatRupiah(totalRemaining) }}
+          </td>
+        </tr>
+      </template>
+
+      <!-- Bottom Card Information: Realization Progress Bar -->
+      <template #bottom>
+        <div class="p-6 flex items-center justify-between">
+          <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold shrink-0">
+              <TrendingUp class="w-5 h-5" />
+            </div>
+            <div>
+              <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Tingkat Capaian Realisasi Anggaran</p>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-lg font-extrabold text-emerald-700 font-mono">{{ realizationPercentage }}%</span>
+                <span class="text-xs text-gray-500 font-medium">dari total proyeksi {{ formatRupiah(totalInvestment) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </DetailTable>
 
   </div>
 </template>

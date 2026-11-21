@@ -44,6 +44,11 @@ const props = defineProps({
   emptyText: {
     type: String,
     default: 'Tidak ada data untuk ditampilkan'
+  },
+  // When embedded inside an already padded card or container
+  embedded: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -51,7 +56,10 @@ defineEmits(['row-click'])
 </script>
 
 <template>
-  <div class="bg-white rounded-2xl border border-gray-200/90 shadow-2xs overflow-hidden flex flex-col w-full">
+  <div
+    class="overflow-hidden flex flex-col w-full"
+    :class="embedded ? 'rounded-2xl border border-gray-200 bg-white' : 'bg-white rounded-3xl border border-gray-100 shadow-sm'"
+  >
     
     <!-- Optional Header / Title Bar -->
     <div
