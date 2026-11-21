@@ -77,6 +77,10 @@ const props = defineProps({
   showNumbering: {
     type: Boolean,
     default: true
+  },
+  footerNote: {
+    type: String,
+    default: ''
   }
 })
 
@@ -595,6 +599,13 @@ function clearDateRange() {
           </tbody>
         </table>
       </div>
+    </div>
+
+    <!-- Optional Footer Note / Callout -->
+    <div v-if="footerNote || $slots.note" class="bg-gray-50/70 p-3 rounded-2xl border border-gray-100 text-xs text-gray-500 flex items-center gap-2">
+      <slot name="note">
+        <span>{{ footerNote }}</span>
+      </slot>
     </div>
 
     <!-- Pagination & Summary Footer -->

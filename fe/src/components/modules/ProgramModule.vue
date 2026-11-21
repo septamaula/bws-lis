@@ -124,6 +124,30 @@ const availableYears = computed(() => {
   return Array.from(years).sort((a, b) => b - a)
 })
 
+const programColumns = [
+  { key: 'program_code', label: 'Program ID', sortable: true, align: 'center', width: '120px' },
+  { key: 'title', label: 'Program Pelatihan & Kategori', sortable: true },
+  { key: 'start_date', label: 'Jadwal Diklat', sortable: true, width: '160px', align: 'center' },
+  { key: 'location', label: 'Lokasi / Ruang', sortable: true, width: '140px' },
+  { key: 'facilitator', label: 'Fasilitator', sortable: true, width: '150px' },
+  {
+    key: 'total_budget',
+    label: 'Pagu Anggaran',
+    sortable: true,
+    align: 'right',
+    width: '130px',
+    format: val => (val > 0 ? formatRupiah(val) : '-')
+  },
+  {
+    key: 'realization_amount',
+    label: 'Realisasi',
+    sortable: true,
+    align: 'right',
+    width: '130px',
+    format: val => (val > 0 ? formatRupiah(val) : '-')
+  }
+]
+
 function openCreate() {
   selectedProgramId.value = null
   programViewMode.value = 'create'
@@ -225,214 +249,130 @@ async function executeDelete() {
         </button>
       </div>
 
-      <!-- MAIN TABLE CONTAINER: Program List -->
-      <div class="bg-white rounded-2xl border border-gray-200/90 shadow-sm overflow-hidden">
-        
-        <!-- Table Header Bar -->
-        <div class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white px-5 py-3.5 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <BookOpen class="w-4 h-4 text-white/80" />
-            <h2 class="text-sm font-bold tracking-wide uppercase">Program List</h2>
+      <!-- Standard BWS LIS DataTable for Training Programs -->
+      <DataTable
+        :data="programs"
+        :columns="programColumns"
+        date-key="start_date"
+        export-filename="program_kerja_diklat_bws_2026"
+        :default-per-page="10"
+      >
+        <!-- Custom Filters: Year & Process -->
+        <template #filters>
+          <!-- 1. Year Filter (20XX) -->
+          <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-gray-200 text-xs shadow-2xs">
+            <Calendar class="w-3.5 h-3.5 text-[#0067AC]" />
+            <select
+              v-model="selectedYear"
+              @change="fetchPrograms"
+              class="bg-transparent text-[11px] font-bold text-gray-800 focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">Semua Tahun</option>
+              <option v-for="yr in availableYears" :key="yr" :value="yr">
+                Tahun {{ yr }}
+              </option>
+            </select>
           </div>
-          <span class="text-xs text-white/80 font-medium">
-            {{ programs.length }} Program Terdaftar
+
+          <!-- 2. Process / Status Filter -->
+          <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-gray-200 text-xs shadow-2xs">
+            <span class="text-[10px] font-bold text-gray-400">Status:</span>
+            <select
+              v-model="selectedProcess"
+              @change="fetchPrograms"
+              class="bg-transparent text-[11px] font-bold text-gray-800 focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">Semua Status</option>
+              <option value="APPROVED">Disetujui Final</option>
+              <option value="SUBMITTED">Menunggu Review</option>
+              <option value="DRAFT">Draft</option>
+            </select>
+          </div>
+        </template>
+
+        <!-- Custom Cell: Program ID -->
+        <template #cell-program_code="{ row }">
+          <span class="font-bold font-mono text-[#0067AC]">{{ row.program_code }}</span>
+        </template>
+
+        <!-- Custom Cell: Title & Category -->
+        <template #cell-title="{ row }">
+          <div class="flex flex-col cursor-pointer" @click="openDetail(row.id)">
+            <span class="font-bold text-gray-900 hover:text-[#0067AC] transition leading-tight">
+              {{ row.title }}
+            </span>
+            <span class="text-[10px] text-gray-400 mt-0.5">
+              {{ row.bi_category || row.category }} • {{ row.program_type || 'In-House' }}
+            </span>
+          </div>
+        </template>
+
+        <!-- Custom Cell: Schedule -->
+        <template #cell-start_date="{ row }">
+          <div class="flex flex-col items-center">
+            <span class="font-mono text-gray-800 font-semibold text-xs">{{ formatDateDisplay(row.start_date) }}</span>
+            <span class="text-[10px] text-gray-400 font-mono">s/d {{ formatDateDisplay(row.end_date) }}</span>
+          </div>
+        </template>
+
+        <!-- Custom Cell: Location -->
+        <template #cell-location="{ row }">
+          <span class="inline-flex items-center gap-1 font-medium text-gray-700">
+            <MapPin class="w-3.5 h-3.5 text-[#0067AC] shrink-0" />
+            <span class="truncate max-w-[130px]">{{ row.location || 'BWS LC' }}</span>
           </span>
-        </div>
+        </template>
 
-        <!-- Filter Bar matching Excel (20XX, Process, Search) -->
-        <div class="p-4 bg-gray-50/80 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
-          
-          <div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
-            <!-- 1. Year Filter (20XX) -->
-            <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-gray-300 shadow-2xs">
-              <Calendar class="w-3.5 h-3.5 text-[#0067AC]" />
-              <select
-                v-model="selectedYear"
-                @change="fetchPrograms"
-                class="bg-transparent text-xs font-bold text-gray-800 focus:outline-none cursor-pointer"
-              >
-                <option value="ALL">Semua Tahun</option>
-                <option v-for="yr in availableYears" :key="yr" :value="yr">
-                  Tahun {{ yr }}
-                </option>
-              </select>
-            </div>
+        <!-- Custom Cell: Facilitator -->
+        <template #cell-facilitator="{ row }">
+          <span class="text-gray-700 font-medium">{{ row.facilitator || '-' }}</span>
+        </template>
 
-            <!-- 2. Process / Status Filter -->
-            <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-gray-300 shadow-2xs">
-              <span class="text-[11px] font-bold text-gray-400">Process:</span>
-              <select
-                v-model="selectedProcess"
-                @change="fetchPrograms"
-                class="bg-transparent text-xs font-bold text-gray-800 focus:outline-none cursor-pointer"
-              >
-                <option value="ALL">Semua Status</option>
-                <option value="APPROVED">Disetujui Final</option>
-                <option value="SUBMITTED">Menunggu Review</option>
-                <option value="DRAFT">Draft</option>
-              </select>
-            </div>
+        <!-- Custom Cell: Budget -->
+        <template #cell-total_budget="{ row }">
+          <span class="font-mono font-bold text-gray-900">{{ row.total_budget > 0 ? formatRupiah(row.total_budget) : '-' }}</span>
+        </template>
 
-            <!-- 3. Search Box -->
-            <div class="relative flex-1 min-w-[200px] max-w-sm">
-              <Search class="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                v-model="searchQuery"
-                @input="fetchPrograms"
-                type="text"
-                placeholder="Cari program, ID, fasilitator, ruang..."
-                class="w-full bg-white text-xs text-gray-800 rounded-xl pl-8 pr-8 py-2 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
-              />
-              <button
-                v-if="searchQuery"
-                @click="searchQuery = ''; fetchPrograms()"
-                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <X class="w-3.5 h-3.5" />
-              </button>
-            </div>
+        <!-- Custom Cell: Realization -->
+        <template #cell-realization_amount="{ row }">
+          <span class="font-mono font-bold text-emerald-700">{{ row.realization_amount > 0 ? formatRupiah(row.realization_amount) : '-' }}</span>
+        </template>
+
+        <!-- Action Column -->
+        <template #action="{ row }">
+          <div class="inline-flex items-center gap-1 justify-center bg-gray-50 p-1 rounded-xl border border-gray-200">
+            <!-- View -->
+            <button
+              @click="openDetail(row.id)"
+              class="px-2.5 py-1 rounded-lg text-xs font-bold text-[#0067AC] hover:bg-[#0067AC] hover:text-white transition flex items-center gap-1 cursor-pointer"
+              title="View Program"
+            >
+              <Eye class="w-3.5 h-3.5" />
+              <span>View</span>
+            </button>
+            <span class="text-gray-300">|</span>
+            <!-- Edit -->
+            <button
+              @click="openEdit(row.id)"
+              class="px-2.5 py-1 rounded-lg text-xs font-bold text-amber-700 hover:bg-amber-600 hover:text-white transition flex items-center gap-1 cursor-pointer"
+              title="Edit Program"
+            >
+              <Edit3 class="w-3.5 h-3.5" />
+              <span>Edit</span>
+            </button>
+            <span class="text-gray-300">|</span>
+            <!-- Delete -->
+            <button
+              @click="confirmDelete(row)"
+              class="px-2.5 py-1 rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-600 hover:text-white transition flex items-center gap-1 cursor-pointer"
+              title="Delete Program"
+            >
+              <Trash2 class="w-3.5 h-3.5" />
+              <span>Delete</span>
+            </button>
           </div>
-
-          <button
-            @click="fetchPrograms"
-            class="p-2 rounded-xl bg-white border border-gray-300 text-gray-600 hover:text-[#0067AC] hover:border-[#0067AC] transition shadow-2xs"
-            title="Refresh Table"
-          >
-            <RotateCcw class="w-4 h-4" :class="{ 'animate-spin': loading }" />
-          </button>
-        </div>
-
-        <!-- Table Content (Columns matching Excel Wireframe) -->
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white font-bold uppercase tracking-wider text-[11px]">
-                <th class="py-3 px-3 w-28 text-center">Program ID</th>
-                <th class="py-3 px-4">Program</th>
-                <th class="py-3 px-3 w-28 text-center">Start Date</th>
-                <th class="py-3 px-3 w-28 text-center">End Date</th>
-                <th class="py-3 px-3 w-28">Location</th>
-                <th class="py-3 px-3 w-28">Facilitator</th>
-                <th class="py-3 px-4 text-right w-36">Budget</th>
-                <th class="py-3 px-4 text-right w-36">Realization</th>
-                <th class="py-3 px-3 text-center w-48">Action</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              <tr
-                v-for="row in programs"
-                :key="row.id"
-                class="hover:bg-blue-50/40 transition group"
-              >
-                <!-- 1. Program ID -->
-                <td class="py-3.5 px-3 text-center font-bold font-mono text-[#0067AC]">
-                  {{ row.program_code }}
-                </td>
-
-                <!-- 2. Program Title & Category -->
-                <td class="py-3.5 px-4 font-semibold text-gray-900">
-                  <div class="flex flex-col">
-                    <span class="font-bold text-gray-900 hover:text-[#0067AC] cursor-pointer" @click="openDetail(row.id)">
-                      {{ row.title }}
-                    </span>
-                    <span class="text-[10px] text-gray-400 mt-0.5">
-                      {{ row.bi_category || row.category }} • {{ row.program_type || 'In-House' }}
-                    </span>
-                  </div>
-                </td>
-
-                <!-- 3. Start Date -->
-                <td class="py-3.5 px-3 text-center font-mono text-gray-700 whitespace-nowrap">
-                  {{ formatDateDisplay(row.start_date) }}
-                </td>
-
-                <!-- 4. End Date -->
-                <td class="py-3.5 px-3 text-center font-mono text-gray-700 whitespace-nowrap">
-                  {{ formatDateDisplay(row.end_date) }}
-                </td>
-
-                <!-- 5. Location -->
-                <td class="py-3.5 px-3 text-gray-700">
-                  <span class="inline-flex items-center gap-1 font-medium">
-                    <MapPin class="w-3 h-3 text-[#0067AC] shrink-0" />
-                    <span class="truncate max-w-[120px]">{{ row.location || 'BWS LC' }}</span>
-                  </span>
-                </td>
-
-                <!-- 6. Facilitator -->
-                <td class="py-3.5 px-3 text-gray-700 font-medium">
-                  {{ row.facilitator || '-' }}
-                </td>
-
-                <!-- 7. Budget -->
-                <td class="py-3.5 px-4 text-right font-mono font-bold text-gray-900">
-                  {{ row.total_budget > 0 ? formatRupiah(row.total_budget) : '-' }}
-                </td>
-
-                <!-- 8. Realization -->
-                <td class="py-3.5 px-4 text-right font-mono font-bold text-emerald-700">
-                  {{ row.realization_amount > 0 ? formatRupiah(row.realization_amount) : '-' }}
-                </td>
-
-                <!-- 9. Action: View / Edit / Delete (Matching Excel Wireframe) -->
-                <td class="py-3.5 px-3 text-center">
-                  <div class="inline-flex items-center gap-1 justify-center bg-gray-50 p-1 rounded-xl border border-gray-200">
-                    <!-- View -->
-                    <button
-                      @click="openDetail(row.id)"
-                      class="px-2.5 py-1 rounded-lg text-xs font-bold text-[#0067AC] hover:bg-[#0067AC] hover:text-white transition flex items-center gap-1 cursor-pointer"
-                      title="View Program"
-                    >
-                      <Eye class="w-3.5 h-3.5" />
-                      <span>View</span>
-                    </button>
-
-                    <span class="text-gray-300">|</span>
-
-                    <!-- Edit -->
-                    <button
-                      @click="openEdit(row.id)"
-                      class="px-2.5 py-1 rounded-lg text-xs font-bold text-amber-700 hover:bg-amber-600 hover:text-white transition flex items-center gap-1 cursor-pointer"
-                      title="Edit Program"
-                    >
-                      <Edit3 class="w-3.5 h-3.5" />
-                      <span>Edit</span>
-                    </button>
-
-                    <span class="text-gray-300">|</span>
-
-                    <!-- Delete -->
-                    <button
-                      @click="confirmDelete(row)"
-                      class="px-2.5 py-1 rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-600 hover:text-white transition flex items-center gap-1 cursor-pointer"
-                      title="Delete Program"
-                    >
-                      <Trash2 class="w-3.5 h-3.5" />
-                      <span>Delete</span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-
-              <tr v-if="programs.length === 0">
-                <td colspan="9" class="py-12 text-center text-gray-400">
-                  <BookOpen class="w-12 h-12 mx-auto text-gray-300 mb-2 stroke-1" />
-                  <p class="font-bold text-sm text-gray-700">Tidak ada program pelatihan yang cocok</p>
-                  <p class="text-xs text-gray-400 mt-1">Gunakan tombol "+ Buat Program Baru" di kanan atas untuk menambahkan program kerja baru.</p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Table Footer Info -->
-        <div class="px-6 py-3.5 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between">
-          <p class="text-xs text-gray-500">
-            Total <span class="font-semibold text-gray-700">{{ programs.length }}</span> program kerja dalam rencana pembelajaran BWS LIS.
-          </p>
-        </div>
-
-      </div>
+        </template>
+      </DataTable>
 
     </div>
 
