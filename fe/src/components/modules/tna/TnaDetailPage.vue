@@ -15,7 +15,8 @@ import {
   Clock,
   ShieldCheck,
   Building2,
-  Printer
+  Printer,
+  Loader2
 } from 'lucide-vue-next'
 import apiClient from '@/api/client'
 
@@ -110,9 +111,33 @@ const detailColumns = [
   { key: 'remaining_budget', label: 'Remaining Budget', align: 'right', width: '160px' }
 ]
 
+const downloadingDoc = ref(false)
+
 async function downloadDocument() {
   if (!proposal.value) return
-  window.open(`${apiClient.defaults.baseURL || '/api'}/tna/${proposal.value.id}/attachment`, '_blank')
+  downloadingDoc.value = true
+  try {
+    const response = await apiClient.get(`/tna/${proposal.value.id}/attachment`, {
+      responseType: 'blob'
+    })
+
+    if (response.data.type === 'application/json') {
+      const text = await response.data.text()
+      const json = JSON.parse(text)
+      alert(json.message || 'Dokumen belum tersedia secara fisik.')
+      return
+    }
+
+    const blob = new Blob([response.data], { type: 'application/pdf' })
+    const url = window.URL.createObjectURL(blob)
+    window.open(url, '_blank')
+  } catch (err) {
+    console.error('Failed to view attachment:', err)
+    // Fallback: direct window.open
+    window.open(`${apiClient.defaults.baseURL || '/api'}/tna/${proposal.value.id}/attachment`, '_blank')
+  } finally {
+    downloadingDoc.value = false
+  }
 }
 </script>
 
@@ -163,10 +188,13 @@ async function downloadDocument() {
           <div class="mt-0.5">
             <button
               v-if="proposal.attachment_name"
+              :disabled="downloadingDoc"
               @click="downloadDocument"
-              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 text-[#0067AC] hover:bg-[#0067AC] hover:text-white font-bold text-xs transition border border-blue-200 cursor-pointer shadow-2xs truncate max-w-full"
+              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 text-[#0067AC] hover:bg-[#0067AC] hover:text-white font-bold text-xs transition border border-blue-200 cursor-pointer shadow-2xs truncate max-w-full disabled:opacity-50"
               :title="proposal.attachment_name"
             >
+              <Loader2 v-if="downloadingDoc" class="w-3.5 h-3.5 animate-spin" />
+              <FileText v-else class="w-3.5 h-3.5" />
               <span>[View] {{ proposal.attachment_name }}</span>
             </button>
             <span v-else class="text-xs text-gray-400 italic">Tidak ada dokumen dilampirkan</span>
