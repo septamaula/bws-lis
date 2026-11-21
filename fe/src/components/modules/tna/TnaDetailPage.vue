@@ -92,6 +92,14 @@ const realizationPercentage = computed(() => {
   return Math.round((totalRealization.value / totalInvestment.value) * 100)
 })
 
+const detailColumns = [
+  { key: 'category', label: 'Category', width: '25%' },
+  { key: 'recommended_program', label: 'Training Program' },
+  { key: 'budget', label: 'Investment (Projection)', align: 'right', width: '180px' },
+  { key: 'realization_amount', label: 'Realization', align: 'right', width: '160px' },
+  { key: 'remaining_budget', label: 'Remaining Budget', align: 'right', width: '160px' }
+]
+
 async function downloadDocument() {
   if (!proposal.value) return
   window.open(`${apiClient.defaults.baseURL || '/api'}/tna/${proposal.value.id}/attachment`, '_blank')
@@ -122,18 +130,23 @@ async function downloadDocument() {
       </div>
     </div>
 
-    <!-- MAIN VIEW CONTAINER: View TNA (Matching Excel Mockup) -->
+    <!-- MAIN VIEW CONTAINER: View TNA -->
     <div v-if="proposal" class="bg-white rounded-3xl border border-gray-200/90 shadow-sm overflow-hidden">
       
-      <!-- Card Header Bar -->
-      <div class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <Calendar class="w-5 h-5 text-white/90" />
-          <h2 class="text-base font-extrabold tracking-wide uppercase">
-            View TNA - Tahun {{ proposal.year }}
-          </h2>
+      <!-- Card Header Bar (Standard BWS Header) -->
+      <div class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
+            <Calendar class="w-5 h-5" />
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-gray-900">
+              Rincian Usulan TNA - Tahun Anggaran {{ proposal.year }}
+            </h2>
+            <p class="text-xs text-gray-400 mt-0.5">Alokasi pagu investasi diklat dan realisasi per kategori kompetensi</p>
+          </div>
         </div>
-        <span class="text-xs bg-white/20 text-white font-bold px-3 py-1 rounded-full">
+        <span class="text-xs bg-blue-50 text-[#0067AC] border border-blue-200 font-mono font-bold px-3 py-1 rounded-full">
           {{ proposal.proposal_code }}
         </span>
       </div>
@@ -173,82 +186,71 @@ async function downloadDocument() {
 
       </div>
 
-      <!-- TABLE: View TNA (Category | Training Program | Investment (Projection) | Realization | Remaining Budget) -->
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs border-collapse">
-          <thead>
-            <tr class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white font-bold text-[11px] uppercase tracking-wider">
-              <th class="py-3 px-4 w-1/4">Category</th>
-              <th class="py-3 px-4">Training Program</th>
-              <th class="py-3 px-4 text-right w-44">Investment (Projection)</th>
-              <th class="py-3 px-4 text-right w-40">Realization</th>
-              <th class="py-3 px-4 text-right w-40">Remaining Budget</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            <template v-for="(items, categoryName) in groupedItems" :key="categoryName">
-              <tr
-                v-for="(row, idx) in items"
-                :key="row.id || idx"
-                class="hover:bg-blue-50/30 transition"
+      <!-- Standard Detail Table: View TNA (Category | Training Program | Investment (Projection) | Realization | Remaining Budget) -->
+      <DetailTable :columns="detailColumns">
+        <template #tbody>
+          <template v-for="(items, categoryName) in groupedItems" :key="categoryName">
+            <tr
+              v-for="(row, idx) in items"
+              :key="row.id || idx"
+              class="hover:bg-blue-50/30 transition"
+            >
+              <!-- Grouped Category: Rowspan or distinct category styling -->
+              <td
+                v-if="idx === 0"
+                :rowspan="items.length"
+                class="py-3 px-4 font-extrabold text-gray-900 border-r border-gray-100 align-top bg-gray-50/40"
               >
-                <!-- Grouped Category: Rowspan or distinct category styling -->
-                <td
-                  v-if="idx === 0"
-                  :rowspan="items.length"
-                  class="py-3 px-4 font-extrabold text-gray-900 border-r border-gray-100 align-top bg-gray-50/40"
-                >
-                  <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-[#0067AC]"></span>
-                    <span>{{ categoryName }}</span>
-                  </div>
-                  <span class="text-[10px] text-gray-400 font-normal block ml-4 mt-0.5">
-                    {{ items.length }} Program Pelatihan
-                  </span>
-                </td>
-
-                <!-- Training Program -->
-                <td class="py-3 px-4 font-semibold text-gray-800">
-                  {{ row.recommended_program || row.sub_category_name || 'Program Pelatihan' }}
-                </td>
-
-                <!-- Investment (Projection) -->
-                <td class="py-3 px-4 text-right font-mono font-bold text-gray-900">
-                  {{ formatRupiah(row.budget || row.estimated_cost) }}
-                </td>
-
-                <!-- Realization -->
-                <td class="py-3 px-4 text-right font-mono font-bold text-emerald-700">
-                  {{ formatRupiah(row.realization_amount) }}
-                </td>
-
-                <!-- Remaining Budget -->
-                <td class="py-3 px-4 text-right font-mono font-bold text-amber-700">
-                  {{ formatRupiah(row.remaining_budget !== undefined ? row.remaining_budget : Math.max(0, (row.budget || row.estimated_cost) - (row.realization_amount || 0))) }}
-                </td>
-              </tr>
-            </template>
-          </tbody>
-
-          <!-- Table Footer matching Excel Total Row -->
-          <tfoot>
-            <tr class="bg-gray-100 border-t-2 border-gray-300 font-extrabold text-xs">
-              <td colspan="2" class="py-4 px-4 text-right text-gray-900 uppercase tracking-wider text-sm">
-                Total
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-[#0067AC]"></span>
+                  <span>{{ categoryName }}</span>
+                </div>
+                <span class="text-[10px] text-gray-400 font-normal block ml-4 mt-0.5">
+                  {{ items.length }} Program Pelatihan
+                </span>
               </td>
-              <td class="py-4 px-4 text-right font-mono text-sm text-[#0067AC]">
-                {{ formatRupiah(totalInvestment) }}
+
+              <!-- Training Program -->
+              <td class="py-3 px-4 font-semibold text-gray-800">
+                {{ row.recommended_program || row.sub_category_name || 'Program Pelatihan' }}
               </td>
-              <td class="py-4 px-4 text-right font-mono text-sm text-emerald-700">
-                {{ formatRupiah(totalRealization) }}
+
+              <!-- Investment (Projection) -->
+              <td class="py-3 px-4 text-right font-mono font-bold text-gray-900">
+                {{ formatRupiah(row.budget || row.estimated_cost) }}
               </td>
-              <td class="py-4 px-4 text-right font-mono text-sm text-amber-700">
-                {{ formatRupiah(totalRemaining) }}
+
+              <!-- Realization -->
+              <td class="py-3 px-4 text-right font-mono font-bold text-emerald-700">
+                {{ formatRupiah(row.realization_amount) }}
+              </td>
+
+              <!-- Remaining Budget -->
+              <td class="py-3 px-4 text-right font-mono font-bold text-amber-700">
+                {{ formatRupiah(row.remaining_budget !== undefined ? row.remaining_budget : Math.max(0, (row.budget || row.estimated_cost) - (row.realization_amount || 0))) }}
               </td>
             </tr>
-          </tfoot>
-        </table>
-      </div>
+          </template>
+        </template>
+
+        <!-- Table Footer matching Excel Total Row -->
+        <template #tfoot>
+          <tr class="bg-[#f8faf9] border-t-2 border-gray-300 font-extrabold text-xs">
+            <td colspan="2" class="py-3.5 px-4 text-right text-gray-900 uppercase tracking-wider text-xs">
+              Total
+            </td>
+            <td class="py-3.5 px-4 text-right font-mono text-sm text-[#0067AC]">
+              {{ formatRupiah(totalInvestment) }}
+            </td>
+            <td class="py-3.5 px-4 text-right font-mono text-sm text-emerald-700">
+              {{ formatRupiah(totalRealization) }}
+            </td>
+            <td class="py-3.5 px-4 text-right font-mono text-sm text-amber-700">
+              {{ formatRupiah(totalRemaining) }}
+            </td>
+          </tr>
+        </template>
+      </DetailTable>
 
       <!-- Bottom Card Information: Realization Progress Bar -->
       <div class="p-6 bg-gray-50/50 border-t border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">

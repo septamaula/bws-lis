@@ -118,6 +118,13 @@ function removeFile() {
   if (fileInputRef.value) fileInputRef.value.value = ''
 }
 
+const itemColumns = [
+  { key: 'category_name', label: 'Category', width: '32%' },
+  { key: 'recommended_program', label: 'Training Program' },
+  { key: 'budget', label: 'Investment (Projection)', align: 'right', width: '220px' },
+  { key: 'action', label: 'Aksi', align: 'center', width: '60px' }
+]
+
 function addItemRow() {
   form.value.items.push({
     category_name: 'Operasional & Layanan Perbankan',
@@ -327,16 +334,21 @@ async function submitForm() {
     <!-- MAIN FORM CONTAINER: Create/Edit TNA (Matching Excel Mockup) -->
     <div class="bg-white rounded-3xl border border-gray-200/90 shadow-sm overflow-hidden">
       
-      <!-- Card Header Bar -->
-      <div class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <Calendar class="w-5 h-5 text-white/90" />
-          <h2 class="text-base font-extrabold tracking-wide">
-            {{ isEditMode ? `Edit TNA - Tahun Anggaran ${form.year}` : 'Create/Edit TNA' }}
-          </h2>
+      <!-- Card Header Bar (Standard BWS Header) -->
+      <div class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
+            <Calendar class="w-5 h-5" />
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-gray-900">
+              {{ isEditMode ? `Edit Usulan TNA - Tahun Anggaran ${form.year}` : 'Form Usulan TNA Baru (Rencana Tahunan)' }}
+            </h2>
+            <p class="text-xs text-gray-400 mt-0.5">Perencanaan kebutuhan diklat dan alokasi pagu investasi bank-wide</p>
+          </div>
         </div>
-        <span class="text-xs bg-white/20 text-white font-bold px-3 py-1 rounded-full">
-          1 Tahun = 1 TNA Bank-Wide
+        <span class="text-xs bg-blue-50 text-[#0067AC] border border-blue-200 font-bold px-3 py-1 rounded-full">
+          1 Dokumen per Tahun
         </span>
       </div>
 
@@ -472,94 +484,85 @@ async function submitForm() {
             </div>
           </div>
 
-          <!-- Table Container -->
-          <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-2xs">
-            <table class="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white font-bold text-[11px] uppercase tracking-wider">
-                  <th class="py-3 px-3 w-12 text-center">No</th>
-                  <th class="py-3 px-4 w-1/3">Category</th>
-                  <th class="py-3 px-4">Training Program</th>
-                  <th class="py-3 px-4 w-48 text-right">Investment (Projection)</th>
-                  <th class="py-3 px-3 w-12 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-100">
-                <tr
-                  v-for="(item, idx) in form.items"
-                  :key="idx"
-                  class="hover:bg-blue-50/30 transition"
-                >
-                  <!-- No -->
-                  <td class="py-2.5 px-3 text-center text-gray-400 font-bold font-mono">
-                    {{ idx + 1 }}
-                  </td>
+          <!-- Standard Detail Table for Form Items -->
+          <DetailTable :columns="itemColumns" show-numbering>
+            <template #tbody>
+              <tr
+                v-for="(item, idx) in form.items"
+                :key="idx"
+                class="hover:bg-blue-50/30 transition"
+              >
+                <!-- No -->
+                <td class="py-2.5 px-3 text-center text-gray-400 font-bold font-mono text-[11px]">
+                  {{ idx + 1 }}
+                </td>
 
-                  <!-- Category -->
-                  <td class="py-2.5 px-3">
+                <!-- Category -->
+                <td class="py-2.5 px-3">
+                  <input
+                    v-model="item.category_name"
+                    type="text"
+                    placeholder="Category 1 / Operasional"
+                    class="w-full bg-white text-xs font-semibold text-gray-800 rounded-lg px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+                  />
+                </td>
+
+                <!-- Training Program -->
+                <td class="py-2.5 px-3">
+                  <input
+                    v-model="item.recommended_program"
+                    type="text"
+                    placeholder="Training Program Name"
+                    class="w-full bg-white text-xs text-gray-800 rounded-lg px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+                  />
+                </td>
+
+                <!-- Investment (Projection) -->
+                <td class="py-2.5 px-3 text-right">
+                  <div class="relative">
+                    <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
                     <input
-                      v-model="item.category_name"
-                      type="text"
-                      placeholder="Category 1 / Operasional"
-                      class="w-full bg-white text-xs font-semibold text-gray-800 rounded-lg px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+                      v-model.number="item.budget"
+                      type="number"
+                      step="1000000"
+                      class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-lg pl-8 pr-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition font-mono shadow-2xs"
                     />
-                  </td>
+                  </div>
+                </td>
 
-                  <!-- Training Program -->
-                  <td class="py-2.5 px-3">
-                    <input
-                      v-model="item.recommended_program"
-                      type="text"
-                      placeholder="Training Program Name"
-                      class="w-full bg-white text-xs text-gray-800 rounded-lg px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
-                    />
-                  </td>
+                <!-- Action -->
+                <td class="py-2.5 px-3 text-center">
+                  <button
+                    type="button"
+                    @click="removeItemRow(idx)"
+                    class="p-1 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                    title="Hapus baris"
+                  >
+                    <Trash2 class="w-3.5 h-3.5" />
+                  </button>
+                </td>
+              </tr>
 
-                  <!-- Investment (Projection) -->
-                  <td class="py-2.5 px-3 text-right">
-                    <div class="relative">
-                      <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
-                      <input
-                        v-model.number="item.budget"
-                        type="number"
-                        step="1000000"
-                        class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-lg pl-8 pr-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition font-mono shadow-2xs"
-                      />
-                    </div>
-                  </td>
+              <tr v-if="form.items.length === 0">
+                <td colspan="5" class="py-8 text-center text-gray-400">
+                  Belum ada baris program. Klik tombol "+ Tambah Baris" di atas.
+                </td>
+              </tr>
+            </template>
 
-                  <!-- Action -->
-                  <td class="py-2.5 px-3 text-center">
-                    <button
-                      type="button"
-                      @click="removeItemRow(idx)"
-                      class="p-1 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition"
-                      title="Hapus baris"
-                    >
-                      <Trash2 class="w-3.5 h-3.5" />
-                    </button>
-                  </td>
-                </tr>
-
-                <tr v-if="form.items.length === 0">
-                  <td colspan="5" class="py-8 text-center text-gray-400">
-                    Belum ada baris program. Klik tombol "+ Tambah Baris" di atas.
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr class="bg-gray-50 border-t-2 border-gray-300 font-extrabold text-xs">
-                  <td colspan="3" class="py-3 px-4 text-right text-gray-800 uppercase tracking-wider">
-                    Total Investment (Projection):
-                  </td>
-                  <td class="py-3 px-4 text-right font-mono text-sm text-[#0067AC]">
-                    {{ formatRupiah(totalInvestment) }}
-                  </td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+            <!-- Table Footer -->
+            <template #tfoot>
+              <tr class="bg-[#f8faf9] border-t-2 border-gray-300 font-extrabold text-xs">
+                <td colspan="3" class="py-3.5 px-4 text-right text-gray-800 uppercase tracking-wider">
+                  Total Investment (Projection):
+                </td>
+                <td class="py-3.5 px-4 text-right font-mono text-sm text-[#0067AC]">
+                  {{ formatRupiah(totalInvestment) }}
+                </td>
+                <td></td>
+              </tr>
+            </template>
+          </DetailTable>
         </div>
 
         <!-- Action Buttons: Save & Cancel (Matching Excel Mockup) -->

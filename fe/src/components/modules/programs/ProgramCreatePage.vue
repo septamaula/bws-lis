@@ -335,15 +335,20 @@ async function submitProgram() {
     <!-- MAIN FORM: Create/View/Edit Program (Matching Excel Wireframe) -->
     <div class="bg-white rounded-3xl border border-gray-200/90 shadow-sm overflow-hidden">
       
-      <!-- Card Header Bar -->
-      <div class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <Layers class="w-5 h-5 text-white/90" />
-          <h2 class="text-base font-extrabold tracking-wide uppercase">
-            {{ isEditMode ? `Edit Program: ${form.program_code}` : 'Create/View/Edit Program' }}
-          </h2>
+      <!-- Card Header Bar (Standard BWS Header) -->
+      <div class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
+            <Layers class="w-5 h-5" />
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-gray-900">
+              {{ isEditMode ? `Edit Program: ${form.program_code}` : 'Form Usulan Program Pelatihan Baru' }}
+            </h2>
+            <p class="text-xs text-gray-400 mt-0.5">Pengaturan program kerja, kurikulum, alokasi anggaran, dan otorisasi</p>
+          </div>
         </div>
-        <span class="text-xs bg-white/20 text-white font-bold px-3 py-1 rounded-full">
+        <span class="text-xs bg-blue-50 text-[#0067AC] border border-blue-200 font-bold px-3 py-1 rounded-full">
           Standar BWS Learning Hub
         </span>
       </div>
@@ -820,7 +825,7 @@ async function submitProgram() {
             <div class="bg-gray-100 px-4 py-2 text-xs font-bold text-gray-700">Approved Without Budget</div>
             <table class="w-full text-left text-xs border-collapse">
               <thead>
-                <tr class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white font-bold text-[10px] uppercase tracking-wider">
+                <tr class="bg-[#f8faf9] border-b border-gray-200 text-gray-700 font-semibold text-xs uppercase tracking-wider">
                   <th class="py-2.5 px-3">Approved Level</th>
                   <th class="py-2.5 px-3">NIK</th>
                   <th class="py-2.5 px-3">Name</th>
@@ -851,7 +856,7 @@ async function submitProgram() {
             <div class="bg-gray-100 px-4 py-2 text-xs font-bold text-gray-700">Approved With Budget (3 Levels Berjenjang)</div>
             <table class="w-full text-left text-xs border-collapse">
               <thead>
-                <tr class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white font-bold text-[10px] uppercase tracking-wider">
+                <tr class="bg-[#f8faf9] border-b border-gray-200 text-gray-700 font-semibold text-xs uppercase tracking-wider">
                   <th class="py-2.5 px-3">Approved Level</th>
                   <th class="py-2.5 px-3">NIK</th>
                   <th class="py-2.5 px-3">Name</th>
@@ -923,7 +928,7 @@ async function submitProgram() {
 
             <table class="w-full text-left text-xs border-collapse border border-gray-200 rounded-lg overflow-hidden mt-1">
               <thead>
-                <tr class="bg-gradient-to-r from-[#0067AC] to-[#003876] text-white font-bold text-[10px] uppercase tracking-wider">
+                <tr class="bg-[#f8faf9] border-b border-gray-200 text-gray-700 font-semibold text-xs uppercase tracking-wider">
                   <th class="py-2 px-3">Approved Level</th>
                   <th class="py-2 px-3">NIK</th>
                   <th class="py-2 px-3">Name</th>
