@@ -298,22 +298,14 @@ async function submitForm() {
 <template>
   <div class="flex flex-col gap-6 w-full pb-12">
 
-    <!-- Top Navigation Bar -->
-    <div class="flex items-center justify-between">
-      <button
-        @click="emit('back')"
-        class="inline-flex items-center gap-2 text-xs font-bold text-gray-600 hover:text-[#0067AC] transition cursor-pointer"
-      >
-        <ArrowLeft class="w-4 h-4" />
-        <span>Kembali ke List TNA</span>
-      </button>
-
-      <div class="flex items-center gap-2 text-xs text-gray-400">
-        <span>TNA Tahunan</span>
-        <ChevronRight class="w-3.5 h-3.5" />
-        <span class="text-gray-800 font-bold">{{ isEditMode ? 'Edit TNA' : 'Create TNA' }}</span>
-      </div>
-    </div>
+    <!-- Standard Subpage Header (Navigation) -->
+    <SubpageHeader
+      back-label="Kembali ke List TNA"
+      :title="isEditMode ? `Edit Usulan TNA - Tahun Anggaran ${form.year}` : 'Form Usulan TNA Baru (Rencana Tahunan)'"
+      subtitle="Perencanaan kebutuhan diklat dan alokasi pagu investasi bank-wide"
+      :badge="isEditMode ? 'Mode Edit' : '1 Dokumen per Tahun'"
+      @back="emit('back')"
+    />
 
     <!-- Alert / Feedback Banner -->
     <div
@@ -331,26 +323,8 @@ async function submitForm() {
       </button>
     </div>
 
-    <!-- MAIN FORM CONTAINER: Create/Edit TNA (Matching Excel Mockup) -->
+    <!-- MAIN FORM CONTAINER: Create/Edit TNA -->
     <div class="bg-white rounded-3xl border border-gray-200/90 shadow-sm overflow-hidden">
-      
-      <!-- Card Header Bar (Standard BWS Header) -->
-      <div class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
-            <Calendar class="w-5 h-5" />
-          </div>
-          <div>
-            <h2 class="text-base font-bold text-gray-900">
-              {{ isEditMode ? `Edit Usulan TNA - Tahun Anggaran ${form.year}` : 'Form Usulan TNA Baru (Rencana Tahunan)' }}
-            </h2>
-            <p class="text-xs text-gray-400 mt-0.5">Perencanaan kebutuhan diklat dan alokasi pagu investasi bank-wide</p>
-          </div>
-        </div>
-        <span class="text-xs bg-blue-50 text-[#0067AC] border border-blue-200 font-bold px-3 py-1 rounded-full">
-          1 Dokumen per Tahun
-        </span>
-      </div>
 
       <!-- Form Body -->
       <div class="p-6 md:p-8 flex flex-col gap-6">

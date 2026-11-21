@@ -330,69 +330,45 @@ onMounted(() => {
 
     <template v-else-if="trainingClass">
       
-      <!-- Top Action Bar & Header Breadcrumb -->
+      <!-- Standard Subpage Header (Navigation & Actions) -->
+      <SubpageHeader
+        back-label="Kembali ke Daftar Kelas"
+        :title="trainingClass.batch_name"
+        :subtitle="`Program: ${trainingClass.program?.title || ''} • ${trainingClass.program?.category || ''} • Metode ${trainingClass.method || ''}`"
+        :badge="trainingClass.class_code"
+        :status-badge="trainingClass.dual_control_status === 'APPROVED' ? 'Terotorisasi Checker' : trainingClass.dual_control_status === 'PENDING_CHECKER' ? 'Menunggu Otorisasi Checker' : trainingClass.dual_control_status"
+        :status-class="trainingClass.dual_control_status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'"
+        @back="emit('back')"
+      >
+        <template #actions>
+          <div v-if="trainingClass.dual_control_status === 'PENDING_CHECKER'" class="flex items-center gap-2">
+            <button
+              @click="handleCheckerDecision('APPROVED')"
+              class="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+            >
+              <Check class="w-3.5 h-3.5" />
+              <span>Otorisasi (Approve)</span>
+            </button>
+            <button
+              @click="handleCheckerDecision('REJECTED')"
+              class="px-3.5 py-2 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition cursor-pointer"
+            >
+              Tolak
+            </button>
+          </div>
+
+          <button
+            @click="fetchClassDetail"
+            class="w-9 h-9 rounded-full bg-white hover:bg-gray-100 text-gray-600 flex items-center justify-center transition border border-gray-200 cursor-pointer shadow-2xs"
+            title="Refresh Data"
+          >
+            <RotateCcw class="w-4 h-4" />
+          </button>
+        </template>
+      </SubpageHeader>
+
+      <!-- KPI Ribbon & Navigation Tabs Card -->
       <div class="bg-white p-5 rounded-3xl border border-gray-100 shadow-2xs space-y-4">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <button
-              @click="emit('back')"
-              class="w-10 h-10 rounded-2xl bg-gray-50 hover:bg-gray-100 text-gray-700 flex items-center justify-center transition border border-gray-200 cursor-pointer"
-              title="Kembali ke Daftar Kelas"
-            >
-              <ArrowLeft class="w-5 h-5 text-gray-600" />
-            </button>
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="font-mono text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">
-                  {{ trainingClass.class_code }}
-                </span>
-                <span class="text-xs text-gray-400">• {{ trainingClass.method }}</span>
-                <span
-                  class="text-[10px] font-bold px-2.5 py-0.5 rounded-full"
-                  :class="trainingClass.dual_control_status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700' : trainingClass.dual_control_status === 'PENDING_CHECKER' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-700'"
-                >
-                  {{ trainingClass.dual_control_status === 'APPROVED' ? 'Terotorisasi Checker' : trainingClass.dual_control_status === 'PENDING_CHECKER' ? 'Menunggu Otorisasi Checker' : trainingClass.dual_control_status }}
-                </span>
-              </div>
-              <h1 class="text-xl font-black text-[#002855] tracking-tight mt-1">
-                {{ trainingClass.batch_name }}
-              </h1>
-              <p class="text-xs text-gray-500 mt-0.5 flex items-center gap-1.5">
-                <span>Program:</span>
-                <span class="font-bold text-[#0067AC]">{{ trainingClass.program?.title }}</span>
-                <span class="text-gray-300">•</span>
-                <span>{{ trainingClass.program?.category }}</span>
-              </p>
-            </div>
-          </div>
-
-          <!-- Dual Control Actions if PENDING_CHECKER -->
-          <div class="flex items-center gap-2">
-            <div v-if="trainingClass.dual_control_status === 'PENDING_CHECKER'" class="flex items-center gap-2">
-              <button
-                @click="handleCheckerDecision('APPROVED')"
-                class="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
-              >
-                <Check class="w-3.5 h-3.5" />
-                <span>Otorisasi (Approve)</span>
-              </button>
-              <button
-                @click="handleCheckerDecision('REJECTED')"
-                class="px-3.5 py-2 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition cursor-pointer"
-              >
-                Tolak
-              </button>
-            </div>
-
-            <button
-              @click="fetchClassDetail"
-              class="w-9 h-9 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-600 flex items-center justify-center transition border border-gray-200 cursor-pointer"
-              title="Refresh Data"
-            >
-              <RotateCcw class="w-4 h-4" />
-            </button>
-          </div>
-        </div>
 
         <!-- Metric KPI Ribbon Strip -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-3 pt-3 border-t border-gray-100 text-xs">

@@ -299,22 +299,14 @@ async function submitProgram() {
 <template>
   <div class="flex flex-col gap-6 w-full pb-16">
 
-    <!-- Top Navigation Bar -->
-    <div class="flex items-center justify-between">
-      <button
-        @click="emit('back')"
-        class="inline-flex items-center gap-2 text-xs font-bold text-gray-600 hover:text-[#0067AC] transition cursor-pointer"
-      >
-        <ArrowLeft class="w-4 h-4" />
-        <span>Kembali ke Program List</span>
-      </button>
-
-      <div class="flex items-center gap-2 text-xs text-gray-400">
-        <span>Program</span>
-        <ChevronRight class="w-3.5 h-3.5" />
-        <span class="text-gray-800 font-bold">{{ isEditMode ? 'Edit Program' : 'Create Program' }}</span>
-      </div>
-    </div>
+    <!-- Standard Subpage Header (Navigation) -->
+    <SubpageHeader
+      back-label="Kembali ke Program List"
+      :title="isEditMode ? `Edit Program: ${form.program_code}` : 'Form Usulan Program Pelatihan Baru'"
+      subtitle="Pengaturan program kerja, kurikulum, alokasi anggaran, dan otorisasi"
+      :badge="isEditMode ? 'Mode Edit' : 'Program Kerja Baru'"
+      @back="emit('back')"
+    />
 
     <!-- Alert / Feedback Banner -->
     <div
@@ -332,26 +324,8 @@ async function submitProgram() {
       </button>
     </div>
 
-    <!-- MAIN FORM: Create/View/Edit Program (Matching Excel Wireframe) -->
+    <!-- MAIN FORM: Create/View/Edit Program -->
     <div class="bg-white rounded-3xl border border-gray-200/90 shadow-sm overflow-hidden">
-      
-      <!-- Card Header Bar (Standard BWS Header) -->
-      <div class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
-            <Layers class="w-5 h-5" />
-          </div>
-          <div>
-            <h2 class="text-base font-bold text-gray-900">
-              {{ isEditMode ? `Edit Program: ${form.program_code}` : 'Form Usulan Program Pelatihan Baru' }}
-            </h2>
-            <p class="text-xs text-gray-400 mt-0.5">Pengaturan program kerja, kurikulum, alokasi anggaran, dan otorisasi</p>
-          </div>
-        </div>
-        <span class="text-xs bg-blue-50 text-[#0067AC] border border-blue-200 font-bold px-3 py-1 rounded-full">
-          Standar BWS Learning Hub
-        </span>
-      </div>
 
       <!-- Form Body -->
       <div class="p-6 md:p-8 flex flex-col gap-8">

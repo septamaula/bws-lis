@@ -258,49 +258,14 @@ onMounted(() => {
 <template>
   <div class="flex flex-col gap-6 w-full pb-16">
     
-    <!-- Top Action Bar & Navigation Breadcrumbs -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-gray-100 shadow-2xs">
-      <div class="flex items-center gap-3">
-        <button
-          @click="emit('back')"
-          class="w-10 h-10 rounded-2xl bg-gray-50 hover:bg-gray-100 text-gray-700 flex items-center justify-center transition border border-gray-200 cursor-pointer"
-          title="Kembali ke Daftar Kelas"
-        >
-          <ArrowLeft class="w-5 h-5 text-gray-600" />
-        </button>
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC] uppercase tracking-wider">
-              Class Batch Maker
-            </span>
-            <span class="text-xs text-gray-400">• BWS LIS Operational</span>
-          </div>
-          <h1 class="text-xl font-black text-[#002855] tracking-tight mt-0.5">
-            Buka Batch Kelas Pelatihan Baru
-          </h1>
-          <p class="text-xs text-gray-500">
-            Pendaftaran batch pelaksanaan diklat, alokasi sesi jadwal harian, instruktur, dan nominasi peserta (1 Program bisa beberapa Batch).
-          </p>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <button
-          @click="emit('back')"
-          class="px-4 py-2 rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 text-xs font-bold transition cursor-pointer"
-        >
-          Batal
-        </button>
-        <button
-          @click="submitForm"
-          :disabled="isSubmitting"
-          class="px-6 py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold transition shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-60"
-        >
-          <Send class="w-3.5 h-3.5" />
-          <span>{{ isSubmitting ? 'Menyimpan...' : 'Buka Batch Kelas' }}</span>
-        </button>
-      </div>
-    </div>
+    <!-- Standard Subpage Header (Navigation) -->
+    <SubpageHeader
+      back-label="Kembali ke Daftar Kelas"
+      title="Buka Batch Kelas Pelatihan Baru"
+      subtitle="Pendaftaran batch pelaksanaan diklat, alokasi sesi jadwal harian, instruktur, dan nominasi peserta"
+      badge="Class Batch Maker"
+      @back="emit('back')"
+    />
 
     <!-- Feedback Banner -->
     <div v-if="feedback.message" class="p-4 rounded-2xl text-xs font-semibold flex items-center gap-2.5 shadow-2xs"

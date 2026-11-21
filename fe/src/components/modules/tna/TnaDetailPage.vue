@@ -109,48 +109,28 @@ async function downloadDocument() {
 <template>
   <div class="flex flex-col gap-6 w-full pb-12">
 
-    <!-- Top Navigation Bar -->
-    <div class="flex items-center justify-between">
-      <button
-        @click="emit('back')"
-        class="inline-flex items-center gap-2 text-xs font-bold text-gray-600 hover:text-[#0067AC] transition cursor-pointer"
-      >
-        <ArrowLeft class="w-4 h-4" />
-        <span>Kembali ke List TNA</span>
-      </button>
-
-      <div class="flex items-center gap-2">
+    <!-- Standard Subpage Header (Navigation & Actions) -->
+    <SubpageHeader
+      back-label="Kembali ke List TNA"
+      title="Rincian Usulan TNA"
+      :subtitle="proposal ? `Tahun Anggaran ${proposal.year} • Perencanaan & Realisasi Investasi Diklat Bank Woori Saudara` : ''"
+      :status-badge="proposal?.proposal_code"
+      @back="emit('back')"
+    >
+      <template #actions>
         <button
           @click="emit('edit', proposal?.id)"
-          class="px-3.5 py-1.5 rounded-xl border border-gray-200 text-gray-700 hover:text-amber-700 hover:border-amber-400 bg-white font-bold text-xs shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
+          class="px-4 py-2 rounded-xl bg-[#0067AC] hover:bg-[#002855] text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
         >
           <Edit3 class="w-3.5 h-3.5" />
-          <span>Edit TNA</span>
+          <span>Edit Dokumen TNA</span>
         </button>
-      </div>
-    </div>
+      </template>
+    </SubpageHeader>
 
     <!-- MAIN VIEW CONTAINER: View TNA -->
     <div v-if="proposal" class="bg-white rounded-3xl border border-gray-200/90 shadow-sm overflow-hidden">
       
-      <!-- Card Header Bar (Standard BWS Header) -->
-      <div class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
-            <Calendar class="w-5 h-5" />
-          </div>
-          <div>
-            <h2 class="text-base font-bold text-gray-900">
-              Rincian Usulan TNA - Tahun Anggaran {{ proposal.year }}
-            </h2>
-            <p class="text-xs text-gray-400 mt-0.5">Alokasi pagu investasi diklat dan realisasi per kategori kompetensi</p>
-          </div>
-        </div>
-        <span class="text-xs bg-blue-50 text-[#0067AC] border border-blue-200 font-mono font-bold px-3 py-1 rounded-full">
-          {{ proposal.proposal_code }}
-        </span>
-      </div>
-
       <!-- Top Information Strip matching Excel Wireframe -->
       <div class="p-6 bg-gray-50/70 border-b border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-4">
         
@@ -265,22 +245,6 @@ async function downloadDocument() {
               <span class="text-xs text-gray-500 font-medium">dari total proyeksi {{ formatRupiah(totalInvestment) }}</span>
             </div>
           </div>
-        </div>
-
-        <div class="flex items-center gap-2.5">
-          <button
-            @click="emit('back')"
-            class="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 font-bold text-xs hover:bg-gray-100 transition cursor-pointer"
-          >
-            Kembali ke List TNA
-          </button>
-          <button
-            @click="emit('edit', proposal?.id)"
-            class="px-5 py-2 rounded-xl bg-[#0067AC] hover:bg-[#002855] text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
-          >
-            <Edit3 class="w-3.5 h-3.5" />
-            <span>Edit Dokumen Ini</span>
-          </button>
         </div>
       </div>
 

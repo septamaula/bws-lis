@@ -221,41 +221,16 @@ onMounted(() => {
 <template>
   <div class="space-y-6">
 
-    <!-- Top Navigation Bar & Action -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-gray-100">
-      <div class="flex items-center gap-3">
-        <button
-          @click="emit('back')"
-          class="w-9 h-9 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-gray-700 flex items-center justify-center transition shadow-2xs cursor-pointer"
-          title="Kembali ke Daftar Program"
-        >
-          <ArrowLeft class="w-4 h-4" />
-        </button>
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-gray-400 font-medium">Program Kerja Diklat BWS</span>
-            <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
-            <span class="text-xs font-bold text-[#0067AC]">Rincian & RAB Program</span>
-          </div>
-          <h1 class="text-xl sm:text-2xl font-extrabold text-[#002855] tracking-tight">
-            {{ program?.program_code || 'Memuat Program...' }} — {{ program?.title || '' }}
-          </h1>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-2 self-end sm:self-auto">
-        <span
-          v-if="program"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border"
-          :class="statusBadgeClass"
-        >
-          <span
-            class="w-2 h-2 rounded-full"
-            :class="program.status === 'APPROVED' ? 'bg-emerald-500' : program.status === 'REJECTED' ? 'bg-rose-500' : 'bg-[#0067AC] animate-pulse'"
-          ></span>
-          {{ program.approval_status_badge || program.status }}
-        </span>
-
+    <!-- Standard Subpage Header (Navigation & Actions) -->
+    <SubpageHeader
+      back-label="Kembali ke Program List"
+      :title="`${program?.program_code || 'Memuat...'} — ${program?.title || ''}`"
+      badge="Rincian & RAB Program"
+      :status-badge="program?.approval_status_badge || program?.status"
+      :status-class="statusBadgeClass"
+      @back="emit('back')"
+    >
+      <template #actions>
         <button
           v-if="canEditProgram"
           @click="emit('edit', program.id)"
@@ -273,8 +248,8 @@ onMounted(() => {
           <Printer class="w-3.5 h-3.5 text-gray-500" />
           <span>Cetak Dokumen</span>
         </button>
-      </div>
-    </div>
+      </template>
+    </SubpageHeader>
 
     <!-- Loading Skeleton -->
     <div v-if="loading" class="bg-white rounded-3xl p-12 text-center border border-gray-100 space-y-3">
