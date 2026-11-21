@@ -246,13 +246,14 @@ async function executeDelete() {
         </div>
       </div>
 
-      <button
+      <AppButton
+        variant="white"
+        icon="plus"
+        size="md"
         @click="openCreateModal"
-        class="bg-white hover:bg-blue-50 text-[#002855] text-xs font-bold px-4 py-2 rounded-xl transition shadow-xs flex items-center gap-1.5 shrink-0"
       >
-        <Plus class="w-3.5 h-3.5" />
-        <span>+ Tambah Tahun Anggaran</span>
-      </button>
+        Tambah Tahun Anggaran
+      </AppButton>
     </div>
 
     <!-- Years Table Card -->

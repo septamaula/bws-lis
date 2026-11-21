@@ -645,13 +645,14 @@ onMounted(async () => {
           </select>
         </div>
 
-        <button
+        <AppButton
+          variant="primary"
+          pill
+          icon="user-plus"
           @click="openCreateUserModal"
-          class="bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold px-4 py-2 rounded-full transition flex items-center justify-center gap-1.5 shadow-xs shrink-0"
         >
-          <UserPlus class="w-3.5 h-3.5" />
-          <span>+ Tambah Pengguna Baru</span>
-        </button>
+          Tambah Pengguna Baru
+        </AppButton>
       </div>
 
       <!-- Users Table -->
@@ -810,13 +811,14 @@ onMounted(async () => {
           </select>
         </div>
 
-        <button
+        <AppButton
+          variant="primary"
+          pill
+          icon="user-plus"
           @click="openCreateKaryawanModal"
-          class="bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold px-4 py-2 rounded-full transition flex items-center justify-center gap-1.5 shadow-xs shrink-0"
         >
-          <UserPlus class="w-3.5 h-3.5" />
-          <span>+ Tambah Karyawan Baru</span>
-        </button>
+          Tambah Karyawan Baru
+        </AppButton>
       </div>
 
       <!-- Karyawan Data Table -->

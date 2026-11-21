@@ -439,22 +439,24 @@ async function submitForm() {
             </div>
 
             <div class="flex items-center gap-2">
-              <button
+              <AppButton
                 type="button"
+                variant="outline"
+                size="sm"
                 @click="loadPreset20Programs"
-                class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0067AC] font-bold text-xs transition border border-blue-200 cursor-pointer"
                 title="Muat contoh lengkap 20 program dari 5 kategori"
               >
-                + Muat Template 20 Program
-              </button>
-              <button
+                Muat Template 20 Program
+              </AppButton>
+              <AppButton
                 type="button"
+                variant="primary"
+                size="sm"
+                icon="plus"
                 @click="addItemRow"
-                class="px-3.5 py-1.5 rounded-xl bg-[#0067AC] hover:bg-[#002855] text-white font-bold text-xs transition flex items-center gap-1 cursor-pointer shadow-2xs"
               >
-                <Plus class="w-3.5 h-3.5" />
-                <span>+ Tambah Baris</span>
-              </button>
+                Tambah Baris
+              </AppButton>
             </div>
           </div>
 
@@ -519,7 +521,7 @@ async function submitForm() {
 
               <tr v-if="form.items.length === 0">
                 <td colspan="5" class="py-8 text-center text-gray-400">
-                  Belum ada baris program. Klik tombol "+ Tambah Baris" di atas.
+                  Belum ada baris program. Klik tombol "Tambah Baris" di atas.
                 </td>
               </tr>
             </template>

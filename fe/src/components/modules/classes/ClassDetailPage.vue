@@ -1070,15 +1070,16 @@ onMounted(() => {
             </p>
           </div>
 
-          <button
+          <AppButton
             v-if="availableNominations.length"
             type="button"
+            variant="primary"
+            pill
+            icon="plus"
             @click="showAddParticipantModal = true"
-            class="px-4 py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
           >
-            <Plus class="w-3.5 h-3.5" />
-            <span>Tambah dari Nominasi Program ({{ availableNominations.length }})</span>
-          </button>
+            Tambah dari Nominasi Program ({{ availableNominations.length }})
+          </AppButton>
         </div>
 
         <div class="overflow-x-auto border border-gray-100 rounded-2xl">

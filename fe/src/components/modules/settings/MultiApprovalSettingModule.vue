@@ -188,13 +188,14 @@ onMounted(() => {
         </button>
       </div>
 
-      <button
+      <AppButton
+        variant="primary"
+        pill
+        icon="plus"
         @click="openCreateStepModal"
-        class="bg-[#0067AC] hover:bg-[#00528c] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 transition shadow-xs shrink-0 cursor-pointer"
       >
-        <Plus class="w-3.5 h-3.5" />
-        <span>+ Tambah Tahapan Approval</span>
-      </button>
+        Tambah Tahapan Approval
+      </AppButton>
     </div>
 
     <!-- Current Module Content & Steps -->

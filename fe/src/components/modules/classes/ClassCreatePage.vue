@@ -488,14 +488,15 @@ onMounted(() => {
           </div>
         </div>
 
-        <button
+        <AppButton
           type="button"
+          variant="purple"
+          pill
+          icon="plus"
           @click="addSessionRow"
-          class="px-3.5 py-1.5 rounded-full bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
         >
-          <Plus class="w-3.5 h-3.5" />
-          <span>Tambah Sesi</span>
-        </button>
+          Tambah Sesi
+        </AppButton>
       </div>
 
       <div class="overflow-x-auto border border-gray-100 rounded-2xl">
@@ -656,15 +657,17 @@ onMounted(() => {
             />
           </div>
           <div>
-            <button
+            <AppButton
               type="button"
-              @click="addManualParticipant"
+              variant="primary"
+              size="md"
+              icon="plus"
+              class="w-full"
               :disabled="!newParticipant.name"
-              class="w-full h-full bg-[#0067AC] hover:bg-[#00528c] text-white rounded-xl py-2 font-bold flex items-center justify-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+              @click="addManualParticipant"
             >
-              <Plus class="w-3.5 h-3.5" />
-              <span>Tambah</span>
-            </button>
+              Tambah
+            </AppButton>
           </div>
         </div>
       </div>

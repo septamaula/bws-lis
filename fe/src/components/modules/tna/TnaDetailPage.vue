@@ -74,12 +74,19 @@ const groupedItems = computed(() => {
   return groups
 })
 
-// Total aggregates
+// Total aggregates for the breakdown table (sum of items)
 const totalInvestment = computed(() => {
+  if (proposal.value?.items && proposal.value.items.length > 0) {
+    const sum = proposal.value.items.reduce((s, item) => s + Number(item.budget || item.estimated_cost || 0), 0)
+    if (sum > 0) return sum
+  }
   return Number(proposal.value?.total_budget_requested || 0)
 })
 
 const totalRealization = computed(() => {
+  if (proposal.value?.items && proposal.value.items.length > 0) {
+    return proposal.value.items.reduce((s, item) => s + Number(item.realization_amount || 0), 0)
+  }
   return Number(proposal.value?.realization_amount || 0)
 })
 
@@ -87,9 +94,12 @@ const totalRemaining = computed(() => {
   return Math.max(0, totalInvestment.value - totalRealization.value)
 })
 
+// Annual plan progress (from proposal header)
+const annualInvestment = computed(() => Number(proposal.value?.total_budget_requested || totalInvestment.value || 0))
+const annualRealization = computed(() => Number(proposal.value?.realization_amount ?? totalRealization.value ?? 0))
 const realizationPercentage = computed(() => {
-  if (totalInvestment.value <= 0) return 0
-  return Math.round((totalRealization.value / totalInvestment.value) * 100)
+  if (annualInvestment.value <= 0) return 0
+  return Math.round((annualRealization.value / annualInvestment.value) * 100)
 })
 
 const detailColumns = [
@@ -118,13 +128,14 @@ async function downloadDocument() {
       @back="emit('back')"
     >
       <template #actions>
-        <button
+        <AppButton
+          variant="primary"
+          icon="edit"
+          size="sm"
           @click="emit('edit', proposal?.id)"
-          class="px-4 py-2 rounded-xl bg-[#0067AC] hover:bg-[#002855] text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
         >
-          <Edit3 class="w-3.5 h-3.5" />
-          <span>Edit Dokumen TNA</span>
-        </button>
+          Edit Dokumen TNA
+        </AppButton>
       </template>
     </SubpageHeader>
 
@@ -260,7 +271,7 @@ async function downloadDocument() {
               <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Tingkat Capaian Realisasi Anggaran</p>
               <div class="flex items-center gap-2 mt-0.5">
                 <span class="text-lg font-extrabold text-emerald-700 font-mono">{{ realizationPercentage }}%</span>
-                <span class="text-xs text-gray-500 font-medium">dari total proyeksi {{ formatRupiah(totalInvestment) }}</span>
+                <span class="text-xs text-gray-500 font-medium">dari total proyeksi {{ formatRupiah(annualInvestment) }}</span>
               </div>
             </div>
           </div>

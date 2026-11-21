@@ -670,7 +670,7 @@ const totalPendingApprovalsForUser = computed(() => {
                           :class="activeTab === 'tna' && tnaViewMode === 'create' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <Plus class="w-3.5 h-3.5 text-gray-400" />
-                          + Buat Usulan TNA Baru
+                          Buat Usulan TNA Baru
                         </button>
                       </li>
                     </ul>
@@ -1111,7 +1111,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition"
               >
                 <Receipt class="w-3.5 h-3.5" />
-                <span>+ Klaim / Reimburse</span>
+                <span>Klaim / Reimburse</span>
               </button>
             </div>
 
@@ -1189,7 +1189,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition"
               >
                 <Receipt class="w-3.5 h-3.5" />
-                <span>+ Buat Voucher / Klaim</span>
+                <span>Buat Voucher / Klaim</span>
               </button>
             </div>
 

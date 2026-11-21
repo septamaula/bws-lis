@@ -624,14 +624,15 @@ onMounted(() => {
             </div>
           </div>
 
-          <button
+          <AppButton
             type="button"
+            variant="primary"
+            pill
+            icon="plus"
             @click="emit('open-class-create', program.id)"
-            class="px-4 py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
           >
-            <Plus class="w-3.5 h-3.5" />
-            <span>+ Buka Batch Kelas untuk Program Ini</span>
-          </button>
+            Buka Batch Kelas untuk Program Ini
+          </AppButton>
         </div>
 
         <div class="overflow-x-auto">
@@ -679,7 +680,7 @@ onMounted(() => {
               </tr>
               <tr v-if="!program.classes || program.classes.length === 0">
                 <td colspan="7" class="py-6 text-center text-gray-400">
-                  Belum ada batch kelas yang dibuka untuk program ini. Klik "+ Buka Batch Kelas untuk Program Ini" untuk membuka batch pertama.
+                  Belum ada batch kelas yang dibuka untuk program ini. Klik "Buka Batch Kelas untuk Program Ini" untuk membuka batch pertama.
                 </td>
               </tr>
             </tbody>

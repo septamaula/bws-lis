@@ -514,7 +514,7 @@ async function submitProgram() {
               </h3>
               <p class="text-[11px] text-gray-500">Isi komponen biaya pelaksanaan pelatihan sesuai RAB BWS</p>
             </div>
-            <span class="text-xs font-bold text-[#0067AC]">[+] Add budget</span>
+            <span class="text-xs font-bold text-[#0067AC]">Rincian Komponen RAB</span>
           </div>
 
           <!-- 10 Budget Items in 2 Columns -->

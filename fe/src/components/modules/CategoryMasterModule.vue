@@ -368,23 +368,25 @@ async function executeDelete() {
 
         <!-- Add Button Contextual -->
         <div class="flex items-center gap-2">
-          <button
+          <AppButton
             v-if="activeView === 'categories'"
+            variant="primary"
+            pill
+            icon="folder-plus"
             @click="openCreateCategoryModal"
-            class="bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold px-4 py-2 rounded-full transition flex items-center gap-1.5 shadow-xs"
           >
-            <FolderPlus class="w-3.5 h-3.5" />
-            <span>+ Tambah Kategori Induk</span>
-          </button>
+            Tambah Kategori Induk
+          </AppButton>
 
-          <button
+          <AppButton
             v-else
+            variant="primary"
+            pill
+            icon="plus"
             @click="openCreateSubCategoryModal()"
-            class="bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold px-4 py-2 rounded-full transition flex items-center gap-1.5 shadow-xs"
           >
-            <Plus class="w-3.5 h-3.5" />
-            <span>+ Tambah Sub-Kategori Baru</span>
-          </button>
+            Tambah Sub-Kategori Baru
+          </AppButton>
         </div>
       </div>
 
@@ -504,10 +506,10 @@ async function executeDelete() {
                         </div>
                         <button
                           @click="openCreateSubCategoryModal(cat)"
-                          class="text-xs font-bold text-[#0067AC] hover:underline flex items-center gap-1"
+                          class="text-xs font-bold text-[#0067AC] hover:underline flex items-center gap-1 cursor-pointer"
                         >
                           <Plus class="w-3 h-3" />
-                          <span>+ Tambah Sub-Kategori</span>
+                          <span>Tambah Sub-Kategori</span>
                         </button>
                       </div>
 
