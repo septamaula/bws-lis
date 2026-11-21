@@ -21,6 +21,7 @@ import {
   Download,
   CheckCircle2,
   TrendingUp,
+  Info,
   X
 } from 'lucide-vue-next'
 import apiClient from '@/api/client'
@@ -340,26 +341,19 @@ async function executeDelete() {
               <td colspan="7" class="py-12 text-center text-gray-400">
                 <ClipboardList class="w-12 h-12 mx-auto text-gray-300 mb-2 stroke-1" />
                 <p class="font-bold text-sm text-gray-700">Belum Ada Dokumen TNA Tahunan</p>
-                <p class="text-xs text-gray-400 mt-1">Silakan klik tombol "Create TNA [+]" di atas untuk membuat rencana tahunan.</p>
+                <p class="text-xs text-gray-400 mt-1">Silakan klik tombol "+ Usulan TNA Baru" di kanan atas untuk membuat rencana tahunan.</p>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Table Bottom Action Bar (Matching Excel Button Placement) -->
-      <div class="p-4 bg-gray-50/70 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
-        <p class="text-xs text-gray-500">
-          Catatan: Setiap tahun anggaran hanya memiliki 1 usulan TNA Induk bank-wide sesuai regulasi OJK & standar BWS.
+      <!-- Table Footer Note -->
+      <div class="px-6 py-3.5 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between">
+        <p class="text-xs text-gray-500 flex items-center gap-2">
+          <Info class="w-3.5 h-3.5 text-sky-600 shrink-0" />
+          <span>Catatan: Setiap tahun anggaran hanya memiliki 1 usulan TNA Induk bank-wide sesuai regulasi OJK &amp; standar BWS.</span>
         </p>
-        <button
-          v-if="canManageTna"
-          @click="emit('create-tna')"
-          class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm hover:shadow-md transition flex items-center gap-2 cursor-pointer ml-auto"
-        >
-          <Plus class="w-4 h-4" />
-          <span>Create TNA [+]</span>
-        </button>
       </div>
     </div>
 

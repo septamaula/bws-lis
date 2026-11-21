@@ -418,25 +418,18 @@ async function executeDelete() {
                 <td colspan="9" class="py-12 text-center text-gray-400">
                   <BookOpen class="w-12 h-12 mx-auto text-gray-300 mb-2 stroke-1" />
                   <p class="font-bold text-sm text-gray-700">Tidak ada program pelatihan yang cocok</p>
-                  <p class="text-xs text-gray-400 mt-1">Gunakan tombol "Create Program [+]" untuk menambahkan program kerja baru.</p>
+                  <p class="text-xs text-gray-400 mt-1">Gunakan tombol "+ Buat Program Baru" di kanan atas untuk menambahkan program kerja baru.</p>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- Table Bottom Action Bar (Matching Excel Button Placement) -->
-        <div class="p-4 bg-gray-50/70 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+        <!-- Table Footer Info -->
+        <div class="px-6 py-3.5 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between">
           <p class="text-xs text-gray-500">
-            Total {{ programs.length }} program kerja dalam rencana pembelajaran BWS LIS.
+            Total <span class="font-semibold text-gray-700">{{ programs.length }}</span> program kerja dalam rencana pembelajaran BWS LIS.
           </p>
-          <button
-            @click="openCreate"
-            class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm hover:shadow-md transition flex items-center gap-2 cursor-pointer ml-auto"
-          >
-            <Plus class="w-4 h-4" />
-            <span>Create Program [+]</span>
-          </button>
         </div>
 
       </div>
