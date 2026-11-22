@@ -810,19 +810,6 @@ async function submitProgram() {
                 </button>
               </div>
             </div>
-
-            <!-- Empty state for custom budget items -->
-            <div
-              v-else
-              class="bg-white/80 rounded-2xl p-4 border border-dashed border-gray-300 text-center flex flex-col items-center justify-center gap-1.5"
-            >
-              <p class="text-xs text-gray-500 font-medium">
-                Belum ada komponen biaya tambahan.
-              </p>
-              <p class="text-[11px] text-gray-400">
-                10 komponen standar BWS di atas sudah mencukupi secara default. Klik <strong>"+ Tambah Komponen Biaya"</strong> jika diperlukan pos anggaran baru.
-              </p>
-            </div>
           </div>
 
           <!-- Total Footer Summary Card -->
