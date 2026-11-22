@@ -179,8 +179,8 @@ const currentTabTitle = computed(() => {
   switch (activeTab.value) {
     case 'dashboard': return 'Executive & Operational Dashboard'
     case 'tna':
-      if (tnaViewMode.value === 'categories') return 'Master Kategori & Sub-Kategori Pelatihan'
-      if (tnaViewMode.value === 'years') return 'Master Tahun Anggaran Pelatihan'
+      if (tnaViewMode.value === 'categories') return 'Kategori & Sub-Kategori Pelatihan'
+      if (tnaViewMode.value === 'years') return 'Tahun Anggaran Pelatihan'
       return 'TNA & Annual Training Plan'
     case 'program': return 'Program Pelatihan & Work Plan'
     case 'class': return 'Class Implementation & Schedule'
@@ -701,6 +701,12 @@ const totalPendingApprovalsForUser = computed(() => {
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
                       </li>
+
+                      <!-- Section Header: Master Data -->
+                      <li class="pt-2 pb-1 px-3 border-t border-gray-100 mt-1 flex items-center justify-between">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Master Data</span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                      </li>
                       <li>
                         <button
                           @click="activeTab = 'tna'; tnaViewMode = 'categories'"
@@ -709,7 +715,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <FolderTree class="w-3.5 h-3.5" />
-                            Master Kategori & Sub
+                            Kategori & Sub-Kategori
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -722,7 +728,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <CalendarRange class="w-3.5 h-3.5" />
-                            Master Tahun Anggaran
+                            Tahun Anggaran
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -1160,7 +1166,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 :class="tnaViewMode === 'categories' ? 'bg-[#0067AC] text-white border-[#0067AC]' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'"
               >
                 <FolderTree class="w-3.5 h-3.5" :class="tnaViewMode === 'categories' ? 'text-white' : 'text-[#0067AC]'" />
-                <span>Master Kategori & Sub</span>
+                <span>Kategori & Sub-Kategori</span>
               </button>
 
               <button
@@ -1169,7 +1175,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 :class="tnaViewMode === 'years' ? 'bg-[#0067AC] text-white border-[#0067AC]' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'"
               >
                 <CalendarRange class="w-3.5 h-3.5" :class="tnaViewMode === 'years' ? 'text-white' : 'text-[#0067AC]'" />
-                <span>Master Tahun Anggaran</span>
+                <span>Tahun Anggaran</span>
               </button>
 
               <button
