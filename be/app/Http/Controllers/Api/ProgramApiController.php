@@ -223,7 +223,7 @@ class ProgramApiController extends Controller
         $sum10 = $bFee + $bMeals + $bHotel + $bMeet + $bTrans + $bTrip + $bReward + $bMat + $bNet + $bMisc;
 
         $budgetItems = $validated['budget_items'] ?? [];
-        $totalBudget = $sum10 > 0 ? $sum10 : collect($budgetItems)->sum(function ($i) {
+        $additionalSum = collect($budgetItems)->sum(function ($i) {
             $sub = (float) ($i['subtotal'] ?? 0);
             if ($sub <= 0 && isset($i['quantity'], $i['unit_price'])) {
                 $sub = (float) $i['quantity'] * (float) $i['unit_price'];
@@ -231,6 +231,17 @@ class ProgramApiController extends Controller
 
             return $sub;
         });
+
+        $customSum = collect($budgetItems)
+            ->filter(fn ($i) => ($i['item_type'] ?? '') === 'OTHER' || ! empty($i['is_custom']))
+            ->sum(function ($i) {
+                return (float) ($i['subtotal'] ?? ((float) ($i['quantity'] ?? 1) * (float) ($i['unit_price'] ?? 0)));
+            });
+
+        $totalBudget = $sum10 + $customSum;
+        if ($totalBudget <= 0 && $additionalSum > 0) {
+            $totalBudget = $additionalSum;
+        }
 
         // Program Code
         if (! empty($validated['program_code'])) {
@@ -535,15 +546,34 @@ class ProgramApiController extends Controller
                 $program->approval_doc_path = $file->store('attachments/programs', 'public');
             }
 
+            // Handle 10 budget fields if provided
+            $bFields = [
+                'budget_fee_facilitator',
+                'budget_meals',
+                'budget_hotel',
+                'budget_meeting_package',
+                'budget_transportation',
+                'budget_business_trip',
+                'budget_reward',
+                'budget_material',
+                'budget_internet',
+                'budget_miscellaneous',
+            ];
+            foreach ($bFields as $f) {
+                if ($request->has($f)) {
+                    $program->$f = (float) $request->input($f, 0);
+                }
+            }
+
             // Hitung ulang RAB jika diberikan
             if (isset($validated['budget_items'])) {
                 $program->budgetItems()->delete();
-                $totalBudget = 0;
+                $additionalSum = 0;
                 foreach ($validated['budget_items'] as $item) {
                     $qty = (float) ($item['quantity'] ?? 1);
                     $unitPrice = (float) ($item['unit_price'] ?? 0);
                     $subtotal = (float) ($item['subtotal'] ?? ($qty * $unitPrice));
-                    $totalBudget += $subtotal;
+                    $additionalSum += $subtotal;
 
                     ProgramBudgetItem::create([
                         'training_program_id' => $program->id,
@@ -556,7 +586,41 @@ class ProgramApiController extends Controller
                         'notes' => $item['notes'] ?? null,
                     ]);
                 }
-                $program->total_budget = $totalBudget;
+
+                $sum10 = (float) $program->budget_fee_facilitator +
+                    (float) $program->budget_meals +
+                    (float) $program->budget_hotel +
+                    (float) $program->budget_meeting_package +
+                    (float) $program->budget_transportation +
+                    (float) $program->budget_business_trip +
+                    (float) $program->budget_reward +
+                    (float) $program->budget_material +
+                    (float) $program->budget_internet +
+                    (float) $program->budget_miscellaneous;
+
+                $customSum = collect($validated['budget_items'])
+                    ->filter(fn ($i) => ($i['item_type'] ?? '') === 'OTHER' || ! empty($i['is_custom']))
+                    ->sum(function ($i) {
+                        return (float) ($i['subtotal'] ?? ((float) ($i['quantity'] ?? 1) * (float) ($i['unit_price'] ?? 0)));
+                    });
+
+                $program->total_budget = $sum10 + $customSum;
+                if ($program->total_budget <= 0 && $additionalSum > 0) {
+                    $program->total_budget = $additionalSum;
+                }
+            } else {
+                $sum10 = (float) $program->budget_fee_facilitator +
+                    (float) $program->budget_meals +
+                    (float) $program->budget_hotel +
+                    (float) $program->budget_meeting_package +
+                    (float) $program->budget_transportation +
+                    (float) $program->budget_business_trip +
+                    (float) $program->budget_reward +
+                    (float) $program->budget_material +
+                    (float) $program->budget_internet +
+                    (float) $program->budget_miscellaneous;
+                $customSum = $program->budgetItems()->where('item_type', 'OTHER')->sum('subtotal');
+                $program->total_budget = $sum10 + $customSum;
             }
 
             // Perbarui peserta jika diberikan

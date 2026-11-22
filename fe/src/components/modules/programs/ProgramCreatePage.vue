@@ -100,8 +100,24 @@ function formatRupiah(num) {
   }).format(num)
 }
 
-// 10 Budget Total Calculation
-const totalBudgetCalculated = computed(() => {
+// Custom Additional Budget Items (Fleksibel)
+const customBudgetItems = ref([])
+
+function addCustomBudgetItem() {
+  customBudgetItems.value.push({
+    id: Date.now() + Math.random(),
+    name: '',
+    amount: 0,
+    notes: ''
+  })
+}
+
+function removeCustomBudgetItem(idx) {
+  customBudgetItems.value.splice(idx, 1)
+}
+
+// 10 Standard Budget Sum
+const standard10BudgetSum = computed(() => {
   const b = form.value
   return (
     Number(b.budget_fee_facilitator || 0) +
@@ -115,6 +131,16 @@ const totalBudgetCalculated = computed(() => {
     Number(b.budget_internet || 0) +
     Number(b.budget_miscellaneous || 0)
   )
+})
+
+// Custom Additional Budget Sum
+const customBudgetSum = computed(() => {
+  return customBudgetItems.value.reduce((acc, item) => acc + Number(item.amount || 0), 0)
+})
+
+// Total Budget Calculation (10 Standard Items + Fleksibel Custom Items)
+const totalBudgetCalculated = computed(() => {
+  return standard10BudgetSum.value + customBudgetSum.value
 })
 
 // Options list
@@ -211,6 +237,17 @@ async function loadData() {
 
       if (p.doc1_name) existingDoc1.value = p.doc1_name
       if (p.doc2_name) existingDoc2.value = p.doc2_name
+
+      if (p.budget_items && p.budget_items.length > 0) {
+        customBudgetItems.value = p.budget_items
+          .filter(bi => bi.item_type === 'OTHER' || !bi.item_type)
+          .map(bi => ({
+            id: bi.id || Date.now() + Math.random(),
+            name: bi.description || '',
+            amount: Number(bi.subtotal || (bi.quantity * bi.unit_price) || 0),
+            notes: bi.notes || ''
+          }))
+      }
     } else {
       // Auto-generate program code suggestion
       const randNum = Math.floor(100 + Math.random() * 900)
@@ -266,6 +303,19 @@ async function submitProgram() {
     formData.append('budget_material', form.value.budget_material || 0)
     formData.append('budget_internet', form.value.budget_internet || 0)
     formData.append('budget_miscellaneous', form.value.budget_miscellaneous || 0)
+
+    // Custom Additional Budget items (Fleksibel)
+    customBudgetItems.value.forEach((item, idx) => {
+      if (item.name && Number(item.amount) > 0) {
+        formData.append(`budget_items[${idx}][item_type]`, 'OTHER')
+        formData.append(`budget_items[${idx}][description]`, item.name)
+        formData.append(`budget_items[${idx}][quantity]`, '1')
+        formData.append(`budget_items[${idx}][unit]`, 'Paket')
+        formData.append(`budget_items[${idx}][unit_price]`, item.amount)
+        formData.append(`budget_items[${idx}][subtotal]`, item.amount)
+        if (item.notes) formData.append(`budget_items[${idx}][notes]`, item.notes)
+      }
+    })
 
     if (doc1File.value) formData.append('doc1', doc1File.value)
     if (form.value.doc1_remarks) formData.append('doc1_remarks', form.value.doc1_remarks)
@@ -504,181 +554,288 @@ async function submitProgram() {
           </div>
         </div>
 
-        <!-- SECTION 2: BUDGET (10 Components matching Excel Wireframe) -->
-        <div class="bg-gray-50/70 p-6 rounded-2xl border border-gray-200">
-          <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-200">
+        <!-- SECTION 2: BUDGET (10 Default Components + Flexible Custom Additional Items) -->
+        <div class="bg-gray-50/70 p-6 rounded-2xl border border-gray-200 flex flex-col gap-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-200">
             <div>
               <h3 class="text-sm font-extrabold text-gray-900 flex items-center gap-2">
                 <Wallet class="w-4 h-4 text-[#0067AC]" />
-                <span>Budget (Rincian 10 Item Anggaran RAB)</span>
+                <span>Rancangan Anggaran Biaya (RAB) Program</span>
               </h3>
-              <p class="text-[11px] text-gray-500">Isi komponen biaya pelaksanaan pelatihan sesuai RAB BWS</p>
+              <p class="text-[11px] text-gray-500">10 Komponen anggaran standar BWS dan komponen tambahan fleksibel</p>
             </div>
-            <span class="text-xs font-bold text-[#0067AC]">Rincian Komponen RAB</span>
+            <div class="text-right">
+              <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Total Anggaran (RAB)</span>
+              <span class="text-base font-extrabold font-mono text-[#0067AC]">{{ formatRupiah(totalBudgetCalculated) }}</span>
+            </div>
           </div>
 
-          <!-- 10 Budget Items in 2 Columns -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3.5">
-            
-            <!-- Left 5 Items: Fee Facilitator, Meals, Hotel, Meeting Package, Transportation -->
-            <div class="flex flex-col gap-3">
+          <!-- 1. 10 Default Standard BWS Items -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-[#0067AC]"></span>
+                <span>10 Komponen Standar BWS (Default)</span>
+              </span>
+              <span class="text-[11px] font-mono font-semibold text-gray-500">
+                Subtotal Standar: <strong class="text-gray-900">{{ formatRupiah(standard10BudgetSum) }}</strong>
+              </span>
+            </div>
+
+            <!-- 10 Budget Items in 2 Columns -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3.5 bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs">
               
-              <!-- 1. Fee Facilitator -->
-              <div class="flex items-center justify-between gap-3">
-                <label class="text-xs font-bold text-gray-700 w-44">Fee Facilitator</label>
-                <div class="flex-1">
-                  <AppNumberInput
-                    v-model="form.budget_fee_facilitator"
-                    prefix="Rp"
-                    size="sm"
-                    align="right"
-                    placeholder="0"
-                  />
+              <!-- Left 5 Items: Fee Facilitator, Meals, Hotel, Meeting Package, Transportation -->
+              <div class="flex flex-col gap-3">
+                
+                <!-- 1. Fee Facilitator -->
+                <div class="flex items-center justify-between gap-3">
+                  <label class="text-xs font-bold text-gray-700 w-44">Fee Facilitator</label>
+                  <div class="flex-1">
+                    <AppNumberInput
+                      v-model="form.budget_fee_facilitator"
+                      prefix="Rp"
+                      size="sm"
+                      align="right"
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
+
+                <!-- 2. Meals -->
+                <div class="flex items-center justify-between gap-3">
+                  <label class="text-xs font-bold text-gray-700 w-44">Meals</label>
+                  <div class="flex-1">
+                    <AppNumberInput
+                      v-model="form.budget_meals"
+                      prefix="Rp"
+                      size="sm"
+                      align="right"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                <!-- 3. Hotel -->
+                <div class="flex items-center justify-between gap-3">
+                  <label class="text-xs font-bold text-gray-700 w-44">Hotel</label>
+                  <div class="flex-1">
+                    <AppNumberInput
+                      v-model="form.budget_hotel"
+                      prefix="Rp"
+                      size="sm"
+                      align="right"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                <!-- 4. Meeting Package -->
+                <div class="flex items-center justify-between gap-3">
+                  <label class="text-xs font-bold text-gray-700 w-44">Meeting Package</label>
+                  <div class="flex-1">
+                    <AppNumberInput
+                      v-model="form.budget_meeting_package"
+                      prefix="Rp"
+                      size="sm"
+                      align="right"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                <!-- 5. Transportation -->
+                <div class="flex items-center justify-between gap-3">
+                  <label class="text-xs font-bold text-gray-700 w-44">Transportation</label>
+                  <div class="flex-1">
+                    <AppNumberInput
+                      v-model="form.budget_transportation"
+                      prefix="Rp"
+                      size="sm"
+                      align="right"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
               </div>
 
-              <!-- 2. Meals -->
-              <div class="flex items-center justify-between gap-3">
-                <label class="text-xs font-bold text-gray-700 w-44">Meals</label>
-                <div class="flex-1">
-                  <AppNumberInput
-                    v-model="form.budget_meals"
-                    prefix="Rp"
-                    size="sm"
-                    align="right"
-                    placeholder="0"
-                  />
+              <!-- Right 5 Items: Business Trip, Reward, Material, Internet, Miscellaneous -->
+              <div class="flex flex-col gap-3">
+                
+                <!-- 6. Business Trip Allowance -->
+                <div class="flex items-center justify-between gap-3">
+                  <label class="text-xs font-bold text-gray-700 w-44">Business Trip Allowance</label>
+                  <div class="flex-1">
+                    <AppNumberInput
+                      v-model="form.budget_business_trip"
+                      prefix="Rp"
+                      size="sm"
+                      align="right"
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <!-- 3. Hotel -->
-              <div class="flex items-center justify-between gap-3">
-                <label class="text-xs font-bold text-gray-700 w-44">Hotel</label>
-                <div class="flex-1">
-                  <AppNumberInput
-                    v-model="form.budget_hotel"
-                    prefix="Rp"
-                    size="sm"
-                    align="right"
-                    placeholder="0"
-                  />
+                <!-- 7. Reward -->
+                <div class="flex items-center justify-between gap-3">
+                  <label class="text-xs font-bold text-gray-700 w-44">Reward</label>
+                  <div class="flex-1">
+                    <AppNumberInput
+                      v-model="form.budget_reward"
+                      prefix="Rp"
+                      size="sm"
+                      align="right"
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <!-- 4. Meeting Package -->
-              <div class="flex items-center justify-between gap-3">
-                <label class="text-xs font-bold text-gray-700 w-44">Meeting Package</label>
-                <div class="flex-1">
-                  <AppNumberInput
-                    v-model="form.budget_meeting_package"
-                    prefix="Rp"
-                    size="sm"
-                    align="right"
-                    placeholder="0"
-                  />
+                <!-- 8. Material -->
+                <div class="flex items-center justify-between gap-3">
+                  <label class="text-xs font-bold text-gray-700 w-44">Material</label>
+                  <div class="flex-1">
+                    <AppNumberInput
+                      v-model="form.budget_material"
+                      prefix="Rp"
+                      size="sm"
+                      align="right"
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <!-- 5. Transportation -->
-              <div class="flex items-center justify-between gap-3">
-                <label class="text-xs font-bold text-gray-700 w-44">Transportation</label>
-                <div class="flex-1">
-                  <AppNumberInput
-                    v-model="form.budget_transportation"
-                    prefix="Rp"
-                    size="sm"
-                    align="right"
-                    placeholder="0"
-                  />
+                <!-- 9. Internet -->
+                <div class="flex items-center justify-between gap-3">
+                  <label class="text-xs font-bold text-gray-700 w-44">Internet</label>
+                  <div class="flex-1">
+                    <AppNumberInput
+                      v-model="form.budget_internet"
+                      prefix="Rp"
+                      size="sm"
+                      align="right"
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
+
+                <!-- 10. Miscellaneous -->
+                <div class="flex items-center justify-between gap-3">
+                  <label class="text-xs font-bold text-gray-700 w-44">Miscellaneous</label>
+                  <div class="flex-1">
+                    <AppNumberInput
+                      v-model="form.budget_miscellaneous"
+                      prefix="Rp"
+                      size="sm"
+                      align="right"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
               </div>
 
             </div>
-
-            <!-- Right 5 Items: Business Trip, Reward, Material, Internet, Miscellaneous -->
-            <div class="flex flex-col gap-3">
-              
-              <!-- 6. Business Trip Allowance -->
-              <div class="flex items-center justify-between gap-3">
-                <label class="text-xs font-bold text-gray-700 w-44">Business Trip Allowance</label>
-                <div class="flex-1">
-                  <AppNumberInput
-                    v-model="form.budget_business_trip"
-                    prefix="Rp"
-                    size="sm"
-                    align="right"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              <!-- 7. Reward -->
-              <div class="flex items-center justify-between gap-3">
-                <label class="text-xs font-bold text-gray-700 w-44">Reward</label>
-                <div class="flex-1">
-                  <AppNumberInput
-                    v-model="form.budget_reward"
-                    prefix="Rp"
-                    size="sm"
-                    align="right"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              <!-- 8. Material -->
-              <div class="flex items-center justify-between gap-3">
-                <label class="text-xs font-bold text-gray-700 w-44">Material</label>
-                <div class="flex-1">
-                  <AppNumberInput
-                    v-model="form.budget_material"
-                    prefix="Rp"
-                    size="sm"
-                    align="right"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              <!-- 9. Internet -->
-              <div class="flex items-center justify-between gap-3">
-                <label class="text-xs font-bold text-gray-700 w-44">Internet</label>
-                <div class="flex-1">
-                  <AppNumberInput
-                    v-model="form.budget_internet"
-                    prefix="Rp"
-                    size="sm"
-                    align="right"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              <!-- 10. Miscellaneous -->
-              <div class="flex items-center justify-between gap-3">
-                <label class="text-xs font-bold text-gray-700 w-44">Miscellaneous</label>
-                <div class="flex-1">
-                  <AppNumberInput
-                    v-model="form.budget_miscellaneous"
-                    prefix="Rp"
-                    size="sm"
-                    align="right"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-            </div>
-
           </div>
 
-          <!-- Total Row matching Excel [Total 0] -->
-          <div class="mt-5 pt-3 border-t border-gray-200 flex items-center justify-between">
-            <span class="text-xs font-extrabold text-gray-800 uppercase tracking-wider">
-              Total Budget (RAB)
-            </span>
-            <div class="px-5 py-2 rounded-xl bg-white border border-gray-300 font-extrabold text-sm text-[#0067AC] font-mono shadow-2xs">
-              {{ formatRupiah(totalBudgetCalculated) }}
+          <!-- 2. Additional Flexible Items Section -->
+          <div class="border-t border-gray-200 pt-5">
+            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <div>
+                <span class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <span>Komponen Biaya Tambahan (Fleksibel)</span>
+                  <span v-if="customBudgetItems.length > 0" class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+                    {{ customBudgetItems.length }} Komponen
+                  </span>
+                </span>
+                <p class="text-[11px] text-gray-500 mt-0.5">Tambahkan pos biaya baru secara fleksibel jika ada kebutuhan spesifik lainnya</p>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <span v-if="customBudgetSum > 0" class="text-[11px] font-mono font-semibold text-gray-500">
+                  Subtotal Tambahan: <strong class="text-emerald-700">{{ formatRupiah(customBudgetSum) }}</strong>
+                </span>
+                <button
+                  type="button"
+                  @click="addCustomBudgetItem"
+                  class="bg-[#0067AC] hover:bg-[#00528c] text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+                >
+                  <Plus class="w-3.5 h-3.5" />
+                  <span>Tambah Komponen Biaya</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- List of Custom Additional Budget Items -->
+            <div v-if="customBudgetItems.length > 0" class="space-y-2.5">
+              <div
+                v-for="(item, idx) in customBudgetItems"
+                :key="item.id || idx"
+                class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white p-3.5 rounded-2xl border border-gray-200 shadow-2xs transition hover:border-blue-200"
+              >
+                <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-xs flex items-center justify-center shrink-0">
+                  {{ idx + 1 }}
+                </div>
+                
+                <!-- Nama Komponen -->
+                <div class="flex-1 min-w-[200px]">
+                  <input
+                    v-model="item.name"
+                    type="text"
+                    placeholder="Nama Komponen Biaya (cth: Sewa Lab Khusus, Ujian Sertifikasi BNSP, Seragam Diklat)"
+                    class="w-full bg-[#f8faf9] text-xs font-semibold text-gray-900 rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:bg-white focus:outline-none transition"
+                  />
+                </div>
+
+                <!-- Nominal Biaya (AppNumberInput) -->
+                <div class="w-full sm:w-56">
+                  <AppNumberInput
+                    v-model="item.amount"
+                    prefix="Rp"
+                    size="sm"
+                    align="right"
+                    placeholder="0"
+                  />
+                </div>
+
+                <!-- Tombol Hapus Baris -->
+                <button
+                  type="button"
+                  @click="removeCustomBudgetItem(idx)"
+                  class="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer shrink-0 self-end sm:self-auto"
+                  title="Hapus baris biaya ini"
+                >
+                  <Trash2 class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Empty state for custom budget items -->
+            <div
+              v-else
+              class="bg-white/80 rounded-2xl p-4 border border-dashed border-gray-300 text-center flex flex-col items-center justify-center gap-1.5"
+            >
+              <p class="text-xs text-gray-500 font-medium">
+                Belum ada komponen biaya tambahan.
+              </p>
+              <p class="text-[11px] text-gray-400">
+                10 komponen standar BWS di atas sudah mencukupi secara default. Klik <strong>"+ Tambah Komponen Biaya"</strong> jika diperlukan pos anggaran baru.
+              </p>
+            </div>
+          </div>
+
+          <!-- Total Footer Summary Card -->
+          <div class="bg-[#EBF4FC] p-4 rounded-2xl border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div class="flex items-center gap-2 text-gray-700">
+              <CheckCircle2 class="w-4 h-4 text-[#0067AC] shrink-0" />
+              <span>
+                Total Pagu Anggaran Diklat dihitung otomatis dari <strong>10 Komponen Standar</strong> ({{ formatRupiah(standard10BudgetSum) }}) + <strong>{{ customBudgetItems.length }} Komponen Tambahan</strong> ({{ formatRupiah(customBudgetSum) }}).
+              </span>
+            </div>
+            <div class="text-right shrink-0">
+              <span class="text-[10px] text-[#0067AC] font-bold uppercase tracking-wider block">Grand Total RAB</span>
+              <span class="text-lg font-mono font-extrabold text-[#002855]">{{ formatRupiah(totalBudgetCalculated) }}</span>
             </div>
           </div>
         </div>
