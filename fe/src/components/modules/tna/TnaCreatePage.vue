@@ -42,6 +42,15 @@ const loadingMasters = ref(true)
 const categories = ref([])
 const fiscalYears = ref([])
 
+const selectedFiscalYear = computed(() => {
+  return fiscalYears.value.find(y => Number(y.year) === Number(form.value.year))
+})
+
+const isYearAlreadyRegistered = computed(() => {
+  if (isEditMode.value) return false
+  return (selectedFiscalYear.value?.tna_proposals_count || 0) > 0
+})
+
 // Form State matching Excel wireframe
 const form = ref({
   year: 2026,
@@ -204,8 +213,16 @@ async function loadMasterData() {
     categories.value = resCats.data.categories || []
     fiscalYears.value = resYears.data.years || []
 
-    if (resYears.data.active_year && !isEditMode.value) {
-      form.value.year = resYears.data.active_year
+    if (!isEditMode.value) {
+      const activeFy = fiscalYears.value.find(y => y.is_active)
+      const availableFy = fiscalYears.value.find(y => (y.tna_proposals_count || 0) === 0 && y.status !== 'TUTUP_BUKU')
+      if (activeFy && (activeFy.tna_proposals_count || 0) === 0) {
+        form.value.year = activeFy.year
+      } else if (availableFy) {
+        form.value.year = availableFy.year
+      } else if (resYears.data.active_year) {
+        form.value.year = resYears.data.active_year
+      }
     }
 
     if (isEditMode.value) {
@@ -257,6 +274,14 @@ onMounted(() => {
 async function submitForm() {
   if (!form.value.year) {
     feedback.value = { type: 'error', message: 'Tahun Anggaran wajib diisi.' }
+    return
+  }
+
+  if (!isEditMode.value && isYearAlreadyRegistered.value) {
+    feedback.value = {
+      type: 'error',
+      message: `Tahun Anggaran ${form.value.year} sudah memiliki dokumen TNA terdaftar. Dalam 1 tahun anggaran hanya terdapat 1 dokumen TNA Induk.`
+    }
     return
   }
 
@@ -365,20 +390,36 @@ async function submitForm() {
           <div>
             <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
               <span>Year (Tahun Anggaran)</span>
-              <span class="text-[11px] text-[#0067AC] font-semibold">Wajib</span>
+              <span class="text-[11px] text-[#0067AC] font-semibold">Wajib (Master Data)</span>
             </label>
             <div class="relative">
-              <input
+              <select
                 v-model.number="form.year"
-                type="number"
-                min="2020"
-                max="2040"
-                placeholder="2026"
-                :disabled="isEditMode"
-                class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-4 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs font-mono disabled:bg-gray-100 disabled:cursor-not-allowed"
-              />
+                :disabled="isEditMode || loadingMasters"
+                class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-4 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs appearance-none pr-10 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              >
+                <option v-if="loadingMasters" :value="form.year" disabled>Memuat master tahun anggaran...</option>
+                <option
+                  v-for="fy in fiscalYears"
+                  :key="fy.id"
+                  :value="fy.year"
+                >
+                  {{ fy.year }} &mdash; {{ fy.name || `Tahun Anggaran ${fy.year}` }} ({{ fy.status === 'AKTIF' ? 'Aktif' : (fy.status === 'PERENCANAAN' ? 'Perencanaan' : 'Tutup Buku') }}){{ fy.tna_proposals_count > 0 && (!isEditMode || editingProposal?.year !== fy.year) ? ' • [Sudah Ada TNA]' : '' }}
+                </option>
+              </select>
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                <ChevronDown class="w-4 h-4" />
+              </div>
             </div>
-            <p class="text-[10px] text-gray-400 mt-1">Satu tahun anggaran hanya diperkenankan 1 dokumen TNA Induk.</p>
+            <div class="mt-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-[10px]">
+              <p :class="isYearAlreadyRegistered ? 'text-amber-600 font-semibold' : 'text-gray-400'">
+                <span v-if="isYearAlreadyRegistered">⚠️ Tahun {{ form.year }} sudah memiliki dokumen TNA. Pilih tahun lain untuk usulan baru.</span>
+                <span v-else>Pilihan ditarik otomatis dari Master Tahun Anggaran. (1 tahun = 1 dokumen TNA)</span>
+              </p>
+              <span v-if="selectedFiscalYear" class="text-gray-500 font-mono text-[10px]">
+                Pagu: {{ formatRupiah(selectedFiscalYear.total_budget_cap) }}
+              </span>
+            </div>
           </div>
 
           <!-- Field 2: Upload Document -->
