@@ -945,7 +945,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 >
                   <BarChart3 class="w-4 h-4" />
                 </button>
-                <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
+                <div class="absolute left-full bottom-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
                     <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
                       <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">Reporting Center</span>
@@ -991,7 +991,7 @@ const totalPendingApprovalsForUser = computed(() => {
               >
                 <KeyRound class="w-4 h-4" />
               </button>
-              <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
+              <div class="absolute left-full bottom-0 pl-3 hidden group-hover:block z-50">
                 <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
                   <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5 flex items-center justify-between">
                     <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">Kelola User & RBAC</span>
