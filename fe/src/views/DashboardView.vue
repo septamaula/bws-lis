@@ -454,14 +454,9 @@ const totalPendingApprovalsForUser = computed(() => {
 
           <!-- Right: LIS Information -->
           <div class="leading-tight">
-            <div class="flex items-center gap-1.5">
-              <span class="font-extrabold text-sm sm:text-base tracking-tight text-[#002855] group-hover:text-[#0067AC] transition">
-                LIS
-              </span>
-              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC] border border-[#00A0E9]/30 uppercase tracking-wider hidden sm:inline-block">
-                PORTAL
-              </span>
-            </div>
+            <span class="font-extrabold text-sm sm:text-base tracking-tight text-[#002855] group-hover:text-[#0067AC] transition block">
+              LIS
+            </span>
             <span class="text-[10px] text-slate-500 font-medium block">Learning Integrated System</span>
           </div>
         </div>
