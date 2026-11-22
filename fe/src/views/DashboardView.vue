@@ -107,16 +107,22 @@ const programModuleRef = ref(null)
 const classModuleRef = ref(null)
 
 const isSubViewActive = computed(() => {
-  if (activeTab.value === 'tna' && tnaViewMode.value !== 'list') return true
+  if (activeTab.value === 'tna' && ['create', 'edit', 'detail'].includes(tnaViewMode.value)) return true
   if (activeTab.value === 'program' && programViewMode.value !== 'list') return true
   if (activeTab.value === 'class' && classViewMode.value !== 'list') return true
   return false
 })
 
-watch(activeTab, () => {
-  tnaViewMode.value = 'list'
-  programViewMode.value = 'list'
-  classViewMode.value = 'list'
+watch(activeTab, (newTab, oldTab) => {
+  if (oldTab === 'tna' && newTab !== 'tna') {
+    tnaViewMode.value = 'list'
+  }
+  if (oldTab === 'program' && newTab !== 'program') {
+    programViewMode.value = 'list'
+  }
+  if (oldTab === 'class' && newTab !== 'class') {
+    classViewMode.value = 'list'
+  }
 })
 
 function openTnaDetail(proposalId) {
@@ -163,7 +169,10 @@ const navigationModules = [
 const currentTabTitle = computed(() => {
   switch (activeTab.value) {
     case 'dashboard': return 'Executive & Operational Dashboard'
-    case 'tna': return 'TNA & Annual Training Plan'
+    case 'tna':
+      if (tnaViewMode.value === 'categories') return 'Master Kategori & Sub-Kategori Pelatihan'
+      if (tnaViewMode.value === 'years') return 'Master Tahun Anggaran Pelatihan'
+      return 'TNA & Annual Training Plan'
     case 'program': return 'Program Pelatihan & Work Plan'
     case 'class': return 'Class Implementation & Schedule'
     case 'participants': return 'Peserta & Activity Tracking'
@@ -180,7 +189,10 @@ const currentTabTitle = computed(() => {
 const currentTabSubtitle = computed(() => {
   switch (activeTab.value) {
     case 'dashboard': return 'Portal Operasional Terpadu Learning & Development — Bank Woori Saudara'
-    case 'tna': return 'Perencanaan Kebutuhan Diklat & Usulan Anggaran Kompetensi Divisi Bank Woori Saudara'
+    case 'tna':
+      if (tnaViewMode.value === 'categories') return 'Kelola rumpun kompetensi, mata diklat, dan standar kurikulum perbankan'
+      if (tnaViewMode.value === 'years') return 'Kelola tahun buku anggaran, batas pagu regulator, dan status periode aktif'
+      return 'Perencanaan Kebutuhan Diklat & Usulan Anggaran Kompetensi Divisi Bank Woori Saudara'
     case 'program': return 'Katalog Program Kerja, Kurikulum Diklat, dan Sertifikasi Wajib Regulasi OJK / BI'
     case 'class': return 'Manajemen Batch Pelatihan, Alokasi Ruangan, dan Otorisasi Maker-Checker'
     case 'participants': return 'Database Peserta Diklat, Kehadiran, dan Monitoring Progres Pelatihan LIS'
@@ -649,28 +661,61 @@ const totalPendingApprovalsForUser = computed(() => {
                 </button>
                 <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
-                    <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">TNA / Training Plan</span>
+                    <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5 flex items-center justify-between">
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">TNA / Training Plan</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">Plan</span>
                     </div>
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
                         <button
                           @click="activeTab = 'tna'; tnaViewMode = 'list'"
-                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'tna' && tnaViewMode === 'list' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                          class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                          :class="activeTab === 'tna' && tnaViewMode === 'list' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
-                          <FolderKanban class="w-3.5 h-3.5 text-gray-400" />
-                          Daftar TNA & Pagu Budget
+                          <span class="flex items-center gap-2">
+                            <FolderKanban class="w-3.5 h-3.5" />
+                            Daftar TNA & Pagu Budget
+                          </span>
+                          <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
                       </li>
                       <li>
                         <button
                           @click="activeTab = 'tna'; tnaViewMode = 'create'"
-                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'tna' && tnaViewMode === 'create' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                          class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                          :class="activeTab === 'tna' && tnaViewMode === 'create' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
-                          <Plus class="w-3.5 h-3.5 text-gray-400" />
-                          Buat Usulan TNA Baru
+                          <span class="flex items-center gap-2">
+                            <Plus class="w-3.5 h-3.5" />
+                            Buat Usulan TNA Baru
+                          </span>
+                          <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          @click="activeTab = 'tna'; tnaViewMode = 'categories'"
+                          class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                          :class="activeTab === 'tna' && tnaViewMode === 'categories' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                        >
+                          <span class="flex items-center gap-2">
+                            <FolderTree class="w-3.5 h-3.5" />
+                            Master Kategori & Sub
+                          </span>
+                          <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          @click="activeTab = 'tna'; tnaViewMode = 'years'"
+                          class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                          :class="activeTab === 'tna' && tnaViewMode === 'years' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                        >
+                          <span class="flex items-center gap-2">
+                            <CalendarRange class="w-3.5 h-3.5" />
+                            Master Tahun Anggaran
+                          </span>
+                          <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
                       </li>
                     </ul>
@@ -1026,32 +1071,6 @@ const totalPendingApprovalsForUser = computed(() => {
                     </li>
                     <li>
                       <button
-                        @click="activeTab = 'rbac'; rbacSubTab = 'categories'"
-                        class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
-                        :class="activeTab === 'rbac' && rbacSubTab === 'categories' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
-                      >
-                        <span class="flex items-center gap-2">
-                          <FolderTree class="w-3.5 h-3.5" />
-                          Master Kategori & Sub
-                        </span>
-                        <ChevronRight class="w-3.5 h-3.5" />
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        @click="activeTab = 'rbac'; rbacSubTab = 'years'"
-                        class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
-                        :class="activeTab === 'rbac' && rbacSubTab === 'years' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
-                      >
-                        <span class="flex items-center gap-2">
-                          <CalendarRange class="w-3.5 h-3.5" />
-                          Master Tahun Anggaran
-                        </span>
-                        <ChevronRight class="w-3.5 h-3.5" />
-                      </button>
-                    </li>
-                    <li>
-                      <button
                         @click="activeTab = 'rbac'; rbacSubTab = 'approvals'"
                         class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
                         :class="activeTab === 'rbac' && rbacSubTab === 'approvals' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
@@ -1091,7 +1110,7 @@ const totalPendingApprovalsForUser = computed(() => {
             <!-- 1. Executive Dashboard: General Fast Actions -->
             <div v-if="activeTab === 'dashboard'" class="flex flex-wrap items-center gap-2">
               <button
-                @click="activeTab = 'rbac'; rbacSubTab = 'years'"
+                @click="activeTab = 'tna'; tnaViewMode = 'years'"
                 class="bg-white px-3.5 py-2 rounded-full text-xs font-semibold text-gray-700 flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-100 transition"
                 title="Klik untuk Kelola Master Tahun Anggaran"
               >
@@ -1115,39 +1134,42 @@ const totalPendingApprovalsForUser = computed(() => {
               </button>
             </div>
 
-            <!-- 2. TNA Module Header Actions -->
-            <div v-else-if="activeTab === 'tna'" class="flex items-center gap-2">
+            <!-- 2. TNA Module Header Actions & Sub-Tabs -->
+            <div v-else-if="activeTab === 'tna'" class="flex flex-wrap items-center gap-2">
               <button
-                @click="activeTab = 'rbac'; rbacSubTab = 'years'"
-                class="bg-white px-3.5 py-2 rounded-full text-xs font-semibold text-gray-700 flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-100 transition"
-                title="Kelola Master Tahun Anggaran"
+                @click="tnaViewMode = 'list'"
+                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-xs border cursor-pointer"
+                :class="tnaViewMode === 'list' ? 'bg-[#0067AC] text-white border-[#0067AC]' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'"
               >
-                <Calendar class="w-3.5 h-3.5 text-[#0067AC]" />
-                <span>Tahun Buku: {{ activeFiscalYear }}</span>
+                <FolderKanban class="w-3.5 h-3.5" :class="tnaViewMode === 'list' ? 'text-white' : 'text-[#0067AC]'" />
+                <span>Daftar Usulan TNA</span>
               </button>
+
+              <button
+                @click="tnaViewMode = 'categories'"
+                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-xs border cursor-pointer"
+                :class="tnaViewMode === 'categories' ? 'bg-[#0067AC] text-white border-[#0067AC]' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'"
+              >
+                <FolderTree class="w-3.5 h-3.5" :class="tnaViewMode === 'categories' ? 'text-white' : 'text-[#0067AC]'" />
+                <span>Master Kategori & Sub</span>
+              </button>
+
+              <button
+                @click="tnaViewMode = 'years'"
+                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-xs border cursor-pointer"
+                :class="tnaViewMode === 'years' ? 'bg-[#0067AC] text-white border-[#0067AC]' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'"
+              >
+                <CalendarRange class="w-3.5 h-3.5" :class="tnaViewMode === 'years' ? 'text-white' : 'text-[#0067AC]'" />
+                <span>Master Tahun Anggaran</span>
+              </button>
+
               <button
                 v-if="canManageTna && tnaViewMode === 'list'"
                 @click="tnaViewMode = 'create'"
-                class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition"
+                class="bg-[#0067AC] hover:bg-[#00528c] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer ml-auto"
               >
                 <Plus class="w-3.5 h-3.5" />
                 <span>Usulan TNA Baru</span>
-              </button>
-              <button
-                v-else-if="tnaViewMode === 'edit'"
-                @click="tnaViewMode = 'detail'"
-                class="bg-white text-gray-700 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-200 transition"
-              >
-                <ArrowLeft class="w-3.5 h-3.5 text-[#0067AC]" />
-                <span>Kembali ke Rincian Dokumen</span>
-              </button>
-              <button
-                v-else-if="tnaViewMode !== 'list'"
-                @click="tnaViewMode = 'list'"
-                class="bg-white text-gray-700 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-200 transition"
-              >
-                <FolderKanban class="w-3.5 h-3.5 text-[#0067AC]" />
-                <span>Daftar Usulan TNA</span>
               </button>
             </div>
 
@@ -1222,24 +1244,6 @@ const totalPendingApprovalsForUser = computed(() => {
               >
                 <UserCheck class="w-3.5 h-3.5" />
                 <span>Master Karyawan</span>
-              </button>
-
-              <button
-                @click="rbacSubTab = 'categories'"
-                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0"
-                :class="rbacSubTab === 'categories' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
-              >
-                <FolderTree class="w-3.5 h-3.5" />
-                <span>Master Kategori & Sub</span>
-              </button>
-
-              <button
-                @click="rbacSubTab = 'years'"
-                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0"
-                :class="rbacSubTab === 'years' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
-              >
-                <CalendarRange class="w-3.5 h-3.5" />
-                <span>Master Tahun</span>
               </button>
 
               <button
@@ -1393,6 +1397,12 @@ const totalPendingApprovalsForUser = computed(() => {
                 @back="tnaViewMode = (tnaViewMode === 'edit' ? 'detail' : 'list')"
                 @created="handleTnaCreated"
               />
+              <CategoryMasterModule
+                v-else-if="tnaViewMode === 'categories'"
+              />
+              <YearMasterModule
+                v-else-if="tnaViewMode === 'years'"
+              />
               <TnaModule
                 v-else
                 :tna-proposals="tnaProposals"
@@ -1458,16 +1468,10 @@ const totalPendingApprovalsForUser = computed(() => {
               :audit-logs="auditLogs"
             />
 
-            <!-- User RBAC, Master Data & Multi-Approval Settings -->
+            <!-- User RBAC & Multi-Approval Settings -->
             <template v-else-if="activeTab === 'rbac'">
-              <CategoryMasterModule
-                v-if="rbacSubTab === 'categories'"
-              />
-              <YearMasterModule
-                v-else-if="rbacSubTab === 'years'"
-              />
               <MultiApprovalSettingModule
-                v-else-if="rbacSubTab === 'approvals' || rbacSubTab === 'approval_settings'"
+                v-if="rbacSubTab === 'approvals' || rbacSubTab === 'approval_settings'"
               />
               <UserRbacModule
                 v-else
