@@ -86,33 +86,52 @@ const isUserTyping = ref(false)
 // Format raw numeric/string value to Indonesian formatted string (e.g. 1.100.000.000)
 function formatValue(val) {
   if (val === null || val === undefined || val === '') return ''
+
+  // If val is a number
+  if (typeof val === 'number') {
+    if (isNaN(val)) return ''
+    if (props.allowDecimal) {
+      const isNeg = props.allowNegative && val < 0
+      const parts = Math.abs(val).toFixed(props.maxDecimals).split('.')
+      const intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+      const decPart = parts[1] || ''
+      return (isNeg ? '-' : '') + intPart + (decPart ? ',' + decPart : '')
+    } else {
+      const rounded = Math.round(val)
+      const isNeg = props.allowNegative && rounded < 0
+      const absStr = String(Math.abs(rounded))
+      return (isNeg ? '-' : '') + absStr.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    }
+  }
+
   const str = String(val).trim()
+  if (!str) return ''
 
   if (props.allowDecimal) {
-    const normalized = str.replace(',', '.')
-    const isNeg = props.allowNegative && normalized.startsWith('-')
-    const cleanStr = normalized.replace(/[^0-9.]/g, '')
-    const parts = cleanStr.split('.')
-    const intPart = parts[0] ? parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '0'
+    const isNeg = props.allowNegative && str.startsWith('-')
+    let clean = str
+    if (clean.includes(',')) {
+      clean = clean.replace(/\./g, '').replace(',', '.')
+    }
+    const parts = clean.replace(/[^0-9.]/g, '').split('.')
+    const intPart = parts[0] ? parts[0].replace(/^0+(?=\d)/, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.') : '0'
     let res = (isNeg ? '-' : '') + intPart
     if (parts.length > 1) {
-      const decPart = parts[1].slice(0, props.maxDecimals)
+      const decPart = parts.slice(1).join('').slice(0, props.maxDecimals)
       res += ',' + decPart
     }
     return res
   } else {
-    // If incoming string has decimal like '1100000000.00' (from DB/Laravel), round it cleanly
-    let num = Number(str)
-    if (!isNaN(num)) {
-      num = Math.round(num)
-      const isNeg = props.allowNegative && num < 0
-      const absStr = String(Math.abs(num))
-      return (isNeg ? '-' : '') + absStr.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    // Integer mode: in Indonesian numbering, dots are thousand separators, not decimals
+    let clean = str
+    if (clean.endsWith('.00')) {
+      clean = clean.replace(/\.00$/, '')
     }
-    const isNeg = props.allowNegative && str.startsWith('-')
-    const clean = str.replace(/\D/g, '')
-    if (!clean) return ''
-    return (isNeg ? '-' : '') + clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+    const isNeg = props.allowNegative && clean.startsWith('-')
+    const digitsOnly = clean.replace(/\D/g, '')
+    if (!digitsOnly) return ''
+    const normalized = digitsOnly.replace(/^0+(?=\d)/, '')
+    return (isNeg ? '-' : '') + normalized.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
   }
 }
 
@@ -144,6 +163,7 @@ function parseValue(displayStr) {
 // Calculate new cursor position after dots/separators are inserted/deleted
 function calculateNewCursor(oldVal, newVal, oldCursor) {
   const digitsBefore = oldVal.slice(0, oldCursor).replace(/\D/g, '').length
+  if (digitsBefore === 0) return 0
   let count = 0
   for (let i = 0; i < newVal.length; i++) {
     if (/\d/.test(newVal[i])) count++
@@ -174,6 +194,7 @@ function onInput(event) {
   const formatted = formatValue(rawTyped)
   const newCursor = calculateNewCursor(rawTyped, formatted, oldCursor)
 
+  el.value = formatted
   displayValue.value = formatted
 
   const parsed = parseValue(formatted)
