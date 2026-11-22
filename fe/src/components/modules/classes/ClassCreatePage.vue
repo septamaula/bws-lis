@@ -358,16 +358,13 @@ onMounted(() => {
           <label class="block text-xs font-bold text-gray-700 mb-1.5">
             Kapasitas Kuota Kursi <span class="text-rose-500">*</span>
           </label>
-          <div class="relative">
-            <input
-              type="number"
-              v-model.number="form.max_quota"
-              min="5"
-              max="200"
-              class="w-full bg-[#f8fafc] border border-gray-200 rounded-2xl px-4 py-2.5 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#0067AC] transition"
-            />
-            <span class="absolute right-3.5 top-2.5 text-[11px] text-gray-400 font-medium">Peserta</span>
-          </div>
+          <AppNumberInput
+            v-model="form.max_quota"
+            suffix="Peserta"
+            :min="5"
+            :max="200"
+            placeholder="30"
+          />
         </div>
       </div>
 
@@ -461,16 +458,13 @@ onMounted(() => {
           <label class="block text-xs font-bold text-gray-700 mb-1.5">
             Passing Grade Kelulusan (Standar BWS: 75)
           </label>
-          <div class="relative">
-            <input
-              type="number"
-              v-model.number="form.passing_grade"
-              min="50"
-              max="100"
-              class="w-full bg-[#f8fafc] border border-gray-200 rounded-2xl px-4 py-2.5 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#0067AC] transition"
-            />
-            <span class="absolute right-3.5 top-2.5 text-[11px] text-gray-400 font-medium">/ 100 Poin</span>
-          </div>
+          <AppNumberInput
+            v-model="form.passing_grade"
+            suffix="/ 100 Poin"
+            :min="50"
+            :max="100"
+            placeholder="75"
+          />
         </div>
       </div>
     </div>

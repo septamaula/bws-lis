@@ -81,7 +81,7 @@ async function submit() {
           </div>
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Kuota</label>
-            <input type="number" v-model.number="form.max_quota" min="5" max="100" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required />
+            <AppNumberInput v-model="form.max_quota" suffix="Peserta" :min="5" :max="100" placeholder="30" required />
           </div>
         </div>
 

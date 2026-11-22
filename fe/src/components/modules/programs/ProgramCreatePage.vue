@@ -526,13 +526,13 @@ async function submitProgram() {
               <!-- 1. Fee Facilitator -->
               <div class="flex items-center justify-between gap-3">
                 <label class="text-xs font-bold text-gray-700 w-44">Fee Facilitator</label>
-                <div class="relative flex-1">
-                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
-                  <input
-                    v-model.number="form.budget_fee_facilitator"
-                    type="number"
-                    step="500000"
-                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                <div class="flex-1">
+                  <AppNumberInput
+                    v-model="form.budget_fee_facilitator"
+                    prefix="Rp"
+                    size="sm"
+                    align="right"
+                    placeholder="0"
                   />
                 </div>
               </div>
@@ -540,13 +540,13 @@ async function submitProgram() {
               <!-- 2. Meals -->
               <div class="flex items-center justify-between gap-3">
                 <label class="text-xs font-bold text-gray-700 w-44">Meals</label>
-                <div class="relative flex-1">
-                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
-                  <input
-                    v-model.number="form.budget_meals"
-                    type="number"
-                    step="500000"
-                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                <div class="flex-1">
+                  <AppNumberInput
+                    v-model="form.budget_meals"
+                    prefix="Rp"
+                    size="sm"
+                    align="right"
+                    placeholder="0"
                   />
                 </div>
               </div>
@@ -554,13 +554,13 @@ async function submitProgram() {
               <!-- 3. Hotel -->
               <div class="flex items-center justify-between gap-3">
                 <label class="text-xs font-bold text-gray-700 w-44">Hotel</label>
-                <div class="relative flex-1">
-                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
-                  <input
-                    v-model.number="form.budget_hotel"
-                    type="number"
-                    step="500000"
-                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                <div class="flex-1">
+                  <AppNumberInput
+                    v-model="form.budget_hotel"
+                    prefix="Rp"
+                    size="sm"
+                    align="right"
+                    placeholder="0"
                   />
                 </div>
               </div>
@@ -568,13 +568,13 @@ async function submitProgram() {
               <!-- 4. Meeting Package -->
               <div class="flex items-center justify-between gap-3">
                 <label class="text-xs font-bold text-gray-700 w-44">Meeting Package</label>
-                <div class="relative flex-1">
-                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
-                  <input
-                    v-model.number="form.budget_meeting_package"
-                    type="number"
-                    step="500000"
-                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                <div class="flex-1">
+                  <AppNumberInput
+                    v-model="form.budget_meeting_package"
+                    prefix="Rp"
+                    size="sm"
+                    align="right"
+                    placeholder="0"
                   />
                 </div>
               </div>
@@ -582,13 +582,13 @@ async function submitProgram() {
               <!-- 5. Transportation -->
               <div class="flex items-center justify-between gap-3">
                 <label class="text-xs font-bold text-gray-700 w-44">Transportation</label>
-                <div class="relative flex-1">
-                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
-                  <input
-                    v-model.number="form.budget_transportation"
-                    type="number"
-                    step="500000"
-                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                <div class="flex-1">
+                  <AppNumberInput
+                    v-model="form.budget_transportation"
+                    prefix="Rp"
+                    size="sm"
+                    align="right"
+                    placeholder="0"
                   />
                 </div>
               </div>
@@ -601,13 +601,13 @@ async function submitProgram() {
               <!-- 6. Business Trip Allowance -->
               <div class="flex items-center justify-between gap-3">
                 <label class="text-xs font-bold text-gray-700 w-44">Business Trip Allowance</label>
-                <div class="relative flex-1">
-                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
-                  <input
-                    v-model.number="form.budget_business_trip"
-                    type="number"
-                    step="500000"
-                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                <div class="flex-1">
+                  <AppNumberInput
+                    v-model="form.budget_business_trip"
+                    prefix="Rp"
+                    size="sm"
+                    align="right"
+                    placeholder="0"
                   />
                 </div>
               </div>
@@ -615,13 +615,13 @@ async function submitProgram() {
               <!-- 7. Reward -->
               <div class="flex items-center justify-between gap-3">
                 <label class="text-xs font-bold text-gray-700 w-44">Reward</label>
-                <div class="relative flex-1">
-                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
-                  <input
-                    v-model.number="form.budget_reward"
-                    type="number"
-                    step="500000"
-                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                <div class="flex-1">
+                  <AppNumberInput
+                    v-model="form.budget_reward"
+                    prefix="Rp"
+                    size="sm"
+                    align="right"
+                    placeholder="0"
                   />
                 </div>
               </div>
@@ -629,13 +629,13 @@ async function submitProgram() {
               <!-- 8. Material -->
               <div class="flex items-center justify-between gap-3">
                 <label class="text-xs font-bold text-gray-700 w-44">Material</label>
-                <div class="relative flex-1">
-                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
-                  <input
-                    v-model.number="form.budget_material"
-                    type="number"
-                    step="500000"
-                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                <div class="flex-1">
+                  <AppNumberInput
+                    v-model="form.budget_material"
+                    prefix="Rp"
+                    size="sm"
+                    align="right"
+                    placeholder="0"
                   />
                 </div>
               </div>
@@ -643,13 +643,13 @@ async function submitProgram() {
               <!-- 9. Internet -->
               <div class="flex items-center justify-between gap-3">
                 <label class="text-xs font-bold text-gray-700 w-44">Internet</label>
-                <div class="relative flex-1">
-                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
-                  <input
-                    v-model.number="form.budget_internet"
-                    type="number"
-                    step="500000"
-                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                <div class="flex-1">
+                  <AppNumberInput
+                    v-model="form.budget_internet"
+                    prefix="Rp"
+                    size="sm"
+                    align="right"
+                    placeholder="0"
                   />
                 </div>
               </div>
@@ -657,13 +657,13 @@ async function submitProgram() {
               <!-- 10. Miscellaneous -->
               <div class="flex items-center justify-between gap-3">
                 <label class="text-xs font-bold text-gray-700 w-44">Miscellaneous</label>
-                <div class="relative flex-1">
-                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
-                  <input
-                    v-model.number="form.budget_miscellaneous"
-                    type="number"
-                    step="500000"
-                    class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-xl pl-8 pr-3 py-1.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none font-mono shadow-2xs"
+                <div class="flex-1">
+                  <AppNumberInput
+                    v-model="form.budget_miscellaneous"
+                    prefix="Rp"
+                    size="sm"
+                    align="right"
+                    placeholder="0"
                   />
                 </div>
               </div>

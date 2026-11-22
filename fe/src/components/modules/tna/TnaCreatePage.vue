@@ -653,18 +653,13 @@ async function submitForm() {
             <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
               <span>Minimum Investment Projection Based on Regulator Statement</span>
             </label>
-            <div class="relative">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">Rp</span>
-              <input
-                v-model.number="form.minimum_regulator_investment"
-                type="number"
-                step="1000000"
-                placeholder="1000000000"
-                class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl pl-9 pr-4 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs font-mono"
-              />
-            </div>
+            <AppNumberInput
+              v-model="form.minimum_regulator_investment"
+              prefix="Rp"
+              placeholder="1.000.000.000"
+            />
             <p class="text-[10px] text-gray-400 mt-1 font-mono">
-              Terbaca: {{ formatRupiah(form.minimum_regulator_investment) }} (Ketentuan Alokasi OJK / Regulasi Bank)
+              Ketentuan Alokasi OJK / Regulasi Bank
             </p>
           </div>
 
@@ -773,15 +768,13 @@ async function submitForm() {
 
                 <!-- Investment (Projection) -->
                 <td class="py-2.5 px-3 text-right">
-                  <div class="relative">
-                    <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] font-bold text-gray-400">Rp</span>
-                    <input
-                      v-model.number="item.budget"
-                      type="number"
-                      step="1000000"
-                      class="w-full bg-white text-xs font-bold text-right text-gray-900 rounded-lg pl-8 pr-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition font-mono shadow-2xs"
-                    />
-                  </div>
+                  <AppNumberInput
+                    v-model="item.budget"
+                    prefix="Rp"
+                    size="sm"
+                    align="right"
+                    placeholder="0"
+                  />
                 </td>
 
                 <!-- Action -->

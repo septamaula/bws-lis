@@ -84,7 +84,7 @@ async function submit() {
           </div>
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Nominal Biaya (IDR)</label>
-            <input type="number" v-model.number="form.amount" min="10000" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required />
+            <AppNumberInput v-model="form.amount" prefix="Rp" :min="10000" placeholder="10.000" required />
           </div>
         </div>
 

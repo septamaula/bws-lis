@@ -449,14 +449,11 @@ async function executeDelete() {
 
           <div class="space-y-1">
             <label class="block font-bold text-gray-700">Plafon Pagu Anggaran Tahunan (Rp)</label>
-            <input
+            <AppNumberInput
               v-model="form.total_budget_cap"
-              type="number"
-              step="1000000"
-              placeholder="5000000000"
-              class="w-full bg-[#F8FAFC] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none font-mono font-bold text-[#0067AC]"
+              prefix="Rp"
+              placeholder="5.000.000.000"
             />
-            <p class="text-[10px] text-gray-400 mt-0.5">Estimasi: {{ formatRupiah(form.total_budget_cap) }}</p>
           </div>
 
           <div class="flex items-center gap-2 pt-1">
