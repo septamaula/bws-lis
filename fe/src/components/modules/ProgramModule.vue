@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import {
   BookOpen,
   Plus,
@@ -47,6 +47,15 @@ const programViewMode = computed({
   }
 })
 const selectedProgramId = ref(null)
+
+watch(
+  () => props.viewMode,
+  (newMode) => {
+    if (newMode === 'create') {
+      selectedProgramId.value = null
+    }
+  }
+)
 
 const loading = ref(false)
 const programs = ref([])
@@ -198,6 +207,13 @@ async function executeDelete() {
     deleting.value = false
   }
 }
+
+defineExpose({
+  openCreate,
+  openDetail,
+  openEdit,
+  fetchPrograms
+})
 </script>
 
 <template>

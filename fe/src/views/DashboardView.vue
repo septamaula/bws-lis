@@ -154,6 +154,14 @@ function handleTnaCreated(message) {
   fetchDashboard()
 }
 
+function handleCreateProgram() {
+  if (programModuleRef.value?.openCreate) {
+    programModuleRef.value.openCreate()
+  } else {
+    programViewMode.value = 'create'
+  }
+}
+
 function handleOpenClassCreateFromProgram(programId) {
   activeTab.value = 'class'
   setTimeout(() => {
@@ -1159,7 +1167,8 @@ const totalPendingApprovalsForUser = computed(() => {
             <!-- 3. Program Kerja -->
             <div v-else-if="activeTab === 'program'" class="flex items-center gap-2">
               <button
-                @click="programModuleRef?.openCreate()"
+                v-if="programViewMode === 'list'"
+                @click="handleCreateProgram"
                 class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition cursor-pointer"
               >
                 <Plus class="w-3.5 h-3.5" />
