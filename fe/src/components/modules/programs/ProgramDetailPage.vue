@@ -497,12 +497,12 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- TABEL RINCIAN ANGGARAN BIAYA (RAB) -->
-      <div class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-100 shadow-2xs space-y-4">
+      <!-- TABEL RINCIAN BIAYA TAMBAHAN -->
+      <div v-if="program.budget_items && program.budget_items.length > 0" class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-100 shadow-2xs space-y-4">
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <div class="flex items-center gap-2">
             <Wallet class="w-4 h-4 text-[#0067AC]" />
-            <h2 class="text-sm font-bold text-gray-900">Rancangan Anggaran Biaya (RAB) Program Pelatihan</h2>
+            <h2 class="text-sm font-bold text-gray-900">Rincian Komponen Biaya Tambahan</h2>
           </div>
           <div class="flex items-center gap-2">
             <button
@@ -513,7 +513,7 @@ onMounted(() => {
               <Edit2 class="w-3 h-3" />
               <span>Edit RAB</span>
             </button>
-            <span class="text-xs font-semibold text-gray-500 font-mono">{{ program.budget_items?.length || 0 }} Komponen Biaya</span>
+            <span class="text-xs font-semibold text-gray-500 font-mono">{{ program.budget_items.length }} Komponen</span>
           </div>
         </div>
 
@@ -521,46 +521,30 @@ onMounted(() => {
           <table class="w-full text-xs text-left border-collapse">
             <thead class="bg-[#F8FAFC] text-gray-700 font-bold border-b border-gray-200">
               <tr>
-                <th class="py-3 px-3 text-center w-12">No</th>
-                <th class="py-3 px-3 w-52">Komponen Biaya</th>
-                <th class="py-3 px-4">Uraian / Deskripsi Rincian</th>
-                <th class="py-3 px-2 text-center w-24">Vol (Qty)</th>
-                <th class="py-3 px-2 text-center w-24">Satuan</th>
-                <th class="py-3 px-3 text-right w-36">Harga Satuan (Rp)</th>
-                <th class="py-3 px-4 text-right w-44">Subtotal Biaya (Rp)</th>
+                <th class="py-3 px-4 text-center w-14">No</th>
+                <th class="py-3 px-4">Uraian Biaya Tambahan</th>
+                <th class="py-3 px-4 text-right w-56">Nominal (Rp)</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
               <tr v-for="(item, idx) in program.budget_items" :key="item.id" class="hover:bg-gray-50/60 transition">
-                <td class="py-3 px-3 text-center font-bold text-gray-400 font-mono">{{ idx + 1 }}</td>
-                <td class="py-3 px-3">
-                  <span
-                    class="px-2.5 py-1 rounded-full text-[11px] font-bold inline-block"
-                    :class="budgetItemTypeBadge[item.item_type]?.class || 'bg-gray-100 text-gray-700'"
-                  >
-                    {{ budgetItemTypeBadge[item.item_type]?.label || item.item_type }}
-                  </span>
-                </td>
-                <td class="py-3 px-4">
-                  <span class="font-bold text-gray-900 block">{{ item.description }}</span>
+                <td class="py-3.5 px-4 text-center font-bold text-gray-400 font-mono">{{ idx + 1 }}</td>
+                <td class="py-3.5 px-4">
+                  <span class="font-bold text-gray-900 block text-xs">{{ item.description }}</span>
                   <span v-if="item.notes" class="text-[11px] text-gray-400 italic block mt-0.5">{{ item.notes }}</span>
                 </td>
-                <td class="py-3 px-2 text-center font-mono font-bold text-gray-900">{{ Number(item.quantity) }}</td>
-                <td class="py-3 px-2 text-center text-gray-600 font-medium">{{ item.unit }}</td>
-                <td class="py-3 px-3 text-right font-mono font-semibold text-gray-800">{{ formatRupiah(item.unit_price) }}</td>
-                <td class="py-3 px-4 text-right font-mono font-extrabold text-[#002855] text-sm">{{ formatRupiah(item.subtotal) }}</td>
-              </tr>
-              <tr v-if="!program.budget_items || program.budget_items.length === 0">
-                <td colspan="7" class="py-6 text-center text-gray-400">Belum ada komponen biaya yang didaftarkan.</td>
+                <td class="py-3.5 px-4 text-right font-mono font-extrabold text-[#002855] text-xs">
+                  {{ formatRupiah(item.subtotal || item.unit_price) }}
+                </td>
               </tr>
             </tbody>
             <tfoot class="bg-[#F8FAFC] border-t-2 border-gray-200 font-bold text-xs">
               <tr>
-                <td colspan="5" class="py-3.5 px-4 text-gray-800 font-extrabold text-right">
-                  Total Akumulasi Anggaran Program Pelatihan (RAB)
+                <td colspan="2" class="py-3.5 px-4 text-gray-800 font-extrabold text-right">
+                  Subtotal Biaya Tambahan
                 </td>
-                <td colspan="2" class="py-3.5 px-4 text-right font-mono text-base text-[#0067AC] font-black">
-                  {{ formatRupiah(program.total_budget) }}
+                <td class="py-3.5 px-4 text-right font-mono text-sm text-[#0067AC] font-black">
+                  {{ formatRupiah(program.budget_items.reduce((s, i) => s + Number(i.subtotal || i.unit_price || 0), 0)) }}
                 </td>
               </tr>
             </tfoot>
