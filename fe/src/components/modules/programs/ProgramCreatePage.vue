@@ -562,7 +562,7 @@ async function submitProgram() {
                 <Wallet class="w-4 h-4 text-[#0067AC]" />
                 <span>Rancangan Anggaran Biaya (RAB) Program</span>
               </h3>
-              <p class="text-[11px] text-gray-500">10 Komponen anggaran standar BWS dan komponen tambahan fleksibel</p>
+              <p class="text-[11px] text-gray-500">Rincian komponen anggaran biaya pelaksanaan diklat</p>
             </div>
             <div class="text-right">
               <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider block">Total Anggaran (RAB)</span>
@@ -575,7 +575,7 @@ async function submitProgram() {
             <div class="flex items-center justify-between mb-3">
               <span class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-[#0067AC]"></span>
-                <span>10 Komponen Standar BWS (Default)</span>
+                <span>Komponen Standar (Default)</span>
               </span>
               <span class="text-[11px] font-mono font-semibold text-gray-500">
                 Subtotal Standar: <strong class="text-gray-900">{{ formatRupiah(standard10BudgetSum) }}</strong>
@@ -741,20 +741,19 @@ async function submitProgram() {
           <!-- 2. Additional Flexible Items Section -->
           <div class="border-t border-gray-200 pt-5">
             <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-              <div>
+              <div class="flex items-center gap-2">
                 <span class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
                   <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <span>Komponen Biaya Tambahan (Fleksibel)</span>
-                  <span v-if="customBudgetItems.length > 0" class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
-                    {{ customBudgetItems.length }} Komponen
-                  </span>
+                  <span>Biaya Tambahan</span>
                 </span>
-                <p class="text-[11px] text-gray-500 mt-0.5">Tambahkan pos biaya baru secara fleksibel jika ada kebutuhan spesifik lainnya</p>
+                <span v-if="customBudgetItems.length > 0" class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+                  {{ customBudgetItems.length }}
+                </span>
               </div>
 
               <div class="flex items-center gap-3">
                 <span v-if="customBudgetSum > 0" class="text-[11px] font-mono font-semibold text-gray-500">
-                  Subtotal Tambahan: <strong class="text-emerald-700">{{ formatRupiah(customBudgetSum) }}</strong>
+                  Subtotal: <strong class="text-emerald-700">{{ formatRupiah(customBudgetSum) }}</strong>
                 </span>
                 <button
                   type="button"
@@ -762,7 +761,7 @@ async function submitProgram() {
                   class="bg-[#0067AC] hover:bg-[#00528c] text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
                 >
                   <Plus class="w-3.5 h-3.5" />
-                  <span>Tambah Komponen Biaya</span>
+                  <span>Tambah Biaya</span>
                 </button>
               </div>
             </div>
@@ -783,7 +782,7 @@ async function submitProgram() {
                   <input
                     v-model="item.name"
                     type="text"
-                    placeholder="Nama Komponen Biaya (cth: Sewa Lab Khusus, Ujian Sertifikasi BNSP, Seragam Diklat)"
+                    placeholder="Nama biaya tambahan"
                     class="w-full bg-[#f8faf9] text-xs font-semibold text-gray-900 rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:bg-white focus:outline-none transition"
                   />
                 </div>
@@ -817,7 +816,7 @@ async function submitProgram() {
             <div class="flex items-center gap-2 text-gray-700">
               <CheckCircle2 class="w-4 h-4 text-[#0067AC] shrink-0" />
               <span>
-                Total Pagu Anggaran Diklat dihitung otomatis dari <strong>10 Komponen Standar</strong> ({{ formatRupiah(standard10BudgetSum) }}) + <strong>{{ customBudgetItems.length }} Komponen Tambahan</strong> ({{ formatRupiah(customBudgetSum) }}).
+                Total anggaran diklat terakumulasi otomatis dari komponen standar dan biaya tambahan.
               </span>
             </div>
             <div class="text-right shrink-0">
