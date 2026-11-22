@@ -335,11 +335,11 @@ onMounted(() => {
 
         <div class="bg-white rounded-2xl p-4 shadow-2xs border border-gray-100 flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-            <Award class="w-5 h-5" />
+            <GraduationCap class="w-5 h-5" />
           </div>
           <div>
-            <p class="text-[11px] text-gray-400 font-medium">Passing Grade Min.</p>
-            <p class="text-base sm:text-lg font-extrabold text-gray-900 font-mono">{{ program.passing_grade }}% Nilai</p>
+            <p class="text-[11px] text-gray-400 font-medium">Jumlah Kelas</p>
+            <p class="text-base sm:text-lg font-extrabold text-gray-900 font-mono">{{ program.classes?.length || 0 }} Kelas</p>
           </div>
         </div>
       </div>
