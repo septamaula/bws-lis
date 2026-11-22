@@ -144,34 +144,34 @@ function removeItemRow(index) {
   form.value.items.splice(index, 1)
 }
 
-// Preset: Muat Contoh Lengkap 20 Program
+// Preset: Muat Contoh Lengkap 20 Program (Total Pagu: Rp 1.485.000.000)
 function loadPreset20Programs() {
   form.value.items = [
-    // Operasional & Layanan
-    { category_name: 'Operasional & Layanan Perbankan', recommended_program: 'Frontliner, Teller & Service Excellence', budget: 65000000 },
-    { category_name: 'Operasional & Layanan Perbankan', recommended_program: 'Back Office, Kliring & Sistem Pembayaran (SKNBI/FAST)', budget: 45000000 },
-    { category_name: 'Operasional & Layanan Perbankan', recommended_program: 'Trade Finance & Transaksi Ekspor-Impor', budget: 55000000 },
-    { category_name: 'Operasional & Layanan Perbankan', recommended_program: 'Treasury Operations & Pasar Uang', budget: 70000000 },
-    // Kredit & Pembiayaan
-    { category_name: 'Kredit & Pembiayaan Komersial', recommended_program: 'Analisis Kelayakan Kredit & Cashflow Modelling', budget: 85000000 },
-    { category_name: 'Kredit & Pembiayaan Komersial', recommended_program: 'Mitigasi Risiko Kredit & Pencegahan NPL', budget: 60000000 },
-    { category_name: 'Kredit & Pembiayaan Komersial', recommended_program: 'Restrukturisasi Kredit & Penyelamatan Aset (Remedial)', budget: 50000000 },
-    { category_name: 'Kredit & Pembiayaan Komersial', recommended_program: 'Kredit Konsumer, KPR & Pembiayaan Pensiunan BWS', budget: 75000000 },
-    // Manajemen Risiko & OJK
-    { category_name: 'Manajemen Risiko, Kepatuhan & OJK', recommended_program: 'Sertifikasi Manajemen Risiko Perbankan (BSMR 1 - 4)', budget: 95000000 },
-    { category_name: 'Manajemen Risiko, Kepatuhan & OJK', recommended_program: 'APU-PPT (Anti Pencucian Uang & Pencegahan Terorisme)', budget: 40000000 },
-    { category_name: 'Manajemen Risiko, Kepatuhan & OJK', recommended_program: 'Audit Internal Perbankan & Investigasi Anti-Fraud', budget: 55000000 },
-    { category_name: 'Manajemen Risiko, Kepatuhan & OJK', recommended_program: 'Perlindungan Konsumen & Kerahasiaan Data (UU PDP)', budget: 45000000 },
-    // Teknologi Informasi
-    { category_name: 'Teknologi Informasi & Siber', recommended_program: 'Keamanan Siber Perbankan & Kepatuhan POJK 29/2022', budget: 110000000 },
-    { category_name: 'Teknologi Informasi & Siber', recommended_program: 'Core Banking Administration & Database Tuning', budget: 65000000 },
-    { category_name: 'Teknologi Informasi & Siber', recommended_program: 'Digital Banking, API Open Banking & SNAP BI', budget: 80000000 },
-    { category_name: 'Teknologi Informasi & Siber', recommended_program: 'IT Disaster Recovery & Business Continuity (BCM)', budget: 70000000 },
-    // Kepemimpinan & Budaya Kerja
-    { category_name: 'Kepemimpinan & Budaya Kerja', recommended_program: 'Officer Development Program (ODP) Corporate Academy', budget: 150000000 },
-    { category_name: 'Kepemimpinan & Budaya Kerja', recommended_program: 'Branch Manager Leadership & P&L Business Mastery', budget: 90000000 },
-    { category_name: 'Kepemimpinan & Budaya Kerja', recommended_program: 'Supervisory Coaching, Mentoring & People Development', budget: 60000000 },
-    { category_name: 'Kepemimpinan & Budaya Kerja', recommended_program: 'Budaya Kerja Perbankan BWS & Integrity Excellence', budget: 50000000 }
+    // Operasional & Layanan Perbankan (Subtotal: Rp 260.000.000)
+    { category_name: 'Operasional & Layanan Perbankan', recommended_program: 'Frontliner, Teller & Service Excellence', budget: 65000000, realization_amount: 0 },
+    { category_name: 'Operasional & Layanan Perbankan', recommended_program: 'Back Office, Kliring & Sistem Pembayaran (SKNBI/FAST)', budget: 55000000, realization_amount: 0 },
+    { category_name: 'Operasional & Layanan Perbankan', recommended_program: 'Trade Finance & Transaksi Ekspor-Impor', budget: 65000000, realization_amount: 0 },
+    { category_name: 'Operasional & Layanan Perbankan', recommended_program: 'Treasury Operations & Pasar Uang', budget: 75000000, realization_amount: 0 },
+    // Kredit & Pembiayaan Komersial (Subtotal: Rp 310.000.000)
+    { category_name: 'Kredit & Pembiayaan Komersial', recommended_program: 'Analisis Kelayakan Kredit & Cashflow Modelling', budget: 95000000, realization_amount: 0 },
+    { category_name: 'Kredit & Pembiayaan Komersial', recommended_program: 'Mitigasi Risiko Kredit & Pencegahan NPL', budget: 70000000, realization_amount: 0 },
+    { category_name: 'Kredit & Pembiayaan Komersial', recommended_program: 'Restrukturisasi Kredit & Penyelamatan Aset (Remedial)', budget: 60000000, realization_amount: 0 },
+    { category_name: 'Kredit & Pembiayaan Komersial', recommended_program: 'Kredit Konsumer, KPR & Pembiayaan Pensiunan BWS', budget: 85000000, realization_amount: 0 },
+    // Manajemen Risiko, Kepatuhan & OJK (Subtotal: Rp 290.000.000)
+    { category_name: 'Manajemen Risiko, Kepatuhan & OJK', recommended_program: 'Sertifikasi Manajemen Risiko Perbankan (BSMR 1 - 4)', budget: 115000000, realization_amount: 0 },
+    { category_name: 'Manajemen Risiko, Kepatuhan & OJK', recommended_program: 'APU-PPT (Anti Pencucian Uang & Pencegahan Terorisme)', budget: 60000000, realization_amount: 0 },
+    { category_name: 'Manajemen Risiko, Kepatuhan & OJK', recommended_program: 'Audit Internal Perbankan & Investigasi Anti-Fraud', budget: 65000000, realization_amount: 0 },
+    { category_name: 'Manajemen Risiko, Kepatuhan & OJK', recommended_program: 'Perlindungan Konsumen & Kerahasiaan Data (UU PDP)', budget: 50000000, realization_amount: 0 },
+    // Teknologi Informasi & Siber (Subtotal: Rp 350.000.000)
+    { category_name: 'Teknologi Informasi & Siber', recommended_program: 'Keamanan Siber Perbankan & Kepatuhan POJK 29/2022', budget: 110000000, realization_amount: 0 },
+    { category_name: 'Teknologi Informasi & Siber', recommended_program: 'Core Banking Administration & Database Tuning', budget: 75000000, realization_amount: 0 },
+    { category_name: 'Teknologi Informasi & Siber', recommended_program: 'Digital Banking, API Open Banking & SNAP BI', budget: 85000000, realization_amount: 0 },
+    { category_name: 'Teknologi Informasi & Siber', recommended_program: 'IT Disaster Recovery & Business Continuity (BCM)', budget: 80000000, realization_amount: 0 },
+    // Kepemimpinan & Budaya Kerja (Subtotal: Rp 270.000.000)
+    { category_name: 'Kepemimpinan & Budaya Kerja', recommended_program: 'Officer Development Program (ODP) Corporate Academy', budget: 110000000, realization_amount: 0 },
+    { category_name: 'Kepemimpinan & Budaya Kerja', recommended_program: 'Branch Manager Leadership & P&L Business Mastery', budget: 75000000, realization_amount: 0 },
+    { category_name: 'Kepemimpinan & Budaya Kerja', recommended_program: 'Supervisory Coaching, Mentoring & People Development', budget: 50000000, realization_amount: 0 },
+    { category_name: 'Kepemimpinan & Budaya Kerja', recommended_program: 'Budaya Kerja Perbankan BWS & Integrity Excellence', budget: 35000000, realization_amount: 0 }
   ]
 }
 
@@ -212,7 +212,8 @@ async function loadMasterData() {
         form.value.items = p.items.map(it => ({
           category_name: it.category_name || it.category?.name || 'Operasional & Layanan Perbankan',
           recommended_program: it.recommended_program || it.sub_category_name || 'Program Pelatihan',
-          budget: Number(it.budget || it.estimated_cost) || 0
+          budget: Number(it.budget || it.estimated_cost) || 0,
+          realization_amount: Number(it.realization_amount) || 0
         }))
       } else {
         addItemRow()
@@ -252,7 +253,8 @@ async function submitForm() {
     const payloadItems = form.value.items.map(i => ({
       category_name: i.category_name,
       recommended_program: i.recommended_program,
-      budget: Number(i.budget) || 0
+      budget: Number(i.budget) || 0,
+      realization_amount: Number(i.realization_amount) || 0
     }))
 
     const formData = new FormData()
@@ -271,6 +273,7 @@ async function submitForm() {
       formData.append(`items[${idx}][category_name]`, it.category_name)
       formData.append(`items[${idx}][recommended_program]`, it.recommended_program)
       formData.append(`items[${idx}][budget]`, it.budget)
+      formData.append(`items[${idx}][realization_amount]`, it.realization_amount)
     })
 
     let res

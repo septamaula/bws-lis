@@ -229,9 +229,10 @@ class TnaApiController extends Controller
                     'sub_category_id' => $subId,
                     'sub_category_name' => $subName,
                     'budget' => $budget,
+                    'realization_amount' => (float) ($item['realization_amount'] ?? 0),
                     'job_family' => $item['job_family'] ?? $catName,
                     'competency_gap' => $compGap,
-                    'recommended_program' => $subName,
+                    'recommended_program' => $item['recommended_program'] ?? $subName,
                     'training_type' => $item['training_type'] ?? 'In-House Training (Internal Academy)',
                     'target_audience' => $item['target_audience'] ?? 'Staff & Officer Divisi '.$proposal->department,
                     'target_participants_count' => $partCount,
@@ -513,11 +514,19 @@ class TnaApiController extends Controller
                 $proposal->attachment_path = 'attachments/tna/'.uniqid().'_'.preg_replace('/[^A-Za-z0-9_\-\.]/', '', $validated['attachment_name']);
             }
 
-            // Hitung ulang total budget requested dari item baru
+            // Hitung ulang total budget requested & realization dari item baru
             $totalRequested = collect($validated['items'])->sum(function ($i) {
                 return (float) ($i['budget'] ?? 0);
             });
+            $totalRealization = collect($validated['items'])->sum(function ($i) {
+                return (float) ($i['realization_amount'] ?? 0);
+            });
             $proposal->total_budget_requested = $totalRequested;
+            if ($totalRealization > 0) {
+                $proposal->realization_amount = $totalRealization;
+            } elseif (isset($validated['realization_amount'])) {
+                $proposal->realization_amount = (float) $validated['realization_amount'];
+            }
 
             // Jika diajukan ulang (re-submit setelah revisi)
             if ($isSubmit) {
@@ -557,9 +566,10 @@ class TnaApiController extends Controller
                     'sub_category_id' => $subId,
                     'sub_category_name' => $subName,
                     'budget' => $budget,
+                    'realization_amount' => (float) ($item['realization_amount'] ?? 0),
                     'job_family' => $item['job_family'] ?? $catName,
                     'competency_gap' => $compGap,
-                    'recommended_program' => $subName,
+                    'recommended_program' => $item['recommended_program'] ?? $subName,
                     'training_type' => $item['training_type'] ?? 'In-House Training (Internal Academy)',
                     'target_audience' => $item['target_audience'] ?? 'Staff & Officer Divisi '.$proposal->department,
                     'target_participants_count' => $partCount,
