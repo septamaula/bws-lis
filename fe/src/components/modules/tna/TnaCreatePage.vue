@@ -18,8 +18,12 @@ import {
   RotateCcw,
   ShieldCheck,
   Building2,
-  ChevronDown
+  ChevronDown,
+  FileSpreadsheet,
+  Download,
+  Upload
 } from 'lucide-vue-next'
+import * as XLSX from 'xlsx'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 
@@ -89,6 +93,189 @@ function formatFileSize(bytes) {
 const totalInvestment = computed(() => {
   return form.value.items.reduce((sum, item) => sum + (Number(item.budget) || 0), 0)
 })
+
+// Import Excel State & Methods
+const showImportModal = ref(false)
+const importFile = ref(null)
+const importFileInputRef = ref(null)
+const isParsingExcel = ref(false)
+const importError = ref('')
+const parsedItems = ref([])
+const importMode = ref('replace') // 'replace' | 'append'
+
+const parsedItemsTotal = computed(() => {
+  return parsedItems.value.reduce((sum, item) => sum + (Number(item.budget) || 0), 0)
+})
+
+function openImportModal() {
+  importFile.value = null
+  importError.value = ''
+  parsedItems.value = []
+  importMode.value = 'replace'
+  showImportModal.value = true
+}
+
+function downloadTemplate() {
+  const wsData = [
+    ['No', 'Kategori Pelatihan', 'Judul Program Pelatihan', 'Pagu Investasi (Rp)', 'Estimasi Realisasi (Rp)'],
+    [1, 'Operasional & Layanan Perbankan', 'Frontliner, Teller & Service Excellence', 65000000, 0],
+    [2, 'Operasional & Layanan Perbankan', 'Back Office, Kliring & Sistem Pembayaran (SKNBI/FAST)', 55000000, 0],
+    [3, 'Operasional & Layanan Perbankan', 'Trade Finance & Transaksi Ekspor-Impor', 65000000, 0],
+    [4, 'Kredit & Pembiayaan Komersial', 'Analisis Kelayakan Kredit & Cashflow Modelling', 95000000, 0],
+    [5, 'Kredit & Pembiayaan Komersial', 'Mitigasi Risiko Kredit & Pencegahan NPL', 70000000, 0],
+    [6, 'Manajemen Risiko, Kepatuhan & Regulasi OJK', 'Sertifikasi Manajemen Risiko Perbankan (BSMR 1 - 4)', 115000000, 0],
+    [7, 'Manajemen Risiko, Kepatuhan & Regulasi OJK', 'APU-PPT (Anti Pencucian Uang & Pencegahan Terorisme)', 60000000, 0],
+    [8, 'Teknologi Informasi & Keamanan Siber', 'Keamanan Siber Perbankan & Kepatuhan POJK 29/2022', 110000000, 0],
+    [9, 'Teknologi Informasi & Keamanan Siber', 'Digital Banking, API Open Banking & SNAP BI', 85000000, 0],
+    [10, 'Kepemimpinan, Manajerial & Budaya Kerja', 'Officer Development Program (ODP) Corporate Academy', 110000000, 0],
+    [11, 'Kepemimpinan, Manajerial & Budaya Kerja', 'Branch Manager Leadership & P&L Business Mastery', 75000000, 0]
+  ]
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData)
+  ws['!cols'] = [
+    { wch: 6 },
+    { wch: 45 },
+    { wch: 55 },
+    { wch: 22 },
+    { wch: 22 }
+  ]
+
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Rincian Program TNA')
+
+  XLSX.writeFile(wb, 'Template_Usulan_Program_TNA_BWS.xlsx')
+}
+
+function handleImportFileChange(e) {
+  const file = e.target?.files?.[0]
+  if (file) processExcelFile(file)
+}
+
+function handleFileDrop(e) {
+  const file = e.dataTransfer?.files?.[0]
+  if (file) processExcelFile(file)
+}
+
+async function processExcelFile(file) {
+  importFile.value = file
+  importError.value = ''
+  parsedItems.value = []
+  isParsingExcel.value = true
+
+  try {
+    const data = await file.arrayBuffer()
+    const wb = XLSX.read(data, { type: 'array' })
+
+    // Look for target sheet
+    let targetSheet = wb.SheetNames[0]
+    for (const name of wb.SheetNames) {
+      const lower = name.toLowerCase()
+      if (name === 'Rincian Program TNA' || lower.includes('tna') || lower.includes('program') || lower.includes('usulan')) {
+        targetSheet = name
+        break
+      }
+    }
+
+    const sheet = wb.Sheets[targetSheet]
+    if (!sheet) throw new Error('Sheet data tidak ditemukan di file Excel.')
+
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 })
+    if (!rows || rows.length === 0) throw new Error('File Excel tidak memiliki baris data.')
+
+    // Find header row
+    let headerIdx = -1
+    let colCat = -1, colProg = -1, colBudget = -1, colReal = -1
+
+    for (let r = 0; r < Math.min(rows.length, 40); r++) {
+      const row = rows[r] || []
+      for (let c = 0; c < row.length; c++) {
+        const val = String(row[c] || '').toLowerCase().trim()
+        if (val.includes('kategori') || val.includes('category')) colCat = c
+        if (val.includes('program') || val.includes('training') || val.includes('judul')) colProg = c
+        if (val.includes('pagu') || val.includes('investasi') || val.includes('investment') || val.includes('budget') || val.includes('biaya')) colBudget = c
+        if (val.includes('realis') || val.includes('realiz')) colReal = c
+      }
+      if (colProg !== -1 && colBudget !== -1) {
+        headerIdx = r
+        break
+      }
+    }
+
+    // Fallback if no explicit header found: assume col 1=Category, col 2=Program, col 3=Budget, col 4=Realization
+    if (headerIdx === -1) {
+      headerIdx = 0
+      colCat = 1
+      colProg = 2
+      colBudget = 3
+      colReal = 4
+    }
+
+    const items = []
+    let currentCategory = categories.value[0]?.name || 'Operasional & Layanan Perbankan'
+
+    for (let r = headerIdx + 1; r < rows.length; r++) {
+      const row = rows[r] || []
+      if (!row || row.length === 0) continue
+
+      const progVal = colProg !== -1 ? String(row[colProg] || '').trim() : ''
+      if (!progVal || progVal.toLowerCase() === 'total' || progVal.toLowerCase().startsWith('subtotal')) continue
+
+      const catVal = colCat !== -1 ? String(row[colCat] || '').trim() : ''
+      if (catVal && catVal.toLowerCase() !== 'total' && !catVal.toLowerCase().startsWith('subtotal')) {
+        currentCategory = catVal
+      }
+
+      // Match category from master
+      const matchedCat = categories.value.find(c =>
+        c.name.toLowerCase() === currentCategory.toLowerCase() ||
+        c.name.toLowerCase().includes(currentCategory.toLowerCase()) ||
+        currentCategory.toLowerCase().includes(c.name.toLowerCase())
+      )
+
+      const rawBudget = colBudget !== -1 ? row[colBudget] : 0
+      const numBudget = Number(String(rawBudget).replace(/[^0-9.-]+/g, '')) || 0
+
+      const rawReal = colReal !== -1 ? row[colReal] : 0
+      const numReal = Number(String(rawReal).replace(/[^0-9.-]+/g, '')) || 0
+
+      items.push({
+        category_id: matchedCat?.id || null,
+        category_name: matchedCat?.name || currentCategory,
+        recommended_program: progVal,
+        budget: numBudget,
+        realization_amount: numReal
+      })
+    }
+
+    if (items.length === 0) {
+      throw new Error('Tidak ada baris program yang dapat dibaca. Pastikan kolom "Kategori", "Program Pelatihan", dan "Pagu Investasi" terisi.')
+    }
+
+    parsedItems.value = items
+  } catch (err) {
+    importError.value = err.message || 'Gagal memproses file Excel.'
+    parsedItems.value = []
+  } finally {
+    isParsingExcel.value = false
+  }
+}
+
+function applyImportedItems() {
+  if (parsedItems.value.length === 0) return
+
+  if (importMode.value === 'replace') {
+    form.value.items = [...parsedItems.value]
+  } else {
+    form.value.items = [...form.value.items, ...parsedItems.value]
+  }
+
+  feedback.value = {
+    type: 'success',
+    message: `Berhasil mengimpor ${parsedItems.value.length} program pelatihan ke tabel TNA.`
+  }
+
+  showImportModal.value = false
+}
 
 function onFileSelect(e) {
   const file = e.target.files[0]
@@ -513,10 +700,13 @@ async function submitForm() {
                 type="button"
                 variant="outline"
                 size="sm"
-                @click="loadPreset20Programs"
-                title="Muat contoh lengkap 20 program dari 5 kategori"
+                @click="openImportModal"
+                title="Import data program pelatihan dari file Excel/CSV"
               >
-                Muat Template 20 Program
+                <span class="flex items-center gap-1.5">
+                  <FileSpreadsheet class="w-3.5 h-3.5 text-emerald-600" />
+                  Import Excel
+                </span>
               </AppButton>
               <AppButton
                 type="button"
@@ -652,6 +842,192 @@ async function submitForm() {
 
       </div>
 
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- MODAL: IMPORT EXCEL & DOWNLOAD TEMPLATE                       -->
+    <!-- ============================================================= -->
+    <div
+      v-if="showImportModal"
+      class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn"
+      @click.self="showImportModal = false"
+    >
+      <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- Modal Header -->
+        <div class="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-emerald-50/40 via-white to-white">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-100 shadow-2xs">
+              <FileSpreadsheet class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="font-extrabold text-sm text-gray-900">Import Program Pelatihan & Anggaran TNA</h3>
+              <p class="text-[11px] text-gray-500">Unduh template resmi atau unggah file spreadsheet untuk mengisi tabel program</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            @click="showImportModal = false"
+            class="w-8 h-8 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 flex items-center justify-center transition cursor-pointer"
+          >
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <!-- Modal Body (Scrollable) -->
+        <div class="p-6 overflow-y-auto space-y-5 text-xs">
+          <!-- Step 1: Download Template Card -->
+          <div class="p-4 rounded-2xl bg-gradient-to-r from-[#0067AC]/5 via-blue-50/40 to-slate-50 border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-full bg-[#0067AC] text-white text-[10px] font-bold uppercase tracking-wider">Step 1</span>
+                <span class="font-bold text-gray-900">Unduh Format Template Resmi BWS</span>
+              </div>
+              <p class="text-[11px] text-gray-600 leading-relaxed">
+                Gunakan format template standar dengan kolom Kategori Pelatihan, Program, dan Pagu Investasi agar data terbaca otomatis.
+              </p>
+            </div>
+            <button
+              type="button"
+              @click="downloadTemplate"
+              class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-blue-200 text-[#0067AC] hover:bg-blue-50 font-bold text-xs transition shadow-2xs hover:shadow-xs shrink-0 cursor-pointer"
+            >
+              <Download class="w-4 h-4 text-[#0067AC]" />
+              <span>Download Template (.xlsx)</span>
+            </button>
+          </div>
+
+          <!-- Step 2: Upload File Area -->
+          <div class="space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded-full bg-gray-800 text-white text-[10px] font-bold uppercase tracking-wider">Step 2</span>
+              <span class="font-bold text-gray-900">Unggah File Spreadsheet yang Sudah Diisi</span>
+            </div>
+
+            <div
+              @dragover.prevent
+              @drop.prevent="handleFileDrop"
+              @click="importFileInputRef?.click()"
+              class="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center gap-2"
+              :class="importFile ? 'border-emerald-300 bg-emerald-50/30' : 'border-gray-200 hover:border-[#0067AC] bg-gray-50/50 hover:bg-blue-50/20'"
+            >
+              <input
+                ref="importFileInputRef"
+                type="file"
+                accept=".xlsx, .xls, .csv"
+                class="hidden"
+                @change="handleImportFileChange"
+              />
+
+              <div
+                class="w-12 h-12 rounded-2xl flex items-center justify-center"
+                :class="importFile ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100/70 text-[#0067AC]'"
+              >
+                <FileSpreadsheet v-if="importFile" class="w-6 h-6" />
+                <Upload v-else class="w-6 h-6" />
+              </div>
+
+              <div v-if="importFile" class="space-y-1">
+                <p class="font-bold text-gray-900 text-xs">{{ importFile.name }}</p>
+                <p class="text-[11px] text-gray-500 font-mono">{{ formatFileSize(importFile.size) }}</p>
+                <p class="text-[10px] text-emerald-700 font-semibold flex items-center justify-center gap-1">
+                  <CheckCircle2 class="w-3.5 h-3.5" /> File berhasil diproses. Klik untuk mengganti file.
+                </p>
+              </div>
+              <div v-else class="space-y-1">
+                <p class="font-bold text-gray-700 text-xs">Tarik & lepaskan file Excel di sini, atau <span class="text-[#0067AC] underline font-semibold">Pilih File</span></p>
+                <p class="text-[10px] text-gray-400">Mendukung format .xlsx, .xls, dan .csv</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading Spinner during parse -->
+          <div v-if="isParsingExcel" class="p-3 text-center text-xs text-gray-500 animate-pulse">
+            Sedang membaca dan memetakan baris program pelatihan...
+          </div>
+
+          <!-- Error Alert -->
+          <div v-if="importError" class="p-3.5 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-xs flex items-center gap-2">
+            <AlertCircle class="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{{ importError }}</span>
+          </div>
+
+          <!-- Step 3: Parsed Preview -->
+          <div v-if="parsedItems.length > 0" class="space-y-3 pt-1 border-t border-gray-100">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider">Hasil Baca</span>
+                <span class="font-bold text-gray-900">{{ parsedItems.length }} Program Pelatihan Terdeteksi</span>
+              </div>
+              <span class="font-mono font-bold text-xs text-[#0067AC]">
+                Total: {{ formatRupiah(parsedItemsTotal) }}
+              </span>
+            </div>
+
+            <!-- Mode selector: Replace or Append -->
+            <div class="grid grid-cols-2 gap-2 bg-gray-100 p-1 rounded-xl text-xs font-semibold">
+              <button
+                type="button"
+                @click="importMode = 'replace'"
+                class="py-1.5 px-3 rounded-lg transition text-center cursor-pointer"
+                :class="importMode === 'replace' ? 'bg-white text-[#0067AC] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-800'"
+              >
+                Ganti Seluruh Tabel (Replace)
+              </button>
+              <button
+                type="button"
+                @click="importMode = 'append'"
+                class="py-1.5 px-3 rounded-lg transition text-center cursor-pointer"
+                :class="importMode === 'append' ? 'bg-white text-[#0067AC] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-800'"
+              >
+                Tambahkan ke Tabel (Append)
+              </button>
+            </div>
+
+            <!-- Preview Table -->
+            <div class="overflow-x-auto rounded-xl border border-gray-200 max-h-48 overflow-y-auto">
+              <table class="w-full text-left border-collapse text-[11px]">
+                <thead class="sticky top-0 bg-[#F8FAFC] border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
+                  <tr>
+                    <th class="py-2 px-3 w-10 text-center">No</th>
+                    <th class="py-2 px-3">Kategori</th>
+                    <th class="py-2 px-3">Program Pelatihan</th>
+                    <th class="py-2 px-3 text-right">Pagu</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr v-for="(p, pIdx) in parsedItems" :key="pIdx" class="hover:bg-blue-50/30">
+                    <td class="py-2 px-3 text-center text-gray-400 font-mono">{{ pIdx + 1 }}</td>
+                    <td class="py-2 px-3 text-gray-700 font-medium truncate max-w-[140px]">{{ p.category_name }}</td>
+                    <td class="py-2 px-3 text-gray-900 font-medium">{{ p.recommended_program }}</td>
+                    <td class="py-2 px-3 text-right font-mono text-gray-800 font-semibold">{{ formatRupiah(p.budget) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+          <button
+            type="button"
+            @click="showImportModal = false"
+            class="px-4 py-2 rounded-xl text-gray-600 hover:bg-gray-200/60 font-bold text-xs transition cursor-pointer"
+          >
+            Batal
+          </button>
+
+          <button
+            type="button"
+            @click="applyImportedItems"
+            :disabled="parsedItems.length === 0"
+            class="px-5 py-2 rounded-xl bg-[#0067AC] hover:bg-[#00528c] text-white font-bold text-xs shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <CheckCircle2 class="w-4 h-4" />
+            <span>Terapkan ke Tabel TNA ({{ parsedItems.length }} Program)</span>
+          </button>
+        </div>
+      </div>
     </div>
 
   </div>
