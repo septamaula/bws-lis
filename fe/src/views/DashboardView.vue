@@ -123,6 +123,15 @@ watch(activeTab, (newTab, oldTab) => {
   if (oldTab === 'class' && newTab !== 'class') {
     classViewMode.value = 'list'
   }
+  if (newTab === 'rbac' && ['categories', 'years'].includes(rbacSubTab.value)) {
+    rbacSubTab.value = 'users'
+  }
+})
+
+watch(rbacSubTab, (val) => {
+  if (['categories', 'years'].includes(val)) {
+    rbacSubTab.value = 'users'
+  }
 })
 
 function openTnaDetail(proposalId) {
