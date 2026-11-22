@@ -100,6 +100,7 @@ class TrainingProgram extends Model
     {
         $budget = (float) ($this->total_budget ?? 0);
         $real = (float) ($this->realization_amount ?? 0);
+
         return max(0, $budget - $real);
     }
 

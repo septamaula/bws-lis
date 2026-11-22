@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\FinancialTransaction;
+use App\Models\TnaProposal;
 use App\Models\TrainingClass;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
@@ -112,9 +113,12 @@ class LisApplicationTest extends TestCase
         $deptHead = User::where('role_name', 'Dept Head')->first();
         Sanctum::actingAs($deptHead);
 
+        $testYear = 2028;
+        TnaProposal::where('year', $testYear)->delete();
+
         $response = $this->postJson('/api/tna', [
             'department' => 'Risk Management',
-            'year' => 2026,
+            'year' => $testYear,
             'priority' => 'High',
             'items' => [
                 [
@@ -132,7 +136,7 @@ class LisApplicationTest extends TestCase
 
         $this->assertDatabaseHas('tna_proposals', [
             'department' => 'Risk Management',
-            'year' => 2026,
+            'year' => $testYear,
             'status' => 'SUBMITTED',
         ]);
 
@@ -140,5 +144,7 @@ class LisApplicationTest extends TestCase
             'action' => 'SUBMIT_TNA_PROPOSAL',
             'user_id' => $deptHead->id,
         ]);
+
+        TnaProposal::where('year', $testYear)->delete();
     }
 }

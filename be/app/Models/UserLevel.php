@@ -11,6 +11,7 @@ class UserLevel extends Model
     use HasFactory;
 
     protected $table = 'user_level';
+
     protected $primaryKey = 'level_id';
 
     protected $fillable = [

@@ -6,18 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\ClassAttendance;
 use App\Models\ClassEnrollment;
-use App\Models\ClassEvaluation;
 use App\Models\ClassSession;
 use App\Models\ProgramParticipant;
 use App\Models\TrainingClass;
 use App\Models\TrainingProgram;
-use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class ClassApiController extends Controller
 {
@@ -119,8 +115,8 @@ class ClassApiController extends Controller
         $failedCount = $class->enrollments->where('completion_status', 'FAILED')->count();
 
         // Instructor Rating Stats
-        $avgInstructorRating = $class->evaluations()->avg('instructor_rating') 
-            ?: $class->enrollments->whereNotNull('eval_instructor_rating')->avg('eval_instructor_rating') 
+        $avgInstructorRating = $class->evaluations()->avg('instructor_rating')
+            ?: $class->enrollments->whereNotNull('eval_instructor_rating')->avg('eval_instructor_rating')
             ?: 4.8;
 
         return response()->json([
@@ -213,12 +209,12 @@ class ClassApiController extends Controller
         ]);
 
         // Create Sessions
-        if (!empty($validated['sessions']) && is_array($validated['sessions'])) {
+        if (! empty($validated['sessions']) && is_array($validated['sessions'])) {
             foreach ($validated['sessions'] as $idx => $s) {
                 ClassSession::create([
                     'training_class_id' => $class->id,
                     'session_number' => $idx + 1,
-                    'session_name' => $s['session_name'] ?? "Sesi ".($idx + 1),
+                    'session_name' => $s['session_name'] ?? 'Sesi '.($idx + 1),
                     'session_date' => $s['session_date'] ?? $class->start_date,
                     'start_time' => $s['start_time'] ?? '08:30',
                     'end_time' => $s['end_time'] ?? '16:30',
@@ -239,7 +235,7 @@ class ClassApiController extends Controller
                 ClassSession::create([
                     'training_class_id' => $class->id,
                     'session_number' => $sessNum,
-                    'session_name' => "Hari ke-{$sessNum}: " . $date->locale('id')->isoFormat('dddd, D MMMM Y'),
+                    'session_name' => "Hari ke-{$sessNum}: ".$date->locale('id')->isoFormat('dddd, D MMMM Y'),
                     'session_date' => $date->format('Y-m-d'),
                     'start_time' => '08:30',
                     'end_time' => '16:30',
@@ -248,13 +244,15 @@ class ClassApiController extends Controller
                     'location_or_url' => $class->location_or_url,
                 ]);
                 $sessNum++;
-                if ($sessNum > 10) break; // limit to 10 days max auto-gen
+                if ($sessNum > 10) {
+                    break;
+                } // limit to 10 days max auto-gen
             }
         }
 
         // Enroll Initial Participants (from Program Nominations or custom list)
         $enrolledCount = 0;
-        if (!empty($validated['enrolled_participants']) && is_array($validated['enrolled_participants'])) {
+        if (! empty($validated['enrolled_participants']) && is_array($validated['enrolled_participants'])) {
             foreach ($validated['enrolled_participants'] as $p) {
                 ClassEnrollment::create([
                     'training_class_id' => $class->id,
@@ -332,7 +330,7 @@ class ClassApiController extends Controller
         $class = TrainingClass::findOrFail($id);
         $user = $request->user();
 
-        if ($class->maker_id === $user->id && !in_array($user->role_name ?? '', ['Super Admin', 'Executive'])) {
+        if ($class->maker_id === $user->id && ! in_array($user->role_name ?? '', ['Super Admin', 'Executive'])) {
             return response()->json([
                 'message' => 'Pelanggaran Dual Control Perbankan: Maker dilarang menyetujui transaksi yang dibuat sendiri!',
             ], 403);
@@ -380,15 +378,15 @@ class ClassApiController extends Controller
             // Check if already enrolled
             $exists = ClassEnrollment::where('training_class_id', $class->id)
                 ->where(function ($q) use ($p) {
-                    if (!empty($p['user_id'])) {
+                    if (! empty($p['user_id'])) {
                         $q->where('user_id', $p['user_id']);
                     }
-                    if (!empty($p['nik'])) {
+                    if (! empty($p['nik'])) {
                         $q->orWhere('nik', $p['nik']);
                     }
                 })->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 ClassEnrollment::create([
                     'training_class_id' => $class->id,
                     'user_id' => $p['user_id'] ?? null,
@@ -521,7 +519,7 @@ class ClassApiController extends Controller
                     'user_id' => $enrollment->user_id,
                     'attendance_date' => $session->session_date,
                     'status' => $att['status'],
-                    'check_in_time' => $att['check_in_time'] ?? ($att['status'] === 'HADIR' ? date('H:i') . ' WIB' : null),
+                    'check_in_time' => $att['check_in_time'] ?? ($att['status'] === 'HADIR' ? date('H:i').' WIB' : null),
                     'notes' => $att['notes'] ?? null,
                     'recorded_by' => $user->id,
                 ]
@@ -561,7 +559,7 @@ class ClassApiController extends Controller
 
         $session = ClassSession::where('training_class_id', $class->id)->findOrFail($request->session_id);
         $user = $request->user();
-        $nowTime = date('H:i') . ' WIB';
+        $nowTime = date('H:i').' WIB';
 
         $enrollments = $class->enrollments;
         foreach ($enrollments as $e) {
@@ -618,7 +616,7 @@ class ClassApiController extends Controller
 
         $passingGrade = $class->passing_grade ?? 75;
 
-        $participants = $class->enrollments->map(function ($e) use ($passingGrade) {
+        $participants = $class->enrollments->map(function ($e) {
             $pre = $e->pre_test_score !== null ? (float) $e->pre_test_score : null;
             $post = $e->post_test_score !== null ? (float) $e->post_test_score : null;
             $task = $e->task_score !== null ? (float) $e->task_score : null;
@@ -734,11 +732,17 @@ class ClassApiController extends Controller
             $grade = null;
             if ($final !== null) {
                 $status = ($final >= $passingGrade) ? 'PASSED' : 'FAILED';
-                if ($final >= 90) $grade = 'A';
-                elseif ($final >= 80) $grade = 'B';
-                elseif ($final >= 70) $grade = 'C';
-                elseif ($final >= 60) $grade = 'D';
-                else $grade = 'E';
+                if ($final >= 90) {
+                    $grade = 'A';
+                } elseif ($final >= 80) {
+                    $grade = 'B';
+                } elseif ($final >= 70) {
+                    $grade = 'C';
+                } elseif ($final >= 60) {
+                    $grade = 'D';
+                } else {
+                    $grade = 'E';
+                }
             }
 
             $updateData = [

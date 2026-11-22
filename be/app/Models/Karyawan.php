@@ -11,6 +11,7 @@ class Karyawan extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = 'karyawan';
+
     protected $primaryKey = 'karyawan_id';
 
     protected $fillable = [

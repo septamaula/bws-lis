@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Karyawan;
-use App\Models\LdmsUser;
 use App\Models\User;
 use App\Models\UserAccess;
 use App\Models\UserLevel;
@@ -30,7 +29,7 @@ class UserRbacApiController extends Controller
                     ['key' => 'dashboard/view', 'name' => 'Lihat Dashboard', 'desc' => 'Akses ringkasan eksekutif dan KPI operasional'],
                     ['key' => 'dashboard/executive', 'name' => 'Dashboard Eksekutif BoD', 'desc' => 'Monitoring level direksi & serapan pagu anggaran'],
                     ['key' => 'dashboard/checker', 'name' => 'Antrean Dual-Control Checker', 'desc' => 'Notifikasi dan akses review otorisator'],
-                ]
+                ],
             ],
             [
                 'code' => 'tna',
@@ -41,7 +40,7 @@ class UserRbacApiController extends Controller
                     ['key' => 'tna/create', 'name' => 'Ajukan Usulan TNA', 'desc' => 'Input kebutuhan diklat dan estimasi biaya unit'],
                     ['key' => 'tna/review', 'name' => 'Review & Validasi HCBP', 'desc' => 'Validasi dan kurasi kebutuhan diklat oleh HCBP'],
                     ['key' => 'tna/approve', 'name' => 'Approval Pagu Anggaran (Checker)', 'desc' => 'Otorisasi akhir alokasi anggaran pelatihan'],
-                ]
+                ],
             ],
             [
                 'code' => 'program',
@@ -52,7 +51,7 @@ class UserRbacApiController extends Controller
                     ['key' => 'program/create', 'name' => 'Buat Program Baru', 'desc' => 'Menambahkan modul dan kurikulum pelatihan'],
                     ['key' => 'program/edit', 'name' => 'Edit Program', 'desc' => 'Mengubah silabus dan pagu per program'],
                     ['key' => 'program/delete', 'name' => 'Hapus / Nonaktifkan', 'desc' => 'Menonaktifkan program pelatihan'],
-                ]
+                ],
             ],
             [
                 'code' => 'class',
@@ -63,7 +62,7 @@ class UserRbacApiController extends Controller
                     ['key' => 'class/create', 'name' => 'Buat Batch Kelas (Maker)', 'desc' => 'Membuat jadwal, ruangan, dan undangan peserta'],
                     ['key' => 'class/maker_submit', 'name' => 'Submit Otorisasi Checker', 'desc' => 'Mengirim pengajuan batch ke antrean otorisator'],
                     ['key' => 'class/checker_approve', 'name' => 'Otorisasi Kelas (Checker)', 'desc' => 'Menyetujui atau menolak pelaksanaan batch diklat'],
-                ]
+                ],
             ],
             [
                 'code' => 'participants',
@@ -73,7 +72,7 @@ class UserRbacApiController extends Controller
                     ['key' => 'participants/view', 'name' => 'Lihat Data Peserta', 'desc' => 'Melihat daftar peserta dan progres pembelajaran'],
                     ['key' => 'participants/enroll', 'name' => 'Daftarkan Peserta', 'desc' => 'Menambahkan karyawan ke dalam batch diklat'],
                     ['key' => 'participants/certificate', 'name' => 'Penerbitan Sertifikat', 'desc' => 'Generate dan verifikasi sertifikat kelulusan'],
-                ]
+                ],
             ],
             [
                 'code' => 'eval',
@@ -84,7 +83,7 @@ class UserRbacApiController extends Controller
                     ['key' => 'eval/input_score', 'name' => 'Input Nilai Ujian', 'desc' => 'Memasukkan nilai ujian akhir atau sertifikasi'],
                     ['key' => 'eval/review', 'name' => 'Review Evaluasi Pengajar', 'desc' => 'Menganalisis penilaian trainer dan kepuasan peserta'],
                     ['key' => 'eval/pre_post_test', 'name' => 'Akses Ujian (Peserta)', 'desc' => 'Mengerjakan soal pre-test dan post-test'],
-                ]
+                ],
             ],
             [
                 'code' => 'task',
@@ -96,7 +95,7 @@ class UserRbacApiController extends Controller
                     ['key' => 'task/submit', 'name' => 'Upload Tugas (Peserta)', 'desc' => 'Mengunggah laporan atau tugas akhir diklat'],
                     ['key' => 'task/review', 'name' => 'Review Tugas PIC/Spv', 'desc' => 'Memeriksa berkas tugas yang diunggah'],
                     ['key' => 'task/grade', 'name' => 'Beri Nilai & Approval Akhir', 'desc' => 'Approval tugas oleh Manager / Kadiv'],
-                ]
+                ],
             ],
             [
                 'code' => 'transaction',
@@ -106,7 +105,7 @@ class UserRbacApiController extends Controller
                     ['key' => 'transaction/view', 'name' => 'Lihat Transaksi Keuangan', 'desc' => 'Melihat voucher klaim dan status pencairan'],
                     ['key' => 'transaction/claim', 'name' => 'Ajukan Klaim / Reimburse', 'desc' => 'Input kwitansi reimbursement ujian/pelatihan'],
                     ['key' => 'transaction/checker_approve', 'name' => 'Otorisasi Pencairan (Checker)', 'desc' => 'Otorisasi dual-control pembayaran finansial'],
-                ]
+                ],
             ],
             [
                 'code' => 'certification',
@@ -117,7 +116,7 @@ class UserRbacApiController extends Controller
                     ['key' => 'certification/input_target', 'name' => 'Update Target & Realisasi', 'desc' => 'Menginput kuota kelulusan per divisi'],
                     ['key' => 'certification/verify', 'name' => 'Verifikasi Sertifikat LSPP/BSMR', 'desc' => 'Validasi keabsahan dokumen sertifikat resmi'],
                     ['key' => 'certification/history', 'name' => 'Riwayat Sertifikat Pribadi', 'desc' => 'Melihat sertifikat kepemilikan karyawan'],
-                ]
+                ],
             ],
             [
                 'code' => 'reporting',
@@ -129,7 +128,7 @@ class UserRbacApiController extends Controller
                     ['key' => 'reporting/signoff_mgr', 'name' => 'Sign-Off Approved (1) Mgr', 'desc' => 'Persetujuan laporan tingkat Manager L&D'],
                     ['key' => 'reporting/signoff_kadiv', 'name' => 'Sign-Off Approved (2) Kadiv', 'desc' => 'Pengesahan final tingkat Kepala Divisi HC'],
                     ['key' => 'reporting/audit_trail', 'name' => 'Log Audit Trail Kepatuhan', 'desc' => 'Inspeksi jejak audit waktu & IP operasional'],
-                ]
+                ],
             ],
             [
                 'code' => 'master_rbac',
@@ -139,7 +138,7 @@ class UserRbacApiController extends Controller
                     ['key' => 'users/manage', 'name' => 'Kelola Akun Pengguna', 'desc' => 'Tambah, ubah data login, dan reset password'],
                     ['key' => 'rbac/manage', 'name' => 'Kelola Peran & Hak Akses', 'desc' => 'Konfigurasi matriks permission RBAC per peran'],
                     ['key' => 'karyawan/manage', 'name' => 'Kelola Master Karyawan', 'desc' => 'Sinkronisasi data master pegawai Bank Woori'],
-                ]
+                ],
             ],
         ];
     }
@@ -166,7 +165,7 @@ class UserRbacApiController extends Controller
             'total_users' => $users->count(),
             'active_users' => $users->where('is_active', true)->count(),
             'total_levels' => $levels->count(),
-            'total_permissions' => collect(self::getPermissionModules())->sum(fn($m) => count($m['permissions'])),
+            'total_permissions' => collect(self::getPermissionModules())->sum(fn ($m) => count($m['permissions'])),
         ];
 
         return response()->json([
@@ -201,7 +200,7 @@ class UserRbacApiController extends Controller
         $hashedPassword = Hash::make($validated['password']);
 
         $karyawanId = $validated['karyawan_id'] ?? null;
-        $nik = $request->nik ?? ($karyawanId ? Karyawan::find($karyawanId)?->nik : null) ?? ('BWS-' . rand(1000, 9999));
+        $nik = $request->nik ?? ($karyawanId ? Karyawan::find($karyawanId)?->nik : null) ?? ('BWS-'.rand(1000, 9999));
 
         // 1. Simpan di tabel users (Laravel standard)
         $user = User::create([
@@ -359,8 +358,9 @@ class UserRbacApiController extends Controller
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return response()->json([
-                'message' => 'Gagal menghapus pengguna: ' . $e->getMessage(),
+                'message' => 'Gagal menghapus pengguna: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -425,7 +425,7 @@ class UserRbacApiController extends Controller
                     'updated_at' => now(),
                 ];
             }
-            if (!empty($insertData)) {
+            if (! empty($insertData)) {
                 UserAccess::insert($insertData);
             }
         });
@@ -440,7 +440,7 @@ class UserRbacApiController extends Controller
         ]);
 
         return response()->json([
-            'message' => "Matriks Hak Akses untuk peran '{$level->level}' berhasil diperbarui (" . count($keys) . " permissions aktif).",
+            'message' => "Matriks Hak Akses untuk peran '{$level->level}' berhasil diperbarui (".count($keys).' permissions aktif).',
             'activeKeys' => $keys,
             'keysCount' => count($keys),
         ]);
@@ -458,11 +458,11 @@ class UserRbacApiController extends Controller
             $s = trim($request->search);
             $query->where(function ($q) use ($s) {
                 $q->where('nama', 'ilike', "%{$s}%")
-                  ->orWhere('nik', 'ilike', "%{$s}%")
-                  ->orWhere('email', 'ilike', "%{$s}%")
-                  ->orWhere('departemen', 'ilike', "%{$s}%")
-                  ->orWhere('jabatan', 'ilike', "%{$s}%")
-                  ->orWhere('kantor_cabang', 'ilike', "%{$s}%");
+                    ->orWhere('nik', 'ilike', "%{$s}%")
+                    ->orWhere('email', 'ilike', "%{$s}%")
+                    ->orWhere('departemen', 'ilike', "%{$s}%")
+                    ->orWhere('jabatan', 'ilike', "%{$s}%")
+                    ->orWhere('kantor_cabang', 'ilike', "%{$s}%");
             });
         }
 
@@ -647,8 +647,9 @@ class UserRbacApiController extends Controller
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return response()->json([
-                'message' => 'Gagal menghapus data karyawan: ' . $e->getMessage(),
+                'message' => 'Gagal menghapus data karyawan: '.$e->getMessage(),
             ], 500);
         }
     }

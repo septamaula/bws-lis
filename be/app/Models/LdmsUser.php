@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -10,7 +11,8 @@ class LdmsUser extends Authenticatable
 {
     use HasApiTokens, Notifiable;
 
-    protected $table      = 'user';
+    protected $table = 'user';
+
     protected $primaryKey = 'user_id';
 
     protected $fillable = [
@@ -35,12 +37,12 @@ class LdmsUser extends Authenticatable
         'is_active' => 'boolean',
     ];
 
-    public function karyawan(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function karyawan(): BelongsTo
     {
         return $this->belongsTo(Karyawan::class, 'karyawan_id', 'karyawan_id');
     }
 
-    public function level(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    public function level(): BelongsTo
     {
         return $this->belongsTo(UserLevel::class, 'level_id', 'level_id');
     }

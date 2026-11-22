@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -11,82 +11,82 @@ return new class extends Migration
     {
         // 1. Tambahkan atribut TNA, Finansial RAB, dan Otorisasi pada training_programs
         Schema::table('training_programs', function (Blueprint $table) {
-            if (!Schema::hasColumn('training_programs', 'tna_proposal_id')) {
+            if (! Schema::hasColumn('training_programs', 'tna_proposal_id')) {
                 $table->foreignId('tna_proposal_id')->nullable()->constrained('tna_proposals')->nullOnDelete();
             }
-            if (!Schema::hasColumn('training_programs', 'tna_item_id')) {
+            if (! Schema::hasColumn('training_programs', 'tna_item_id')) {
                 $table->foreignId('tna_item_id')->nullable()->constrained('tna_items')->nullOnDelete();
             }
-            if (!Schema::hasColumn('training_programs', 'department')) {
+            if (! Schema::hasColumn('training_programs', 'department')) {
                 $table->string('department', 100)->nullable();
             }
-            if (!Schema::hasColumn('training_programs', 'year')) {
+            if (! Schema::hasColumn('training_programs', 'year')) {
                 $table->integer('year')->default(2026);
             }
-            if (!Schema::hasColumn('training_programs', 'execution_quarter')) {
+            if (! Schema::hasColumn('training_programs', 'execution_quarter')) {
                 $table->string('execution_quarter', 50)->default('Q1');
             }
-            if (!Schema::hasColumn('training_programs', 'target_audience')) {
+            if (! Schema::hasColumn('training_programs', 'target_audience')) {
                 $table->string('target_audience', 255)->nullable();
             }
-            if (!Schema::hasColumn('training_programs', 'target_participants_count')) {
+            if (! Schema::hasColumn('training_programs', 'target_participants_count')) {
                 $table->integer('target_participants_count')->default(20);
             }
-            if (!Schema::hasColumn('training_programs', 'participant_prerequisites')) {
+            if (! Schema::hasColumn('training_programs', 'participant_prerequisites')) {
                 $table->text('participant_prerequisites')->nullable();
             }
-            if (!Schema::hasColumn('training_programs', 'method')) {
+            if (! Schema::hasColumn('training_programs', 'method')) {
                 $table->string('method', 50)->default('Hybrid'); // In-Class, Virtual, Hybrid, E-Learning
             }
-            if (!Schema::hasColumn('training_programs', 'location')) {
+            if (! Schema::hasColumn('training_programs', 'location')) {
                 $table->string('location', 255)->nullable();
             }
-            if (!Schema::hasColumn('training_programs', 'approval_type')) {
+            if (! Schema::hasColumn('training_programs', 'approval_type')) {
                 $table->string('approval_type', 50)->default('WORKFLOW'); // DOCUMENT or WORKFLOW
             }
-            if (!Schema::hasColumn('training_programs', 'approval_doc_number')) {
+            if (! Schema::hasColumn('training_programs', 'approval_doc_number')) {
                 $table->string('approval_doc_number', 100)->nullable();
             }
-            if (!Schema::hasColumn('training_programs', 'approval_doc_date')) {
+            if (! Schema::hasColumn('training_programs', 'approval_doc_date')) {
                 $table->date('approval_doc_date')->nullable();
             }
-            if (!Schema::hasColumn('training_programs', 'approval_doc_signer')) {
+            if (! Schema::hasColumn('training_programs', 'approval_doc_signer')) {
                 $table->string('approval_doc_signer', 150)->nullable();
             }
-            if (!Schema::hasColumn('training_programs', 'approval_doc_path')) {
+            if (! Schema::hasColumn('training_programs', 'approval_doc_path')) {
                 $table->string('approval_doc_path')->nullable();
             }
-            if (!Schema::hasColumn('training_programs', 'approval_doc_name')) {
+            if (! Schema::hasColumn('training_programs', 'approval_doc_name')) {
                 $table->string('approval_doc_name')->nullable();
             }
-            if (!Schema::hasColumn('training_programs', 'approval_doc_size')) {
+            if (! Schema::hasColumn('training_programs', 'approval_doc_size')) {
                 $table->integer('approval_doc_size')->nullable();
             }
-            if (!Schema::hasColumn('training_programs', 'total_budget')) {
+            if (! Schema::hasColumn('training_programs', 'total_budget')) {
                 $table->decimal('total_budget', 15, 2)->default(0);
             }
-            if (!Schema::hasColumn('training_programs', 'status')) {
+            if (! Schema::hasColumn('training_programs', 'status')) {
                 $table->string('status', 50)->default('DRAFT'); // DRAFT, SUBMITTED, APPROVED, REJECTED, REVISED
             }
-            if (!Schema::hasColumn('training_programs', 'current_step_order')) {
+            if (! Schema::hasColumn('training_programs', 'current_step_order')) {
                 $table->integer('current_step_order')->default(1);
             }
-            if (!Schema::hasColumn('training_programs', 'approval_status_badge')) {
+            if (! Schema::hasColumn('training_programs', 'approval_status_badge')) {
                 $table->string('approval_status_badge', 100)->nullable();
             }
-            if (!Schema::hasColumn('training_programs', 'rejection_notes')) {
+            if (! Schema::hasColumn('training_programs', 'rejection_notes')) {
                 $table->text('rejection_notes')->nullable();
             }
-            if (!Schema::hasColumn('training_programs', 'approved_by')) {
+            if (! Schema::hasColumn('training_programs', 'approved_by')) {
                 $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
             }
-            if (!Schema::hasColumn('training_programs', 'approved_at')) {
+            if (! Schema::hasColumn('training_programs', 'approved_at')) {
                 $table->timestamp('approved_at')->nullable();
             }
         });
 
         // 2. Tabel Rincian Anggaran Biaya Program (RAB)
-        if (!Schema::hasTable('program_budget_items')) {
+        if (! Schema::hasTable('program_budget_items')) {
             Schema::create('program_budget_items', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('training_program_id')->constrained('training_programs')->cascadeOnDelete();
@@ -102,7 +102,7 @@ return new class extends Migration
         }
 
         // 3. Tabel Daftar Nominasi Peserta Didik
-        if (!Schema::hasTable('program_participants')) {
+        if (! Schema::hasTable('program_participants')) {
             Schema::create('program_participants', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('training_program_id')->constrained('training_programs')->cascadeOnDelete();
@@ -120,7 +120,7 @@ return new class extends Migration
         // 4. Daftarkan module program ke approval_modules jika belum ada
         if (Schema::hasTable('approval_modules')) {
             $existing = DB::table('approval_modules')->where('module_code', 'program')->first();
-            if (!$existing) {
+            if (! $existing) {
                 $modId = DB::table('approval_modules')->insertGetId([
                     'module_code' => 'program',
                     'module_name' => 'Program Kerja & Rencana Anggaran Biaya (RAB) Diklat',
@@ -183,7 +183,7 @@ return new class extends Migration
                 'method', 'location', 'approval_type', 'approval_doc_number', 'approval_doc_date',
                 'approval_doc_signer', 'approval_doc_path', 'approval_doc_name', 'approval_doc_size',
                 'total_budget', 'status', 'current_step_order', 'approval_status_badge',
-                'rejection_notes', 'approved_by', 'approved_at'
+                'rejection_notes', 'approved_by', 'approved_at',
             ]);
         });
     }

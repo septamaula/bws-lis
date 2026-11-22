@@ -11,19 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (Schema::hasTable('users') && !Schema::hasColumn('users', 'deleted_at')) {
+        if (Schema::hasTable('users') && ! Schema::hasColumn('users', 'deleted_at')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->softDeletes();
             });
         }
 
-        if (Schema::hasTable('karyawan') && !Schema::hasColumn('karyawan', 'deleted_at')) {
+        if (Schema::hasTable('karyawan') && ! Schema::hasColumn('karyawan', 'deleted_at')) {
             Schema::table('karyawan', function (Blueprint $table) {
                 $table->softDeletes();
             });
         }
 
-        if (Schema::hasTable('user') && !Schema::hasColumn('user', 'deleted_at')) {
+        if (Schema::hasTable('user') && ! Schema::hasColumn('user', 'deleted_at')) {
             Schema::table('user', function (Blueprint $table) {
                 $table->softDeletes();
             });

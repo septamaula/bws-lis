@@ -9,7 +9,6 @@ use App\Models\TnaItem;
 use App\Models\TnaProposal;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class MultiApprovalAndTnaSeeder extends Seeder
 {
@@ -47,7 +46,7 @@ class MultiApprovalAndTnaSeeder extends Seeder
                         'max_amount' => null,
                         'sla_days' => 3,
                     ],
-                ]
+                ],
             ],
             [
                 'module_code' => 'class',
@@ -71,7 +70,7 @@ class MultiApprovalAndTnaSeeder extends Seeder
                         'max_amount' => null,
                         'sla_days' => 2,
                     ],
-                ]
+                ],
             ],
             [
                 'module_code' => 'transaction',
@@ -95,7 +94,7 @@ class MultiApprovalAndTnaSeeder extends Seeder
                         'max_amount' => null,
                         'sla_days' => 3,
                     ],
-                ]
+                ],
             ],
             [
                 'module_code' => 'certification',
@@ -119,7 +118,7 @@ class MultiApprovalAndTnaSeeder extends Seeder
                         'max_amount' => null,
                         'sla_days' => 2,
                     ],
-                ]
+                ],
             ],
         ];
 

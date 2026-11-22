@@ -292,7 +292,7 @@ class CategorySubCategoryAndYearSeeder extends Seeder
         $catOps = DB::table('categories')->where('code', 'CAT-OPS')->first();
         $catCrd = DB::table('categories')->where('code', 'CAT-CRD')->first();
         $catRsk = DB::table('categories')->where('code', 'CAT-RSK')->first();
-        $catIt  = DB::table('categories')->where('code', 'CAT-IT')->first();
+        $catIt = DB::table('categories')->where('code', 'CAT-IT')->first();
 
         $subIt1 = DB::table('sub_categories')->where('code', 'SUB-IT-001')->first();
         $subCrd1 = DB::table('sub_categories')->where('code', 'SUB-CRD-001')->first();

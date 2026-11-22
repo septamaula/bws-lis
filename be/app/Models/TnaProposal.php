@@ -59,14 +59,18 @@ class TnaProposal extends Model
     {
         $proj = (float) ($this->total_budget_requested ?? 0);
         $real = (float) ($this->realization_amount ?? 0);
+
         return max(0, $proj - $real);
     }
 
     public function getRealizationPercentageAttribute(): float
     {
         $proj = (float) ($this->total_budget_requested ?? 0);
-        if ($proj <= 0) return 0.0;
+        if ($proj <= 0) {
+            return 0.0;
+        }
         $real = (float) ($this->realization_amount ?? 0);
+
         return round(($real / $proj) * 100, 1);
     }
 

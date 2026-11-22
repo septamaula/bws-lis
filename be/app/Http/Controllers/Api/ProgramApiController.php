@@ -3,14 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\ApprovalFlowStep;
 use App\Models\ApprovalHistory;
 use App\Models\ApprovalModule;
 use App\Models\AuditLog;
 use App\Models\ProgramBudgetItem;
 use App\Models\ProgramParticipant;
-use App\Models\TnaItem;
-use App\Models\TnaProposal;
 use App\Models\TrainingProgram;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -46,14 +43,14 @@ class ProgramApiController extends Controller
         }
 
         if ($request->filled('search')) {
-            $s = '%' . trim($request->search) . '%';
+            $s = '%'.trim($request->search).'%';
             $query->where(function ($q) use ($s) {
                 $q->where('title', 'like', $s)
-                  ->orWhere('program_code', 'like', $s)
-                  ->orWhere('facilitator', 'like', $s)
-                  ->orWhere('location', 'like', $s)
-                  ->orWhere('category', 'like', $s)
-                  ->orWhere('bi_category', 'like', $s);
+                    ->orWhere('program_code', 'like', $s)
+                    ->orWhere('facilitator', 'like', $s)
+                    ->orWhere('location', 'like', $s)
+                    ->orWhere('category', 'like', $s)
+                    ->orWhere('bi_category', 'like', $s);
             });
         }
 
@@ -94,7 +91,7 @@ class ProgramApiController extends Controller
             'approvalHistories.approver',
             'classes' => function ($q) {
                 $q->withCount(['sessions', 'enrollments'])->orderByDesc('id');
-            }
+            },
         ])->findOrFail($id);
 
         $approvalModule = ApprovalModule::where('module_code', 'program')->first();
@@ -187,8 +184,8 @@ class ProgramApiController extends Controller
             $docName = $file->getClientOriginalName();
             $docSize = $file->getSize();
             $docPath = $file->store('attachments/programs', 'public');
-        } elseif (!empty($docName)) {
-            $docPath = 'attachments/programs/' . uniqid() . '_' . preg_replace('/[^A-Za-z0-9_\-\.]/', '', $docName);
+        } elseif (! empty($docName)) {
+            $docPath = 'attachments/programs/'.uniqid().'_'.preg_replace('/[^A-Za-z0-9_\-\.]/', '', $docName);
         }
 
         $doc1Path = null;
@@ -198,7 +195,7 @@ class ProgramApiController extends Controller
             $doc1Name = $file->getClientOriginalName();
             $doc1Path = $file->store('attachments/programs', 'public');
         } elseif ($doc1Name) {
-            $doc1Path = 'attachments/programs/' . uniqid() . '_' . preg_replace('/[^A-Za-z0-9_\-\.]/', '', $doc1Name);
+            $doc1Path = 'attachments/programs/'.uniqid().'_'.preg_replace('/[^A-Za-z0-9_\-\.]/', '', $doc1Name);
         }
 
         $doc2Path = null;
@@ -208,7 +205,7 @@ class ProgramApiController extends Controller
             $doc2Name = $file->getClientOriginalName();
             $doc2Path = $file->store('attachments/programs', 'public');
         } elseif ($doc2Name) {
-            $doc2Path = 'attachments/programs/' . uniqid() . '_' . preg_replace('/[^A-Za-z0-9_\-\.]/', '', $doc2Name);
+            $doc2Path = 'attachments/programs/'.uniqid().'_'.preg_replace('/[^A-Za-z0-9_\-\.]/', '', $doc2Name);
         }
 
         // Hitung total 10 item RAB
@@ -231,16 +228,17 @@ class ProgramApiController extends Controller
             if ($sub <= 0 && isset($i['quantity'], $i['unit_price'])) {
                 $sub = (float) $i['quantity'] * (float) $i['unit_price'];
             }
+
             return $sub;
         });
 
         // Program Code
-        if (!empty($validated['program_code'])) {
+        if (! empty($validated['program_code'])) {
             $programCode = $validated['program_code'];
         } else {
             $count = TrainingProgram::where('year', $year)->count() + 1;
             $deptShort = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $validated['unit_initiator'] ?? $validated['department'] ?? 'GEN'), 0, 3));
-            $programCode = 'PRG-' . $year . '-' . $deptShort . '-' . str_pad($count, 3, '0', STR_PAD_LEFT);
+            $programCode = 'PRG-'.$year.'-'.$deptShort.'-'.str_pad($count, 3, '0', STR_PAD_LEFT);
         }
 
         // Tentukan status dan badge
@@ -249,7 +247,7 @@ class ProgramApiController extends Controller
             $badge = $isSubmit ? 'Menunggu Disposisi LD Div Head' : 'Draft Program';
         } elseif ($approvalScenario === 'WITH_APPROVAL_DOC') {
             $status = $isSubmit ? 'APPROVED' : 'DRAFT';
-            $badge = $isSubmit ? 'Disahkan via Dokumen (' . ($docName ?? 'Memo') . ')' : 'Draft Program';
+            $badge = $isSubmit ? 'Disahkan via Dokumen ('.($docName ?? 'Memo').')' : 'Draft Program';
         } else {
             $status = $isSubmit ? 'SUBMITTED' : 'DRAFT';
             $badge = $isSubmit ? 'Menunggu Reviewer 1 (People Dev)' : 'Draft Program';
@@ -379,7 +377,7 @@ class ProgramApiController extends Controller
                         'approver_nik' => $user->nik,
                         'role_name' => $user->role_name ?? 'Dept Head',
                         'action' => 'SUBMITTED',
-                        'notes' => "Program {$program->program_code} diajukan ke Alur Multi-Approval dengan total RAB Rp " . number_format($totalBudget, 0, ',', '.'),
+                        'notes' => "Program {$program->program_code} diajukan ke Alur Multi-Approval dengan total RAB Rp ".number_format($totalBudget, 0, ',', '.'),
                         'approved_amount' => $totalBudget,
                         'action_at' => now(),
                     ]);
@@ -407,8 +405,9 @@ class ProgramApiController extends Controller
             ], 201);
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return response()->json([
-                'message' => 'Gagal menyimpan program kerja pelatihan: ' . $e->getMessage(),
+                'message' => 'Gagal menyimpan program kerja pelatihan: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -467,26 +466,66 @@ class ProgramApiController extends Controller
         try {
             DB::beginTransaction();
 
-            if (isset($validated['title'])) $program->title = $validated['title'];
-            if (isset($validated['category'])) $program->category = $validated['category'];
-            if (array_key_exists('tna_proposal_id', $validated)) $program->tna_proposal_id = $validated['tna_proposal_id'];
-            if (array_key_exists('tna_item_id', $validated)) $program->tna_item_id = $validated['tna_item_id'];
-            if (isset($validated['department'])) $program->department = $validated['department'];
-            if (isset($validated['year'])) $program->year = $validated['year'];
-            if (isset($validated['execution_quarter'])) $program->execution_quarter = $validated['execution_quarter'];
-            if (isset($validated['target_audience'])) $program->target_audience = $validated['target_audience'];
-            if (isset($validated['target_participants_count'])) $program->target_participants_count = $validated['target_participants_count'];
-            if (isset($validated['participant_prerequisites'])) $program->participant_prerequisites = $validated['participant_prerequisites'];
-            if (isset($validated['method'])) $program->method = $validated['method'];
-            if (isset($validated['location'])) $program->location = $validated['location'];
-            if (isset($validated['duration_hours'])) $program->duration_hours = $validated['duration_hours'];
-            if (isset($validated['passing_grade'])) $program->passing_grade = $validated['passing_grade'];
-            if ($request->has('is_mandatory')) $program->is_mandatory = $request->boolean('is_mandatory');
-            if (isset($validated['description'])) $program->description = $validated['description'];
-            if (isset($validated['approval_type'])) $program->approval_type = $validated['approval_type'];
-            if (isset($validated['approval_doc_number'])) $program->approval_doc_number = $validated['approval_doc_number'];
-            if (isset($validated['approval_doc_date'])) $program->approval_doc_date = $validated['approval_doc_date'];
-            if (isset($validated['approval_doc_signer'])) $program->approval_doc_signer = $validated['approval_doc_signer'];
+            if (isset($validated['title'])) {
+                $program->title = $validated['title'];
+            }
+            if (isset($validated['category'])) {
+                $program->category = $validated['category'];
+            }
+            if (array_key_exists('tna_proposal_id', $validated)) {
+                $program->tna_proposal_id = $validated['tna_proposal_id'];
+            }
+            if (array_key_exists('tna_item_id', $validated)) {
+                $program->tna_item_id = $validated['tna_item_id'];
+            }
+            if (isset($validated['department'])) {
+                $program->department = $validated['department'];
+            }
+            if (isset($validated['year'])) {
+                $program->year = $validated['year'];
+            }
+            if (isset($validated['execution_quarter'])) {
+                $program->execution_quarter = $validated['execution_quarter'];
+            }
+            if (isset($validated['target_audience'])) {
+                $program->target_audience = $validated['target_audience'];
+            }
+            if (isset($validated['target_participants_count'])) {
+                $program->target_participants_count = $validated['target_participants_count'];
+            }
+            if (isset($validated['participant_prerequisites'])) {
+                $program->participant_prerequisites = $validated['participant_prerequisites'];
+            }
+            if (isset($validated['method'])) {
+                $program->method = $validated['method'];
+            }
+            if (isset($validated['location'])) {
+                $program->location = $validated['location'];
+            }
+            if (isset($validated['duration_hours'])) {
+                $program->duration_hours = $validated['duration_hours'];
+            }
+            if (isset($validated['passing_grade'])) {
+                $program->passing_grade = $validated['passing_grade'];
+            }
+            if ($request->has('is_mandatory')) {
+                $program->is_mandatory = $request->boolean('is_mandatory');
+            }
+            if (isset($validated['description'])) {
+                $program->description = $validated['description'];
+            }
+            if (isset($validated['approval_type'])) {
+                $program->approval_type = $validated['approval_type'];
+            }
+            if (isset($validated['approval_doc_number'])) {
+                $program->approval_doc_number = $validated['approval_doc_number'];
+            }
+            if (isset($validated['approval_doc_date'])) {
+                $program->approval_doc_date = $validated['approval_doc_date'];
+            }
+            if (isset($validated['approval_doc_signer'])) {
+                $program->approval_doc_signer = $validated['approval_doc_signer'];
+            }
 
             // Handle file upload
             if ($request->hasFile('document')) {
@@ -524,7 +563,7 @@ class ProgramApiController extends Controller
             if (isset($validated['participants'])) {
                 $program->participants()->delete();
                 foreach ($validated['participants'] as $p) {
-                    if (!empty($p['name'])) {
+                    if (! empty($p['name'])) {
                         ProgramParticipant::create([
                             'training_program_id' => $program->id,
                             'nik' => $p['nik'] ?? null,
@@ -543,7 +582,7 @@ class ProgramApiController extends Controller
             if ($isSubmit) {
                 if ($program->approval_type === 'DOCUMENT') {
                     $program->status = 'APPROVED';
-                    $program->approval_status_badge = 'Disahkan via Dokumen (' . ($program->approval_doc_number ?? 'MEMO') . ')';
+                    $program->approval_status_badge = 'Disahkan via Dokumen ('.($program->approval_doc_number ?? 'MEMO').')';
                     $program->approved_by = $user->id;
                     $program->approved_at = now();
                     $program->rejection_notes = null;
@@ -580,8 +619,9 @@ class ProgramApiController extends Controller
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return response()->json([
-                'message' => 'Gagal memperbarui program kerja: ' . $e->getMessage(),
+                'message' => 'Gagal memperbarui program kerja: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -606,9 +646,9 @@ class ProgramApiController extends Controller
         $flowSteps = $mod ? $mod->flowSteps()->where('is_active', true)->orderBy('step_order')->get() : collect();
         $currentStep = $flowSteps->firstWhere('step_order', $program->current_step_order);
 
-        if (!$isSuperAdmin && (!$currentStep || $currentStep->role_name !== $userRole)) {
+        if (! $isSuperAdmin && (! $currentStep || $currentStep->role_name !== $userRole)) {
             return response()->json([
-                'message' => 'Anda tidak memiliki hak otorisasi untuk tahapan approval saat ini (' . ($currentStep?->step_name ?? 'N/A') . ').',
+                'message' => 'Anda tidak memiliki hak otorisasi untuk tahapan approval saat ini ('.($currentStep?->step_name ?? 'N/A').').',
             ], 403);
         }
 
@@ -692,14 +732,14 @@ class ProgramApiController extends Controller
                     'action_at' => now(),
                 ]);
 
-                $msg = "Permintaan revisi program berhasil dikirimkan kembali kepada pengusul.";
+                $msg = 'Permintaan revisi program berhasil dikirimkan kembali kepada pengusul.';
             }
 
             $program->save();
 
             AuditLog::create([
                 'user_id' => $user->id,
-                'action' => 'WORKFLOW_' . $decision . '_PROGRAM',
+                'action' => 'WORKFLOW_'.$decision.'_PROGRAM',
                 'entity_type' => 'TrainingProgram',
                 'entity_id' => $program->id,
                 'ip_address' => $request->ip(),
@@ -714,8 +754,9 @@ class ProgramApiController extends Controller
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return response()->json([
-                'message' => 'Gagal memproses aksi otorisasi: ' . $e->getMessage(),
+                'message' => 'Gagal memproses aksi otorisasi: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -728,24 +769,25 @@ class ProgramApiController extends Controller
     {
         $program = TrainingProgram::findOrFail($id);
 
-        if (!$program->approval_doc_path) {
+        if (! $program->approval_doc_path) {
             return response()->json(['message' => 'Program ini tidak memiliki dokumen lampiran fisik.'], 404);
         }
 
         if (Storage::disk('public')->exists($program->approval_doc_path)) {
             $path = Storage::disk('public')->path($program->approval_doc_path);
+
             return response()->download($path, $program->approval_doc_name ?: 'Dokumen_Pengesahan_Program.pdf');
         }
 
         // Dummy generated stream jika berkas simulasi
         $safeName = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $program->approval_doc_name ?: 'Dokumen_Pengesahan_Program.pdf');
         $dummyDir = storage_path('app/public/attachments/programs');
-        if (!file_exists($dummyDir)) {
+        if (! file_exists($dummyDir)) {
             mkdir($dummyDir, 0755, true);
         }
-        $fallbackPath = $dummyDir . '/' . $safeName;
-        if (!file_exists($fallbackPath)) {
-            $content = "%PDF-1.4\n%BWS Learning Integrated System (LIS) - Official Approval Document\nProgram: {$program->program_code}\nTitle: {$program->title}\nBudget: Rp " . number_format($program->total_budget, 0, ',', '.') . "\nSigner: {$program->approval_doc_signer}\nStatus: {$program->status}\n%%EOF";
+        $fallbackPath = $dummyDir.'/'.$safeName;
+        if (! file_exists($fallbackPath)) {
+            $content = "%PDF-1.4\n%BWS Learning Integrated System (LIS) - Official Approval Document\nProgram: {$program->program_code}\nTitle: {$program->title}\nBudget: Rp ".number_format($program->total_budget, 0, ',', '.')."\nSigner: {$program->approval_doc_signer}\nStatus: {$program->status}\n%%EOF";
             file_put_contents($fallbackPath, $content);
         }
 
@@ -762,7 +804,7 @@ class ProgramApiController extends Controller
         $user = $request->user();
         $isSuperAdmin = ($user?->role_name === 'Super Admin' || ($user?->level && $user->level->is_admin));
 
-        if ($program->status === 'APPROVED' && !$isSuperAdmin) {
+        if ($program->status === 'APPROVED' && ! $isSuperAdmin) {
             return response()->json([
                 'message' => 'Program kerja yang telah Disetujui Final tidak dapat dihapus.',
             ], 422);

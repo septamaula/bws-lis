@@ -2,16 +2,15 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use App\Models\User;
-use App\Models\Category;
-use App\Models\SubCategory;
-use App\Models\FiscalYear;
-use App\Models\TnaProposal;
-use App\Models\TnaItem;
 use App\Models\ApprovalHistory;
+use App\Models\Category;
+use App\Models\FiscalYear;
+use App\Models\SubCategory;
+use App\Models\TnaItem;
+use App\Models\TnaProposal;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
 
 class ComprehensiveAnnualTnaSeeder extends Seeder
 {
@@ -30,11 +29,11 @@ class ComprehensiveAnnualTnaSeeder extends Seeder
         $fiscalYear = FiscalYear::where('year', 2026)->first() ?? FiscalYear::where('is_active', true)->first();
 
         // 3. Ensure Storage Directory & Dummy Attachment PDF exists
-        if (!Storage::disk('public')->exists('attachments/tna')) {
+        if (! Storage::disk('public')->exists('attachments/tna')) {
             Storage::disk('public')->makeDirectory('attachments/tna');
         }
         $attachmentRelPath = 'attachments/tna/TOR_Rencana_Induk_TNA_Tahunan_BWS_2026.pdf';
-        if (!Storage::disk('public')->exists($attachmentRelPath)) {
+        if (! Storage::disk('public')->exists($attachmentRelPath)) {
             $dummyPdfContent = "%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000052 00000 n\n0000000101 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n178\n%%EOF\n";
             Storage::disk('public')->put($attachmentRelPath, $dummyPdfContent);
         }

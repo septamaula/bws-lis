@@ -13,22 +13,22 @@ return new class extends Migration
     {
         // 1. Enhance training_classes
         Schema::table('training_classes', function (Blueprint $table) {
-            if (!Schema::hasColumn('training_classes', 'daily_schedule')) {
+            if (! Schema::hasColumn('training_classes', 'daily_schedule')) {
                 $table->string('daily_schedule', 100)->nullable()->default('08:30 - 16:30 WIB');
             }
-            if (!Schema::hasColumn('training_classes', 'trainer_name')) {
+            if (! Schema::hasColumn('training_classes', 'trainer_name')) {
                 $table->string('trainer_name', 150)->nullable();
             }
-            if (!Schema::hasColumn('training_classes', 'passing_grade')) {
+            if (! Schema::hasColumn('training_classes', 'passing_grade')) {
                 $table->integer('passing_grade')->default(75);
             }
-            if (!Schema::hasColumn('training_classes', 'description')) {
+            if (! Schema::hasColumn('training_classes', 'description')) {
                 $table->text('description')->nullable();
             }
-            if (!Schema::hasColumn('training_classes', 'notes')) {
+            if (! Schema::hasColumn('training_classes', 'notes')) {
                 $table->text('notes')->nullable();
             }
-            if (!Schema::hasColumn('training_classes', 'is_attendance_open')) {
+            if (! Schema::hasColumn('training_classes', 'is_attendance_open')) {
                 $table->boolean('is_attendance_open')->default(true);
             }
         });
@@ -38,55 +38,55 @@ return new class extends Migration
             Schema::table('class_enrollments', function (Blueprint $table) {
                 $table->foreignId('user_id')->nullable()->change();
             });
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Already nullable or driver-specific constraint
         }
 
         Schema::table('class_enrollments', function (Blueprint $table) {
 
-            if (!Schema::hasColumn('class_enrollments', 'nik')) {
+            if (! Schema::hasColumn('class_enrollments', 'nik')) {
                 $table->string('nik', 50)->nullable();
             }
-            if (!Schema::hasColumn('class_enrollments', 'participant_name')) {
+            if (! Schema::hasColumn('class_enrollments', 'participant_name')) {
                 $table->string('participant_name', 150)->nullable();
             }
-            if (!Schema::hasColumn('class_enrollments', 'department')) {
+            if (! Schema::hasColumn('class_enrollments', 'department')) {
                 $table->string('department', 100)->nullable();
             }
-            if (!Schema::hasColumn('class_enrollments', 'branch')) {
+            if (! Schema::hasColumn('class_enrollments', 'branch')) {
                 $table->string('branch', 100)->nullable();
             }
-            if (!Schema::hasColumn('class_enrollments', 'position')) {
+            if (! Schema::hasColumn('class_enrollments', 'position')) {
                 $table->string('position', 100)->nullable();
             }
-            if (!Schema::hasColumn('class_enrollments', 'attendance_percentage')) {
+            if (! Schema::hasColumn('class_enrollments', 'attendance_percentage')) {
                 $table->decimal('attendance_percentage', 5, 2)->default(0);
             }
-            if (!Schema::hasColumn('class_enrollments', 'eval_instructor_rating')) {
+            if (! Schema::hasColumn('class_enrollments', 'eval_instructor_rating')) {
                 $table->integer('eval_instructor_rating')->nullable();
             }
-            if (!Schema::hasColumn('class_enrollments', 'eval_material_rating')) {
+            if (! Schema::hasColumn('class_enrollments', 'eval_material_rating')) {
                 $table->integer('eval_material_rating')->nullable();
             }
-            if (!Schema::hasColumn('class_enrollments', 'eval_facility_rating')) {
+            if (! Schema::hasColumn('class_enrollments', 'eval_facility_rating')) {
                 $table->integer('eval_facility_rating')->nullable();
             }
-            if (!Schema::hasColumn('class_enrollments', 'eval_notes')) {
+            if (! Schema::hasColumn('class_enrollments', 'eval_notes')) {
                 $table->text('eval_notes')->nullable();
             }
-            if (!Schema::hasColumn('class_enrollments', 'grade')) {
+            if (! Schema::hasColumn('class_enrollments', 'grade')) {
                 $table->string('grade', 5)->nullable();
             }
-            if (!Schema::hasColumn('class_enrollments', 'certificate_number')) {
+            if (! Schema::hasColumn('class_enrollments', 'certificate_number')) {
                 $table->string('certificate_number', 100)->nullable();
             }
-            if (!Schema::hasColumn('class_enrollments', 'certificate_issued_at')) {
+            if (! Schema::hasColumn('class_enrollments', 'certificate_issued_at')) {
                 $table->timestamp('certificate_issued_at')->nullable();
             }
         });
 
         // 3. Create class_sessions
-        if (!Schema::hasTable('class_sessions')) {
+        if (! Schema::hasTable('class_sessions')) {
             Schema::create('class_sessions', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('training_class_id')->constrained('training_classes')->cascadeOnDelete();
@@ -103,7 +103,7 @@ return new class extends Migration
         }
 
         // 4. Create class_attendances
-        if (!Schema::hasTable('class_attendances')) {
+        if (! Schema::hasTable('class_attendances')) {
             Schema::create('class_attendances', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('training_class_id')->constrained('training_classes')->cascadeOnDelete();
@@ -122,7 +122,7 @@ return new class extends Migration
         }
 
         // 5. Create class_evaluations
-        if (!Schema::hasTable('class_evaluations')) {
+        if (! Schema::hasTable('class_evaluations')) {
             Schema::create('class_evaluations', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('training_class_id')->constrained('training_classes')->cascadeOnDelete();

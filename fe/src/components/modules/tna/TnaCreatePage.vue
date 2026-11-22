@@ -17,7 +17,8 @@ import {
   Layers,
   RotateCcw,
   ShieldCheck,
-  Building2
+  Building2,
+  ChevronDown
 } from 'lucide-vue-next'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
@@ -126,11 +127,27 @@ const itemColumns = [
 ]
 
 function addItemRow() {
+  const firstCat = categories.value[0]
   form.value.items.push({
-    category_name: 'Operasional & Layanan Perbankan',
+    category_id: firstCat?.id || null,
+    category_name: firstCat?.name || 'Operasional & Layanan Perbankan',
     recommended_program: '',
-    budget: 50000000
+    budget: 50000000,
+    realization_amount: 0
   })
+}
+
+function onCategoryChange(item) {
+  const matched = categories.value.find(c => c.name === item.category_name)
+  if (matched) {
+    item.category_id = matched.id
+  }
+}
+
+function getSubCategoriesForCategory(categoryName) {
+  if (!categoryName) return []
+  const cat = categories.value.find(c => c.name === categoryName)
+  return cat?.sub_categories || []
 }
 
 function removeItemRow(index) {
@@ -157,22 +174,30 @@ function loadPreset20Programs() {
     { category_name: 'Kredit & Pembiayaan Komersial', recommended_program: 'Mitigasi Risiko Kredit & Pencegahan NPL', budget: 70000000, realization_amount: 0 },
     { category_name: 'Kredit & Pembiayaan Komersial', recommended_program: 'Restrukturisasi Kredit & Penyelamatan Aset (Remedial)', budget: 60000000, realization_amount: 0 },
     { category_name: 'Kredit & Pembiayaan Komersial', recommended_program: 'Kredit Konsumer, KPR & Pembiayaan Pensiunan BWS', budget: 85000000, realization_amount: 0 },
-    // Manajemen Risiko, Kepatuhan & OJK (Subtotal: Rp 290.000.000)
-    { category_name: 'Manajemen Risiko, Kepatuhan & OJK', recommended_program: 'Sertifikasi Manajemen Risiko Perbankan (BSMR 1 - 4)', budget: 115000000, realization_amount: 0 },
-    { category_name: 'Manajemen Risiko, Kepatuhan & OJK', recommended_program: 'APU-PPT (Anti Pencucian Uang & Pencegahan Terorisme)', budget: 60000000, realization_amount: 0 },
-    { category_name: 'Manajemen Risiko, Kepatuhan & OJK', recommended_program: 'Audit Internal Perbankan & Investigasi Anti-Fraud', budget: 65000000, realization_amount: 0 },
-    { category_name: 'Manajemen Risiko, Kepatuhan & OJK', recommended_program: 'Perlindungan Konsumen & Kerahasiaan Data (UU PDP)', budget: 50000000, realization_amount: 0 },
-    // Teknologi Informasi & Siber (Subtotal: Rp 350.000.000)
-    { category_name: 'Teknologi Informasi & Siber', recommended_program: 'Keamanan Siber Perbankan & Kepatuhan POJK 29/2022', budget: 110000000, realization_amount: 0 },
-    { category_name: 'Teknologi Informasi & Siber', recommended_program: 'Core Banking Administration & Database Tuning', budget: 75000000, realization_amount: 0 },
-    { category_name: 'Teknologi Informasi & Siber', recommended_program: 'Digital Banking, API Open Banking & SNAP BI', budget: 85000000, realization_amount: 0 },
-    { category_name: 'Teknologi Informasi & Siber', recommended_program: 'IT Disaster Recovery & Business Continuity (BCM)', budget: 80000000, realization_amount: 0 },
-    // Kepemimpinan & Budaya Kerja (Subtotal: Rp 270.000.000)
-    { category_name: 'Kepemimpinan & Budaya Kerja', recommended_program: 'Officer Development Program (ODP) Corporate Academy', budget: 110000000, realization_amount: 0 },
-    { category_name: 'Kepemimpinan & Budaya Kerja', recommended_program: 'Branch Manager Leadership & P&L Business Mastery', budget: 75000000, realization_amount: 0 },
-    { category_name: 'Kepemimpinan & Budaya Kerja', recommended_program: 'Supervisory Coaching, Mentoring & People Development', budget: 50000000, realization_amount: 0 },
-    { category_name: 'Kepemimpinan & Budaya Kerja', recommended_program: 'Budaya Kerja Perbankan BWS & Integrity Excellence', budget: 35000000, realization_amount: 0 }
+    // Manajemen Risiko, Kepatuhan & Regulasi OJK (Subtotal: Rp 290.000.000)
+    { category_name: 'Manajemen Risiko, Kepatuhan & Regulasi OJK', recommended_program: 'Sertifikasi Manajemen Risiko Perbankan (BSMR 1 - 4)', budget: 115000000, realization_amount: 0 },
+    { category_name: 'Manajemen Risiko, Kepatuhan & Regulasi OJK', recommended_program: 'APU-PPT (Anti Pencucian Uang & Pencegahan Terorisme)', budget: 60000000, realization_amount: 0 },
+    { category_name: 'Manajemen Risiko, Kepatuhan & Regulasi OJK', recommended_program: 'Audit Internal Perbankan & Investigasi Anti-Fraud', budget: 65000000, realization_amount: 0 },
+    { category_name: 'Manajemen Risiko, Kepatuhan & Regulasi OJK', recommended_program: 'Perlindungan Konsumen & Kerahasiaan Data (UU PDP)', budget: 50000000, realization_amount: 0 },
+    // Teknologi Informasi & Keamanan Siber (Subtotal: Rp 350.000.000)
+    { category_name: 'Teknologi Informasi & Keamanan Siber', recommended_program: 'Keamanan Siber Perbankan & Kepatuhan POJK 29/2022', budget: 110000000, realization_amount: 0 },
+    { category_name: 'Teknologi Informasi & Keamanan Siber', recommended_program: 'Core Banking Administration & Database Tuning', budget: 75000000, realization_amount: 0 },
+    { category_name: 'Teknologi Informasi & Keamanan Siber', recommended_program: 'Digital Banking, API Open Banking & SNAP BI', budget: 85000000, realization_amount: 0 },
+    { category_name: 'Teknologi Informasi & Keamanan Siber', recommended_program: 'IT Disaster Recovery & Business Continuity (BCM)', budget: 80000000, realization_amount: 0 },
+    // Kepemimpinan, Manajerial & Budaya Kerja (Subtotal: Rp 270.000.000)
+    { category_name: 'Kepemimpinan, Manajerial & Budaya Kerja', recommended_program: 'Officer Development Program (ODP) Corporate Academy', budget: 110000000, realization_amount: 0 },
+    { category_name: 'Kepemimpinan, Manajerial & Budaya Kerja', recommended_program: 'Branch Manager Leadership & P&L Business Mastery', budget: 75000000, realization_amount: 0 },
+    { category_name: 'Kepemimpinan, Manajerial & Budaya Kerja', recommended_program: 'Supervisory Coaching, Mentoring & People Development', budget: 50000000, realization_amount: 0 },
+    { category_name: 'Kepemimpinan, Manajerial & Budaya Kerja', recommended_program: 'Budaya Kerja Perbankan BWS & Integrity Excellence', budget: 35000000, realization_amount: 0 }
   ]
+
+  // Link category_id automatically from loaded master categories
+  form.value.items.forEach(item => {
+    const matched = categories.value.find(c => c.name === item.category_name)
+    if (matched) {
+      item.category_id = matched.id
+    }
+  })
 }
 
 // Fetch Master Data on Mount
@@ -180,7 +205,7 @@ async function loadMasterData() {
   loadingMasters.value = true
   try {
     const [resCats, resYears] = await Promise.all([
-      apiClient.get('/categories'),
+      apiClient.get('/categories?with_subs=1'),
       apiClient.get('/fiscal-years')
     ])
     categories.value = resCats.data.categories || []
@@ -210,6 +235,7 @@ async function loadMasterData() {
 
       if (p.items && p.items.length > 0) {
         form.value.items = p.items.map(it => ({
+          category_id: it.category_id || null,
           category_name: it.category_name || it.category?.name || 'Operasional & Layanan Perbankan',
           recommended_program: it.recommended_program || it.sub_category_name || 'Program Pelatihan',
           budget: Number(it.budget || it.estimated_cost) || 0,
@@ -250,12 +276,16 @@ async function submitForm() {
   feedback.value = { type: '', message: '' }
 
   try {
-    const payloadItems = form.value.items.map(i => ({
-      category_name: i.category_name,
-      recommended_program: i.recommended_program,
-      budget: Number(i.budget) || 0,
-      realization_amount: Number(i.realization_amount) || 0
-    }))
+    const payloadItems = form.value.items.map(i => {
+      const matchedCat = categories.value.find(c => c.name === i.category_name)
+      return {
+        category_id: i.category_id || matchedCat?.id || null,
+        category_name: i.category_name,
+        recommended_program: i.recommended_program,
+        budget: Number(i.budget) || 0,
+        realization_amount: Number(i.realization_amount) || 0
+      }
+    })
 
     const formData = new FormData()
     formData.append('year', form.value.year)
@@ -270,6 +300,9 @@ async function submitForm() {
     }
 
     payloadItems.forEach((it, idx) => {
+      if (it.category_id) {
+        formData.append(`items[${idx}][category_id]`, it.category_id)
+      }
       formData.append(`items[${idx}][category_name]`, it.category_name)
       formData.append(`items[${idx}][recommended_program]`, it.recommended_program)
       formData.append(`items[${idx}][budget]`, it.budget)
@@ -476,24 +509,52 @@ async function submitForm() {
                   {{ idx + 1 }}
                 </td>
 
-                <!-- Category -->
+                <!-- Category (Master Data Select) -->
                 <td class="py-2.5 px-3">
-                  <input
-                    v-model="item.category_name"
-                    type="text"
-                    placeholder="Category 1 / Operasional"
-                    class="w-full bg-white text-xs font-semibold text-gray-800 rounded-lg px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
-                  />
+                  <div class="relative">
+                    <select
+                      v-model="item.category_name"
+                      @change="onCategoryChange(item)"
+                      class="w-full bg-white text-xs font-semibold text-gray-800 rounded-lg pl-3 pr-8 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer appearance-none truncate"
+                    >
+                      <option value="" disabled>-- Pilih Kategori Diklat --</option>
+                      <option
+                        v-for="cat in categories"
+                        :key="cat.id"
+                        :value="cat.name"
+                      >
+                        {{ cat.name }}
+                      </option>
+                      <!-- Fallback jika ada kategori legacy/kustom di luar master data -->
+                      <option
+                        v-if="item.category_name && !categories.some(c => c.name === item.category_name)"
+                        :value="item.category_name"
+                      >
+                        {{ item.category_name }}
+                      </option>
+                    </select>
+                    <ChevronDown class="w-3.5 h-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </td>
 
-                <!-- Training Program -->
+                <!-- Training Program (with Sub Categories autocomplete suggestions) -->
                 <td class="py-2.5 px-3">
                   <input
                     v-model="item.recommended_program"
                     type="text"
-                    placeholder="Training Program Name"
-                    class="w-full bg-white text-xs text-gray-800 rounded-lg px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+                    :list="'subcat-suggestions-' + idx"
+                    placeholder="Judul / nama program pelatihan..."
+                    class="w-full bg-white text-xs text-gray-800 rounded-lg px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs placeholder:text-gray-300"
                   />
+                  <datalist :id="'subcat-suggestions-' + idx">
+                    <option
+                      v-for="sub in getSubCategoriesForCategory(item.category_name)"
+                      :key="sub.id"
+                      :value="sub.name"
+                    >
+                      {{ sub.code ? `[${sub.code}] ` : '' }}{{ sub.target_competency ? `(${sub.target_competency})` : '' }}
+                    </option>
+                  </datalist>
                 </td>
 
                 <!-- Investment (Projection) -->

@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         // 1. user_level
-        if (!Schema::hasTable('user_level')) {
+        if (! Schema::hasTable('user_level')) {
             Schema::create('user_level', function (Blueprint $table) {
                 $table->id('level_id');
                 $table->string('level', 100);
@@ -22,7 +22,7 @@ return new class extends Migration
         }
 
         // 2. user_access
-        if (!Schema::hasTable('user_access')) {
+        if (! Schema::hasTable('user_access')) {
             Schema::create('user_access', function (Blueprint $table) {
                 $table->id();
                 $table->unsignedBigInteger('level_id');
@@ -35,7 +35,7 @@ return new class extends Migration
         }
 
         // 3. user (LDMS structure)
-        if (!Schema::hasTable('user')) {
+        if (! Schema::hasTable('user')) {
             Schema::create('user', function (Blueprint $table) {
                 $table->id('user_id');
                 $table->string('username', 100)->unique();
@@ -61,11 +61,11 @@ return new class extends Migration
         // 4. Update users table with level_id and karyawan_id if not present
         if (Schema::hasTable('users')) {
             Schema::table('users', function (Blueprint $table) {
-                if (!Schema::hasColumn('users', 'level_id')) {
+                if (! Schema::hasColumn('users', 'level_id')) {
                     $table->unsignedBigInteger('level_id')->nullable()->after('role_name');
                     $table->foreign('level_id')->references('level_id')->on('user_level')->onDelete('set null');
                 }
-                if (!Schema::hasColumn('users', 'karyawan_id')) {
+                if (! Schema::hasColumn('users', 'karyawan_id')) {
                     $table->unsignedBigInteger('karyawan_id')->nullable()->after('level_id');
                     if (Schema::hasTable('karyawan')) {
                         $table->foreign('karyawan_id')->references('karyawan_id')->on('karyawan')->onDelete('set null');

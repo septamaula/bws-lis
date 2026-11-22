@@ -48,6 +48,7 @@ class TnaItem extends Model
     {
         $proj = (float) ($this->budget ?? $this->estimated_cost ?? 0);
         $real = (float) ($this->realization_amount ?? 0);
+
         return max(0, $proj - $real);
     }
 

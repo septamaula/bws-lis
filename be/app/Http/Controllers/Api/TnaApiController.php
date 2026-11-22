@@ -215,6 +215,18 @@ class TnaApiController extends Controller
                 $subObj = $subId ? $allSubs->get($subId) : null;
 
                 $catName = $item['category_name'] ?? ($catObj?->name ?? 'Operasional & Perbankan');
+                if (! $catId && $catName) {
+                    $matchedCat = $allCats->firstWhere('name', $catName);
+                    if ($matchedCat) {
+                        $catId = $matchedCat->id;
+                    }
+                }
+                if (! $catId && $catName) {
+                    $matchedCat = $allCats->firstWhere('name', $catName);
+                    if ($matchedCat) {
+                        $catId = $matchedCat->id;
+                    }
+                }
                 $subName = $item['sub_category_name'] ?? ($subObj?->name ?? ($item['recommended_program'] ?? 'Program Diklat'));
                 $compGap = $item['competency_gap'] ?? ($subObj?->target_competency ?? $subObj?->description ?? $subName);
                 $execQ = $item['execution_quarter'] ?? 'Q1';
@@ -469,6 +481,15 @@ class TnaApiController extends Controller
             'items.*.sub_category_id' => 'nullable|exists:sub_categories,id',
             'items.*.sub_category_name' => 'nullable|string',
             'items.*.budget' => 'nullable|numeric|min:0',
+            'items.*.realization_amount' => 'nullable|numeric|min:0',
+            'items.*.recommended_program' => 'nullable|string',
+            'items.*.job_family' => 'nullable|string|max:100',
+            'items.*.competency_gap' => 'nullable|string',
+            'items.*.training_type' => 'nullable|string|max:100',
+            'items.*.target_audience' => 'nullable|string',
+            'items.*.cost_per_participant' => 'nullable|numeric|min:0',
+            'items.*.urgency' => 'nullable|in:Critical,High,Medium,Low',
+            'items.*.impact_kpi' => 'nullable|string',
             'items.*.execution_quarter' => 'nullable|string|max:50',
             'items.*.target_participants_count' => 'nullable|integer|min:1',
         ]);
@@ -552,6 +573,12 @@ class TnaApiController extends Controller
                 $subObj = $subId ? $allSubs->get($subId) : null;
 
                 $catName = $item['category_name'] ?? ($catObj?->name ?? 'Operasional & Perbankan');
+                if (! $catId && $catName) {
+                    $matchedCat = $allCats->firstWhere('name', $catName);
+                    if ($matchedCat) {
+                        $catId = $matchedCat->id;
+                    }
+                }
                 $subName = $item['sub_category_name'] ?? ($subObj?->name ?? 'Program Diklat');
                 $compGap = $item['competency_gap'] ?? ($subObj?->target_competency ?? $subObj?->description ?? $subName);
                 $execQ = $item['execution_quarter'] ?? 'Q1';

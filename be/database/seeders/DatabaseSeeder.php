@@ -5,12 +5,12 @@ namespace Database\Seeders;
 use App\Models\AuditLog;
 use App\Models\ClassEnrollment;
 use App\Models\FinancialTransaction;
+use App\Models\Karyawan;
 use App\Models\TnaItem;
 use App\Models\TnaProposal;
 use App\Models\TrainingClass;
 use App\Models\TrainingProgram;
 use App\Models\User;
-use App\Models\Karyawan;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
@@ -451,4 +451,3 @@ class DatabaseSeeder extends Seeder
         $this->call(AlignExcelWireframeSeeder::class);
     }
 }
-

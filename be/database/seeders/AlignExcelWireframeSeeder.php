@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use App\Models\FiscalYear;
 use App\Models\TnaItem;
 use App\Models\TnaProposal;
@@ -107,16 +108,18 @@ class AlignExcelWireframeSeeder extends Seeder
             // Jika tahun 2026, masukkan 11 item program pelatihan bank-wide (Total: Rp 1.485.000.000, Realisasi: Rp 425.000.000)
             if ($data['year'] === 2026) {
                 $tna->items()->delete();
-                $items2026 = [
-                    // Teknologi Informasi & Siber (Total: Rp 275.000.000, Real: Rp 173.500.000)
-                    ['cat' => 'Teknologi Informasi & Siber', 'prog' => 'PRG-CYBER-01 - Cyber Security Defense & Anti-Phishing in Core Banking', 'inv' => 85000000, 'real' => 78500000, 'q' => 'Q1'],
-                    ['cat' => 'Teknologi Informasi & Siber', 'prog' => 'Cloud Native Banking Migration & Container Architecture', 'inv' => 100000000, 'real' => 95000000, 'q' => 'Q1'],
-                    ['cat' => 'Teknologi Informasi & Siber', 'prog' => 'IT Disaster Recovery, High Availability & BCM', 'inv' => 90000000, 'real' => 0, 'q' => 'Q3'],
+                $categoriesByName = Category::all()->keyBy('name');
 
-                    // Manajemen Risiko & OJK (Total: Rp 315.000.000, Real: Rp 187.000.000)
-                    ['cat' => 'Manajemen Risiko, Kepatuhan & OJK', 'prog' => 'PRG-APU-02 - Penerapan Anti Pencucian Uang & Pencegahan Pendanaan Terorisme (APU PPT)', 'inv' => 75000000, 'real' => 72000000, 'q' => 'Q1'],
-                    ['cat' => 'Manajemen Risiko, Kepatuhan & OJK', 'prog' => 'Sertifikasi Manajemen Risiko Perbankan (BSMR Tingkat 1 - 4)', 'inv' => 160000000, 'real' => 115000000, 'q' => 'Q2'],
-                    ['cat' => 'Manajemen Risiko, Kepatuhan & OJK', 'prog' => 'Kepatuhan Regulasi POJK 29/2022 & Audit Kepatuhan Perbankan', 'inv' => 80000000, 'real' => 0, 'q' => 'Q3'],
+                $items2026 = [
+                    // Teknologi Informasi & Keamanan Siber (Total: Rp 275.000.000, Real: Rp 173.500.000)
+                    ['cat' => 'Teknologi Informasi & Keamanan Siber', 'prog' => 'PRG-CYBER-01 - Cyber Security Defense & Anti-Phishing in Core Banking', 'inv' => 85000000, 'real' => 78500000, 'q' => 'Q1'],
+                    ['cat' => 'Teknologi Informasi & Keamanan Siber', 'prog' => 'Cloud Native Banking Migration & Container Architecture', 'inv' => 100000000, 'real' => 95000000, 'q' => 'Q1'],
+                    ['cat' => 'Teknologi Informasi & Keamanan Siber', 'prog' => 'IT Disaster Recovery, High Availability & BCM', 'inv' => 90000000, 'real' => 0, 'q' => 'Q3'],
+
+                    // Manajemen Risiko, Kepatuhan & Regulasi OJK (Total: Rp 315.000.000, Real: Rp 187.000.000)
+                    ['cat' => 'Manajemen Risiko, Kepatuhan & Regulasi OJK', 'prog' => 'PRG-APU-02 - Penerapan Anti Pencucian Uang & Pencegahan Pendanaan Terorisme (APU PPT)', 'inv' => 75000000, 'real' => 72000000, 'q' => 'Q1'],
+                    ['cat' => 'Manajemen Risiko, Kepatuhan & Regulasi OJK', 'prog' => 'Sertifikasi Manajemen Risiko Perbankan (BSMR Tingkat 1 - 4)', 'inv' => 160000000, 'real' => 115000000, 'q' => 'Q2'],
+                    ['cat' => 'Manajemen Risiko, Kepatuhan & Regulasi OJK', 'prog' => 'Kepatuhan Regulasi POJK 29/2022 & Audit Kepatuhan Perbankan', 'inv' => 80000000, 'real' => 0, 'q' => 'Q3'],
 
                     // Kredit & Pembiayaan Komersial (Total: Rp 325.000.000, Real: Rp 64.500.000)
                     ['cat' => 'Kredit & Pembiayaan Komersial', 'prog' => 'PRG-CRE-03 - Comprehensive Commercial & SME Credit Risk Underwriting', 'inv' => 185000000, 'real' => 64500000, 'q' => 'Q2'],
@@ -126,13 +129,15 @@ class AlignExcelWireframeSeeder extends Seeder
                     ['cat' => 'Operasional & Layanan Perbankan', 'prog' => 'Service Excellence, Teller & Frontliner Customer Protection', 'inv' => 170000000, 'real' => 0, 'q' => 'Q3'],
                     ['cat' => 'Operasional & Layanan Perbankan', 'prog' => 'Sistem Pembayaran BI-FAST, SKNBI & Operasional Treasury', 'inv' => 150000000, 'real' => 0, 'q' => 'Q4'],
 
-                    // Kepemimpinan & Budaya Kerja (Total: Rp 250.000.000, Real: Rp 0)
-                    ['cat' => 'Kepemimpinan & Budaya Kerja', 'prog' => 'PRG-LEAD-04 - Strategic Banking Leadership & High Impact Branch Execution', 'inv' => 250000000, 'real' => 0, 'q' => 'Q4'],
+                    // Kepemimpinan, Manajerial & Budaya Kerja (Total: Rp 250.000.000, Real: Rp 0)
+                    ['cat' => 'Kepemimpinan, Manajerial & Budaya Kerja', 'prog' => 'PRG-LEAD-04 - Strategic Banking Leadership & High Impact Branch Execution', 'inv' => 250000000, 'real' => 0, 'q' => 'Q4'],
                 ];
 
                 foreach ($items2026 as $i) {
+                    $catModel = $categoriesByName->get($i['cat']);
                     TnaItem::create([
                         'tna_proposal_id' => $tna->id,
+                        'category_id' => $catModel?->id,
                         'category_name' => $i['cat'],
                         'sub_category_name' => $i['prog'],
                         'recommended_program' => $i['prog'],

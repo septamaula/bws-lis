@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Master Categories (Rumpun / Kategori Utama Pelatihan)
-        if (!Schema::hasTable('categories')) {
+        if (! Schema::hasTable('categories')) {
             Schema::create('categories', function (Blueprint $table) {
                 $table->id();
                 $table->string('code', 50)->unique();
@@ -28,7 +28,7 @@ return new class extends Migration
         }
 
         // 2. Master Sub-Categories (Sub Kategori Pelatihan dengan Relasi ke Kategori Induk)
-        if (!Schema::hasTable('sub_categories')) {
+        if (! Schema::hasTable('sub_categories')) {
             Schema::create('sub_categories', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('category_id')->constrained('categories')->cascadeOnDelete();
@@ -44,7 +44,7 @@ return new class extends Migration
         }
 
         // 3. Master Fiscal Years (Tahun Anggaran & Periode Diklat)
-        if (!Schema::hasTable('fiscal_years')) {
+        if (! Schema::hasTable('fiscal_years')) {
             Schema::create('fiscal_years', function (Blueprint $table) {
                 $table->id();
                 $table->integer('year')->unique();
@@ -63,35 +63,35 @@ return new class extends Migration
 
         // 4. Enhance tna_proposals with document upload & fiscal year
         Schema::table('tna_proposals', function (Blueprint $table) {
-            if (!Schema::hasColumn('tna_proposals', 'attachment_path')) {
+            if (! Schema::hasColumn('tna_proposals', 'attachment_path')) {
                 $table->string('attachment_path', 255)->nullable();
             }
-            if (!Schema::hasColumn('tna_proposals', 'attachment_name')) {
+            if (! Schema::hasColumn('tna_proposals', 'attachment_name')) {
                 $table->string('attachment_name', 255)->nullable();
             }
-            if (!Schema::hasColumn('tna_proposals', 'attachment_size')) {
+            if (! Schema::hasColumn('tna_proposals', 'attachment_size')) {
                 $table->integer('attachment_size')->nullable();
             }
-            if (!Schema::hasColumn('tna_proposals', 'fiscal_year_id')) {
+            if (! Schema::hasColumn('tna_proposals', 'fiscal_year_id')) {
                 $table->foreignId('fiscal_year_id')->nullable()->constrained('fiscal_years')->nullOnDelete();
             }
         });
 
         // 5. Enhance tna_items with category, sub_category, and direct budget fields
         Schema::table('tna_items', function (Blueprint $table) {
-            if (!Schema::hasColumn('tna_items', 'category_id')) {
+            if (! Schema::hasColumn('tna_items', 'category_id')) {
                 $table->foreignId('category_id')->nullable()->constrained('categories')->nullOnDelete();
             }
-            if (!Schema::hasColumn('tna_items', 'category_name')) {
+            if (! Schema::hasColumn('tna_items', 'category_name')) {
                 $table->string('category_name', 150)->nullable();
             }
-            if (!Schema::hasColumn('tna_items', 'sub_category_id')) {
+            if (! Schema::hasColumn('tna_items', 'sub_category_id')) {
                 $table->foreignId('sub_category_id')->nullable()->constrained('sub_categories')->nullOnDelete();
             }
-            if (!Schema::hasColumn('tna_items', 'sub_category_name')) {
+            if (! Schema::hasColumn('tna_items', 'sub_category_name')) {
                 $table->string('sub_category_name', 150)->nullable();
             }
-            if (!Schema::hasColumn('tna_items', 'budget')) {
+            if (! Schema::hasColumn('tna_items', 'budget')) {
                 $table->decimal('budget', 15, 2)->nullable();
             }
         });
