@@ -114,7 +114,7 @@ class LisApplicationTest extends TestCase
         Sanctum::actingAs($deptHead);
 
         $testYear = 2028;
-        TnaProposal::where('year', $testYear)->delete();
+        TnaProposal::withTrashed()->where('year', $testYear)->forceDelete();
 
         $response = $this->postJson('/api/tna', [
             'department' => 'Risk Management',

@@ -40,7 +40,6 @@ const existingAttachment = ref(null)
 // Master Data State
 const loadingMasters = ref(true)
 const categories = ref([])
-const subCategories = ref([])
 const fiscalYears = ref([])
 
 // Form State matching Excel wireframe
@@ -144,12 +143,6 @@ function onCategoryChange(item) {
   }
 }
 
-function getSubCategoriesForCategory(categoryName) {
-  if (!categoryName) return []
-  const cat = categories.value.find(c => c.name === categoryName)
-  return cat?.sub_categories || []
-}
-
 function removeItemRow(index) {
   if (form.value.items.length <= 1) {
     feedback.value = {
@@ -205,7 +198,7 @@ async function loadMasterData() {
   loadingMasters.value = true
   try {
     const [resCats, resYears] = await Promise.all([
-      apiClient.get('/categories?with_subs=1'),
+      apiClient.get('/categories'),
       apiClient.get('/fiscal-years')
     ])
     categories.value = resCats.data.categories || []
@@ -537,24 +530,14 @@ async function submitForm() {
                   </div>
                 </td>
 
-                <!-- Training Program (with Sub Categories autocomplete suggestions) -->
+                <!-- Training Program -->
                 <td class="py-2.5 px-3">
                   <input
                     v-model="item.recommended_program"
                     type="text"
-                    :list="'subcat-suggestions-' + idx"
                     placeholder="Judul / nama program pelatihan..."
                     class="w-full bg-white text-xs text-gray-800 rounded-lg px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs placeholder:text-gray-300"
                   />
-                  <datalist :id="'subcat-suggestions-' + idx">
-                    <option
-                      v-for="sub in getSubCategoriesForCategory(item.category_name)"
-                      :key="sub.id"
-                      :value="sub.name"
-                    >
-                      {{ sub.code ? `[${sub.code}] ` : '' }}{{ sub.target_competency ? `(${sub.target_competency})` : '' }}
-                    </option>
-                  </datalist>
                 </td>
 
                 <!-- Investment (Projection) -->

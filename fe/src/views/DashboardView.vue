@@ -179,7 +179,7 @@ const currentTabTitle = computed(() => {
   switch (activeTab.value) {
     case 'dashboard': return 'Executive & Operational Dashboard'
     case 'tna':
-      if (tnaViewMode.value === 'categories') return 'Kategori & Sub-Kategori Pelatihan'
+      if (tnaViewMode.value === 'categories') return 'Master Kategori Pelatihan'
       if (tnaViewMode.value === 'years') return 'Tahun Anggaran Pelatihan'
       return 'TNA & Annual Training Plan'
     case 'program': return 'Program Pelatihan & Work Plan'
@@ -715,7 +715,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <FolderTree class="w-3.5 h-3.5" />
-                            Kategori & Sub-Kategori
+                            Kategori Pelatihan
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
