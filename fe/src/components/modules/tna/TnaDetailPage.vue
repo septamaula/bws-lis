@@ -178,27 +178,42 @@ async function downloadDocument() {
         </div>
       </div>
 
-      <!-- Document [View] -->
-      <div class="flex items-center gap-3.5">
-        <div class="w-11 h-11 rounded-2xl bg-gray-50 text-gray-700 flex items-center justify-center font-bold shrink-0 border border-gray-100">
-          <FileText class="w-5 h-5 text-[#0067AC]" />
+      <!-- Document Lampiran -->
+      <div class="flex items-center gap-3.5 min-w-0">
+        <div class="w-11 h-11 rounded-2xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold shrink-0">
+          <FileText class="w-5 h-5" />
         </div>
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1">
           <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Dokumen Lampiran</span>
-          <div class="mt-0.5">
+          <div v-if="proposal.attachment_name" class="mt-1 flex items-center gap-1.5 flex-wrap">
             <button
-              v-if="proposal.attachment_name"
               :disabled="downloadingDoc"
               @click="downloadDocument"
-              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-50 text-[#0067AC] hover:bg-[#0067AC] hover:text-white font-bold text-xs transition border border-blue-200 cursor-pointer shadow-2xs truncate max-w-full disabled:opacity-50"
-              :title="proposal.attachment_name"
+              class="group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50/70 hover:bg-[#0067AC] text-gray-800 hover:text-white border border-blue-200/80 hover:border-[#0067AC] transition-all duration-200 cursor-pointer shadow-2xs max-w-full disabled:opacity-50"
+              :title="`Klik untuk membuka file: ${proposal.attachment_name}`"
             >
-              <Loader2 v-if="downloadingDoc" class="w-3.5 h-3.5 animate-spin" />
-              <FileText v-else class="w-3.5 h-3.5" />
-              <span>[View] {{ proposal.attachment_name }}</span>
+              <div class="w-5 h-5 rounded-md bg-rose-50 text-rose-600 group-hover:bg-white group-hover:text-rose-600 flex items-center justify-center shrink-0 border border-rose-100 group-hover:border-transparent transition">
+                <FileText class="w-3 h-3" />
+              </div>
+              <span class="text-xs font-bold text-gray-800 group-hover:text-white truncate max-w-[130px] sm:max-w-[170px] transition">
+                {{ proposal.attachment_name }}
+              </span>
+              <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/80 group-hover:bg-white/20 text-[#0067AC] group-hover:text-white border border-blue-100 group-hover:border-transparent transition shrink-0">
+                <Eye v-if="!downloadingDoc" class="w-2.5 h-2.5" />
+                <Loader2 v-else class="w-2.5 h-2.5 animate-spin" />
+                <span>Lihat File</span>
+              </span>
             </button>
-            <span v-else class="text-xs text-gray-400 italic">Tidak ada dokumen dilampirkan</span>
+            <a
+              :href="`${apiClient.defaults.baseURL || '/api'}/tna/${proposal.id}/attachment?download=1`"
+              target="_blank"
+              class="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-[#0067AC] border border-gray-200 transition shadow-2xs cursor-pointer flex items-center justify-center shrink-0"
+              title="Unduh file dokumen"
+            >
+              <Download class="w-3.5 h-3.5" />
+            </a>
           </div>
+          <span v-else class="text-xs text-gray-400 italic block mt-1">Tidak ada dokumen dilampirkan</span>
         </div>
       </div>
 
