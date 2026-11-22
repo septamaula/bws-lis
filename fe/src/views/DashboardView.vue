@@ -1149,39 +1149,12 @@ const totalPendingApprovalsForUser = computed(() => {
               </button>
             </div>
 
-            <!-- 2. TNA Module Header Actions & Sub-Tabs -->
-            <div v-else-if="activeTab === 'tna'" class="flex flex-wrap items-center gap-2">
-              <button
-                @click="tnaViewMode = 'list'"
-                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-xs border cursor-pointer"
-                :class="tnaViewMode === 'list' ? 'bg-[#0067AC] text-white border-[#0067AC]' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'"
-              >
-                <FolderKanban class="w-3.5 h-3.5" :class="tnaViewMode === 'list' ? 'text-white' : 'text-[#0067AC]'" />
-                <span>Daftar Usulan TNA</span>
-              </button>
-
-              <button
-                @click="tnaViewMode = 'categories'"
-                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-xs border cursor-pointer"
-                :class="tnaViewMode === 'categories' ? 'bg-[#0067AC] text-white border-[#0067AC]' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'"
-              >
-                <FolderTree class="w-3.5 h-3.5" :class="tnaViewMode === 'categories' ? 'text-white' : 'text-[#0067AC]'" />
-                <span>Kategori & Sub-Kategori</span>
-              </button>
-
-              <button
-                @click="tnaViewMode = 'years'"
-                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-xs border cursor-pointer"
-                :class="tnaViewMode === 'years' ? 'bg-[#0067AC] text-white border-[#0067AC]' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'"
-              >
-                <CalendarRange class="w-3.5 h-3.5" :class="tnaViewMode === 'years' ? 'text-white' : 'text-[#0067AC]'" />
-                <span>Tahun Anggaran</span>
-              </button>
-
+            <!-- 2. TNA Module Header Actions -->
+            <div v-else-if="activeTab === 'tna'" class="flex items-center gap-2">
               <button
                 v-if="canManageTna && tnaViewMode === 'list'"
                 @click="tnaViewMode = 'create'"
-                class="bg-[#0067AC] hover:bg-[#00528c] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer ml-auto"
+                class="bg-[#0067AC] hover:bg-[#00528c] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
               >
                 <Plus class="w-3.5 h-3.5" />
                 <span>Usulan TNA Baru</span>
