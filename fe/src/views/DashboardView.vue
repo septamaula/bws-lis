@@ -47,7 +47,8 @@ import {
   Plus,
   Download,
   FolderTree,
-  CalendarRange
+  CalendarRange,
+  Workflow
 } from 'lucide-vue-next'
 
 // Import Modular Components
@@ -67,6 +68,7 @@ import TnaDetailPage from '@/components/modules/tna/TnaDetailPage.vue'
 import MultiApprovalSettingModule from '@/components/modules/settings/MultiApprovalSettingModule.vue'
 import CategoryMasterModule from '@/components/modules/CategoryMasterModule.vue'
 import YearMasterModule from '@/components/modules/YearMasterModule.vue'
+import BusinessProcessFlowchartModule from '@/components/modules/BusinessProcessFlowchartModule.vue'
 
 // Import Modals
 import TnaModal from '@/components/modals/TnaModal.vue'
@@ -198,7 +200,9 @@ const currentTabTitle = computed(() => {
     case 'transaction': return 'Transaksi Keuangan & Reimbursement'
     case 'certification': return 'Sertifikasi Wajib & Lisensi Profesi'
     case 'reporting': return 'Reporting Center & Audit Trail'
-    case 'rbac': return 'Manajemen Pengguna & Matriks Hak Akses (RBAC)'
+    case 'rbac':
+      if (rbacSubTab.value === 'flowchart') return 'Bagan Alir (Flowchart) Proses Bisnis'
+      return 'Manajemen Pengguna & Matriks Hak Akses (RBAC)'
     default: return 'Dashboard'
   }
 })
@@ -218,7 +222,9 @@ const currentTabSubtitle = computed(() => {
     case 'transaction': return 'Buku Transaksi Realisasi Anggaran, Klaim Biaya Diklat, dan Otorisasi Maker-Checker'
     case 'certification': return 'Kepatuhan Lisensi Perbankan OJK & Bank Indonesia (Manajemen Risiko, SKSP, Tresuri)'
     case 'reporting': return 'Pusat Unduh Laporan Realisasi Diklat, Sign-Off Berjenjang, dan Rekam Jejak Audit OJK'
-    case 'rbac': return 'Konfigurasi Akun Pegawai, Tingkat Peran Jabatan, dan Matriks Kontrol Hak Akses'
+    case 'rbac':
+      if (rbacSubTab.value === 'flowchart') return 'Dokumentasi Alur Proses Bisnis: TNA & Anggaran, Kelas, Evaluasi (Import Excel), Realisasi & Laporan'
+      return 'Konfigurasi Akun Pegawai, Tingkat Peran Jabatan, dan Matriks Kontrol Hak Akses'
     default: return 'Portal Operasional Terpadu Learning & Development — Bank Woori Saudara'
   }
 })
@@ -1100,6 +1106,19 @@ const totalPendingApprovalsForUser = computed(() => {
                         <ChevronRight class="w-3.5 h-3.5" />
                       </button>
                     </li>
+                    <li>
+                      <button
+                        @click="activeTab = 'rbac'; rbacSubTab = 'flowchart'"
+                        class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                        :class="activeTab === 'rbac' && rbacSubTab === 'flowchart' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                      >
+                        <span class="flex items-center gap-2">
+                          <Workflow class="w-3.5 h-3.5 text-[#0067AC]" />
+                          Bagan Proses Bisnis
+                        </span>
+                        <ChevronRight class="w-3.5 h-3.5" />
+                      </button>
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -1263,6 +1282,15 @@ const totalPendingApprovalsForUser = computed(() => {
               >
                 <FileCheck2 class="w-3.5 h-3.5" />
                 <span>Setting Multi-Approval</span>
+              </button>
+
+              <button
+                @click="rbacSubTab = 'flowchart'"
+                class="px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                :class="rbacSubTab === 'flowchart' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
+              >
+                <Workflow class="w-3.5 h-3.5" />
+                <span>Bagan Proses Bisnis</span>
               </button>
             </div>
           </div>
@@ -1464,6 +1492,9 @@ const totalPendingApprovalsForUser = computed(() => {
             <template v-else-if="activeTab === 'rbac'">
               <MultiApprovalSettingModule
                 v-if="rbacSubTab === 'approvals' || rbacSubTab === 'approval_settings'"
+              />
+              <BusinessProcessFlowchartModule
+                v-else-if="rbacSubTab === 'flowchart'"
               />
               <UserRbacModule
                 v-else
