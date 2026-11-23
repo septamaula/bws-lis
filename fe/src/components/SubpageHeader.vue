@@ -38,9 +38,9 @@ const emit = defineEmits(['back'])
 </script>
 
 <template>
-  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-gray-100 w-full">
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-3 border-b border-gray-100 w-full">
     <!-- Left: Back Button & Title / Hierarchy -->
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-3 min-w-0 flex-1">
       <button
         type="button"
         @click="emit('back')"
@@ -50,24 +50,24 @@ const emit = defineEmits(['back'])
         <ArrowLeft class="w-4 h-4 text-gray-600" />
       </button>
 
-      <div class="flex flex-col">
+      <div class="flex flex-col min-w-0">
         <!-- Breadcrumb / Badge -->
-        <div v-if="badge || backLabel" class="flex items-center gap-1.5 text-xs text-gray-400">
+        <div v-if="badge || backLabel" class="flex items-center gap-1.5 text-xs text-gray-400 truncate">
           <span class="hover:text-[#0067AC] cursor-pointer" @click="emit('back')">{{ backLabel }}</span>
           <template v-if="badge">
-            <ChevronRight class="w-3 h-3 text-gray-300" />
+            <ChevronRight class="w-3 h-3 text-gray-300 shrink-0" />
             <span class="font-semibold text-gray-600">{{ badge }}</span>
           </template>
         </div>
 
         <!-- Title & Status Badge -->
-        <div class="flex items-center gap-2 mt-0.5">
-          <h1 v-if="title" class="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
+        <div class="flex items-center gap-2.5 mt-0.5 flex-wrap">
+          <h1 v-if="title" class="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight leading-tight">
             {{ title }}
           </h1>
           <span
             v-if="statusBadge"
-            class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border whitespace-nowrap"
+            class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border shrink-0 whitespace-nowrap inline-flex items-center"
             :class="statusClass"
           >
             {{ statusBadge }}
@@ -82,7 +82,7 @@ const emit = defineEmits(['back'])
     </div>
 
     <!-- Right: Contextual Actions Slot (Single Source of Action) -->
-    <div class="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+    <div class="flex items-center gap-2 sm:gap-2.5 shrink-0 self-start sm:self-center">
       <slot name="actions"></slot>
       <slot></slot>
     </div>

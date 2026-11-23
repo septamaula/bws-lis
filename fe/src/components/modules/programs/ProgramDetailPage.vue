@@ -224,8 +224,9 @@ onMounted(() => {
     <!-- Standard Subpage Header (Navigation & Actions) -->
     <SubpageHeader
       back-label="Kembali ke Program List"
-      :title="`${program?.program_code || 'Memuat...'} — ${program?.title || ''}`"
-      badge="Rincian & RAB Program"
+      :title="program?.title || 'Rincian Program Pelatihan'"
+      :badge="program?.program_code || 'Program Kerja'"
+      :subtitle="program ? `${program.category || ''} • Inisiator: ${program.unit_initiator || program.department || 'HC'} • Tahun ${program.year || 2026}` : ''"
       :status-badge="program?.approval_status_badge || program?.status"
       :status-class="statusBadgeClass"
       @back="emit('back')"
@@ -234,7 +235,7 @@ onMounted(() => {
         <button
           v-if="canEditProgram"
           @click="emit('edit', program.id)"
-          class="bg-[#0067AC] hover:bg-[#00528c] text-white px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
+          class="bg-[#0067AC] hover:bg-[#00528c] text-white px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
           title="Perbaiki atau edit spesifikasi dan RAB program ini"
         >
           <Edit2 class="w-3.5 h-3.5" />
@@ -243,7 +244,7 @@ onMounted(() => {
 
         <button
           @click="handlePrint"
-          class="bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
+          class="bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
         >
           <Printer class="w-3.5 h-3.5 text-gray-500" />
           <span>Cetak Dokumen</span>
