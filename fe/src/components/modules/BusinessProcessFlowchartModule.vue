@@ -16,7 +16,42 @@ import {
 } from 'lucide-vue-next'
 
 function handlePrint() {
-  window.print()
+  // Cetak langsung HANYA bagan flowchart (tanpa menu aplikasi / navbar / sidebar)
+  const existingIframe = document.getElementById('flowchart-print-iframe')
+  if (existingIframe) {
+    document.body.removeChild(existingIframe)
+  }
+
+  const iframe = document.createElement('iframe')
+  iframe.id = 'flowchart-print-iframe'
+  iframe.style.position = 'fixed'
+  iframe.style.right = '0'
+  iframe.style.bottom = '0'
+  iframe.style.width = '0'
+  iframe.style.height = '0'
+  iframe.style.border = '0'
+  iframe.style.opacity = '0'
+  iframe.src = '/bagan_flowchart_landscape.html'
+  document.body.appendChild(iframe)
+
+  iframe.onload = () => {
+    setTimeout(() => {
+      try {
+        iframe.contentWindow.focus()
+        iframe.contentWindow.print()
+      } catch (e) {
+        // Fallback jika iframe print terblokir oleh browser
+        window.open('/bagan_flowchart_landscape.html', '_blank')
+      }
+      setTimeout(() => {
+        try {
+          if (iframe.parentNode) {
+            document.body.removeChild(iframe)
+          }
+        } catch (_) {}
+      }, 10000)
+    }, 400)
+  }
 }
 
 function openStandalone() {
@@ -27,8 +62,8 @@ function openStandalone() {
 <template>
   <div class="space-y-6 w-full">
 
-    <!-- Top Action & Info Bar -->
-    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <!-- Top Action & Info Bar (Sembunyi otomatis saat dicetak) -->
+    <div class="flowchart-action-bar no-print bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div class="flex items-center gap-3">
         <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#002855] to-[#0067AC] text-white flex items-center justify-center shadow-md">
           <Workflow class="w-6 h-6 text-white" />
@@ -62,13 +97,13 @@ function openStandalone() {
           class="px-4 py-2.5 rounded-2xl bg-[#0067AC] hover:bg-[#002855] text-white font-bold text-xs shadow-sm hover:shadow transition flex items-center gap-2 cursor-pointer"
         >
           <Printer class="w-4 h-4" />
-          <span>Cetak A4 Landscape</span>
+          <span>Cetak Bagan (1 Halaman)</span>
         </button>
       </div>
     </div>
 
     <!-- MAIN FLOWCHART CONTAINER (LANDSCAPE A4 STYLE) -->
-    <div class="bg-white rounded-3xl border border-gray-200 p-5 sm:p-6 shadow-xs flex flex-col gap-4">
+    <div class="flowchart-main-card bg-white rounded-3xl border border-gray-200 p-5 sm:p-6 shadow-xs flex flex-col gap-4">
       
       <!-- Flowchart Sub-header & Legend -->
       <div class="flex flex-wrap items-center justify-between pb-3 border-b border-gray-200 gap-2">
@@ -121,7 +156,7 @@ function openStandalone() {
           <!-- Process 1.1: Input Kredensial -->
           <div class="bg-sky-50/70 border-2 border-sky-600 rounded-xl p-2 text-center">
             <span class="text-[8px] font-bold text-sky-700 block">TAHAP 1.1</span>
-            <p class="text-[11px] font-black text-[#002855] leading-tight">Input NIK & Password</p>
+            <p class="text-[11px] font-black text-[#002855] leading-tight">Input Username & Password</p>
             <p class="text-[9px] text-gray-500 mt-0.5">Form Login Pegawai Bank</p>
           </div>
 
@@ -134,7 +169,7 @@ function openStandalone() {
             </span>
             <span class="text-[8px] font-bold text-[#0067AC] block mt-0.5">TAHAP 1.2</span>
             <p class="text-[11px] font-black text-[#002855] leading-tight">Sinkronisasi API Aplikasi HR</p>
-            <p class="text-[9px] text-blue-800 font-medium mt-0.5">Validasi NIK, Jabatan, Unit & Status Aktif di HRIS</p>
+            <p class="text-[9px] text-blue-800 font-medium mt-0.5">Validasi Akun Pegawai, Jabatan, Unit & Status Aktif di HRIS</p>
           </div>
 
           <div class="w-0.5 h-3 bg-[#0067AC] mx-auto"></div>
@@ -412,3 +447,49 @@ function openStandalone() {
 
   </div>
 </template>
+
+<style>
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 4mm;
+  }
+
+  /* Sembunyikan SEMUA menu, navbar, sidebar, subheader, dan tombol aksi aplikasi */
+  header,
+  aside,
+  #page-subheader,
+  .flowchart-action-bar,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Reset layout dan body agar murni bagan yang tercetak */
+  body, html, #app {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Hapus padding pembungkus luar dari Dashboard */
+  .min-h-screen, .px-4, .py-3, .md\:px-6, .md\:py-4, .gap-5 {
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+    background: transparent !important;
+  }
+
+  /* Kotak utama bagan tampil penuh dan pas di 1 halaman A4 Landscape */
+  .flowchart-main-card {
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    padding: 3mm !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+</style>
