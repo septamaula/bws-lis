@@ -183,6 +183,39 @@ async function downloadDocument() {
   }
 }
 
+function formatScheduleRange(start, end) {
+  if (!start) return '-'
+  try {
+    const s = new Date(start)
+    if (isNaN(s.getTime())) return start.substring(0, 10)
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+    
+    if (!end || start.substring(0, 10) === end.substring(0, 10)) {
+      const d = String(s.getDate()).padStart(2, '0')
+      return `${d} ${months[s.getMonth()]} ${s.getFullYear()}`
+    }
+    
+    const e = new Date(end)
+    if (isNaN(e.getTime())) return `${start.substring(0, 10)} - ${end.substring(0, 10)}`
+
+    const sd = String(s.getDate()).padStart(2, '0')
+    const ed = String(e.getDate()).padStart(2, '0')
+
+    // Same month and year: e.g. 22 - 24 Nov 2026
+    if (s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()) {
+      return `${sd} - ${ed} ${months[s.getMonth()]} ${s.getFullYear()}`
+    }
+    // Same year, different month: e.g. 28 Nov - 02 Des 2026
+    if (s.getFullYear() === e.getFullYear()) {
+      return `${sd} ${months[s.getMonth()]} - ${ed} ${months[e.getMonth()]} ${s.getFullYear()}`
+    }
+    // Different year: e.g. 28 Des 2026 - 02 Jan 2027
+    return `${sd} ${months[s.getMonth()]} ${s.getFullYear()} - ${ed} ${months[e.getMonth()]} ${e.getFullYear()}`
+  } catch (err) {
+    return `${start?.substring(0, 10)} - ${end?.substring(0, 10)}`
+  }
+}
+
 function handlePrint() {
   window.print()
 }
@@ -642,47 +675,63 @@ onMounted(() => {
           <table class="w-full text-xs text-left border-collapse">
             <thead class="bg-[#F8FAFC] text-gray-700 font-bold border-b border-gray-200">
               <tr>
-                <th class="py-2.5 px-3 w-10 text-center">No</th>
-                <th class="py-2.5 px-3">Kode &amp; Nama Batch</th>
-                <th class="py-2.5 px-3">Jadwal Pelaksanaan</th>
-                <th class="py-2.5 px-3">Metode &amp; Lokasi</th>
-                <th class="py-2.5 px-3">Instruktur / Trainer</th>
-                <th class="py-2.5 px-3 text-center">Peserta</th>
-                <th class="py-2.5 px-3 text-center">Status</th>
+                <th class="py-3 px-3 w-12 text-center">No</th>
+                <th class="py-3 px-3 min-w-[200px]">Kode &amp; Nama Batch</th>
+                <th class="py-3 px-3 min-w-[170px] whitespace-nowrap">Jadwal Pelaksanaan</th>
+                <th class="py-3 px-3 min-w-[180px]">Metode &amp; Lokasi</th>
+                <th class="py-3 px-3 min-w-[180px]">Instruktur / Trainer</th>
+                <th class="py-3 px-3 w-24 text-center whitespace-nowrap">Peserta</th>
+                <th class="py-3 px-3 w-36 text-center whitespace-nowrap">Status</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
-              <tr v-for="(cls, idx) in program.classes" :key="cls.id" class="hover:bg-gray-50/50">
-                <td class="py-2.5 px-3 text-center font-bold text-gray-400 font-mono">{{ idx + 1 }}</td>
-                <td class="py-2.5 px-3">
-                  <p class="font-bold text-gray-900">{{ cls.batch_name }}</p>
-                  <p class="font-mono text-[10px] text-[#0067AC]">{{ cls.class_code }}</p>
+              <tr v-for="(cls, idx) in program.classes" :key="cls.id" class="hover:bg-gray-50/60 transition">
+                <td class="py-3.5 px-3 text-center font-bold text-gray-400 font-mono">{{ idx + 1 }}</td>
+                <td class="py-3.5 px-3 min-w-[200px]">
+                  <p class="font-extrabold text-gray-900 text-xs leading-snug">{{ cls.batch_name }}</p>
+                  <p class="font-mono text-[11px] font-bold text-[#0067AC] mt-0.5">{{ cls.class_code }}</p>
                 </td>
-                <td class="py-2.5 px-3 text-gray-700">
-                  <p>{{ cls.start_date?.substring(0, 10) }} s/d {{ cls.end_date?.substring(0, 10) }}</p>
-                  <p class="text-[10px] text-gray-400 font-mono">{{ cls.daily_schedule || '08:30 WIB' }}</p>
+                <td class="py-3.5 px-3 text-gray-700 whitespace-nowrap">
+                  <p class="font-semibold text-gray-900 whitespace-nowrap">{{ formatScheduleRange(cls.start_date, cls.end_date) }}</p>
+                  <p class="text-[11px] text-gray-400 font-mono flex items-center gap-1 mt-0.5 whitespace-nowrap">
+                    <Clock class="w-3 h-3 text-gray-400 shrink-0" />
+                    <span>{{ cls.daily_schedule || '08:30 - 16:30 WIB' }}</span>
+                  </p>
                 </td>
-                <td class="py-2.5 px-3 text-gray-600">
-                  <p class="font-semibold text-gray-800">{{ cls.method }}</p>
-                  <p class="text-[10px] text-gray-400 truncate max-w-[160px]">{{ cls.location_or_url }}</p>
-                </td>
-                <td class="py-2.5 px-3 text-gray-700">
-                  {{ cls.trainer_name || 'Tim Trainer BWS' }}
-                </td>
-                <td class="py-2.5 px-3 text-center font-bold font-mono text-[#0067AC]">
-                  {{ cls.enrollments_count || 0 }} / {{ cls.max_quota }}
-                </td>
-                <td class="py-2.5 px-3 text-center">
+                <td class="py-3.5 px-3 text-gray-600 min-w-[180px]">
                   <span
-                    class="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                    :class="cls.dual_control_status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700' : cls.dual_control_status === 'PENDING_CHECKER' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-700'"
+                    class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
+                    :class="cls.method === 'In-Classroom' ? 'bg-blue-50 text-[#0067AC] border border-blue-100' : cls.method === 'Virtual' ? 'bg-purple-50 text-purple-700 border border-purple-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'"
                   >
-                    {{ cls.dual_control_status === 'APPROVED' ? 'Terotorisasi' : cls.dual_control_status === 'PENDING_CHECKER' ? 'Menunggu Checker' : cls.dual_control_status }}
+                    {{ cls.method || 'In-Classroom' }}
+                  </span>
+                  <p class="text-[11px] text-gray-500 mt-1 leading-snug" :title="cls.location_or_url">
+                    {{ cls.location_or_url || 'BWS Corporate Learning Center' }}
+                  </p>
+                </td>
+                <td class="py-3.5 px-3 text-gray-700 min-w-[180px]">
+                  <p class="font-medium text-xs text-gray-900 leading-snug">{{ cls.trainer_name || 'Tim Trainer BWS' }}</p>
+                </td>
+                <td class="py-3.5 px-3 text-center whitespace-nowrap">
+                  <span class="font-extrabold font-mono text-xs text-[#0067AC]">{{ cls.enrollments_count || 0 }}</span>
+                  <span class="text-gray-400 font-mono text-xs"> / {{ cls.max_quota || 25 }}</span>
+                  <span class="block text-[10px] text-gray-400">Kursi</span>
+                </td>
+                <td class="py-3.5 px-3 text-center whitespace-nowrap">
+                  <span
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border"
+                    :class="cls.dual_control_status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : cls.dual_control_status === 'PENDING_CHECKER' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-50 text-gray-700 border-gray-200'"
+                  >
+                    <span
+                      class="w-1.5 h-1.5 rounded-full shrink-0"
+                      :class="cls.dual_control_status === 'APPROVED' ? 'bg-emerald-500' : cls.dual_control_status === 'PENDING_CHECKER' ? 'bg-amber-500' : 'bg-gray-400'"
+                    ></span>
+                    <span>{{ cls.dual_control_status === 'APPROVED' ? 'Terotorisasi' : cls.dual_control_status === 'PENDING_CHECKER' ? 'Menunggu Checker' : cls.dual_control_status }}</span>
                   </span>
                 </td>
               </tr>
               <tr v-if="!program.classes || program.classes.length === 0">
-                <td colspan="7" class="py-6 text-center text-gray-400">
+                <td colspan="7" class="py-8 text-center text-gray-400">
                   Belum ada batch kelas yang dibuka untuk program ini. Klik "Buka Batch Kelas untuk Program Ini" untuk membuka batch pertama.
                 </td>
               </tr>

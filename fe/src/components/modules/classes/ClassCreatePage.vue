@@ -100,7 +100,7 @@ async function onProgramSelected() {
     // Auto fill suggested batch name if default
     if (form.value.batch_name.startsWith('Batch 1')) {
       const existingCount = data.program?.classes_count || 0
-      form.value.batch_name = `Batch ${existingCount + 1} - ${data.program.title.substring(0, 28)}...`
+      form.value.batch_name = `Batch ${existingCount + 1} - ${data.program.title}`
     }
     if (data.program.passing_grade) {
       form.value.passing_grade = data.program.passing_grade
