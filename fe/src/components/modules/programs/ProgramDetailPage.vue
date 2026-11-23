@@ -201,6 +201,22 @@ const statusBadgeClass = computed(() => {
   }
 })
 
+const standardBudgetSum = computed(() => {
+  if (!program.value) return 0
+  return (
+    Number(program.value.budget_fee_facilitator || 0) +
+    Number(program.value.budget_meals || 0) +
+    Number(program.value.budget_hotel || 0) +
+    Number(program.value.budget_meeting_package || 0) +
+    Number(program.value.budget_transportation || 0) +
+    Number(program.value.budget_business_trip || 0) +
+    Number(program.value.budget_reward || 0) +
+    Number(program.value.budget_material || 0) +
+    Number(program.value.budget_internet || 0) +
+    Number(program.value.budget_miscellaneous || 0)
+  )
+})
+
 const budgetItemTypeBadge = {
   SPEAKER: { label: 'Pembicara / Trainer', class: 'bg-blue-100 text-[#0067AC]' },
   TRANSPORT: { label: 'Transportasi', class: 'bg-indigo-100 text-indigo-800' },
@@ -439,14 +455,16 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- 10 ITEM BUDGET BREAKDOWN (BWS STANDARD) -->
-      <div v-if="program.budget_fee_facilitator > 0 || program.total_budget > 0" class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-100 shadow-2xs space-y-4">
+      <!-- BUDGET BREAKDOWN (RAB) -->
+      <div v-if="standardBudgetSum > 0 || program.total_budget > 0" class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-100 shadow-2xs space-y-4">
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <div class="flex items-center gap-2">
             <Wallet class="w-4 h-4 text-[#0067AC]" />
-            <h2 class="text-sm font-bold text-gray-900">Rincian 10 Item Anggaran RAB (Standar BWS)</h2>
+            <h2 class="text-sm font-bold text-gray-900">Rencana Anggaran Biaya (RAB)</h2>
           </div>
-          <span class="text-xs font-mono font-bold text-[#0067AC]">Total: {{ formatRupiah(program.total_budget) }}</span>
+          <span class="text-xs font-mono font-bold text-[#0067AC]">
+            {{ (program.budget_items && program.budget_items.length > 0) ? 'Subtotal Standar: ' : 'Total: ' }}{{ formatRupiah(standardBudgetSum) }}
+          </span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
