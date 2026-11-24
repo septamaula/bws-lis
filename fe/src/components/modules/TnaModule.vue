@@ -45,6 +45,32 @@ const deletingId = ref(null)
 const deleteModalOpen = ref(false)
 const targetDeleteProposal = ref(null)
 const flashMessage = ref({ type: '', text: '' })
+const updatingStatusId = ref(null)
+
+async function toggleTnaStatus(row) {
+  const newStatus = row.tna_status === 'Aktif' ? 'Closed' : 'Aktif'
+  updatingStatusId.value = row.id
+  try {
+    const { data } = await apiClient.post(`/tna/${row.id}/status`, {
+      tna_status: newStatus
+    })
+    row.tna_status = newStatus
+    flashMessage.value = {
+      type: 'success',
+      text: data.message || `Status TNA Tahun ${row.year} berhasil diubah menjadi ${newStatus}.`
+    }
+    setTimeout(() => {
+      flashMessage.value = { type: '', text: '' }
+    }, 4000)
+  } catch (err) {
+    flashMessage.value = {
+      type: 'error',
+      text: err.response?.data?.message || 'Gagal mengubah status TNA.'
+    }
+  } finally {
+    updatingStatusId.value = null
+  }
+}
 
 function formatRupiah(num) {
   if (num === null || num === undefined) return 'Rp 0'
@@ -102,7 +128,8 @@ const tnaColumns = [
     align: 'right',
     format: val => (val ? formatRupiah(val) : '-')
   },
-  { key: 'status', label: 'Status Dokumen', sortable: true, align: 'center', width: '160px' }
+  { key: 'tna_status', label: 'Status TNA', sortable: true, align: 'center', width: '130px' },
+  { key: 'status', label: 'Status Approval', sortable: true, align: 'center', width: '160px' }
 ]
 
 // KPI Metrics
@@ -278,6 +305,35 @@ async function executeDelete() {
       <template #cell-minimum_regulator_investment="{ row }">
         <span class="font-mono text-gray-500">
           {{ row.minimum_regulator_investment ? formatRupiah(row.minimum_regulator_investment) : '-' }}
+        </span>
+      </template>
+
+      <!-- Custom Cell: Status TNA (Aktif / Closed) -->
+      <template #cell-tna_status="{ row }">
+        <button
+          v-if="canManageTna"
+          @click="toggleTnaStatus(row)"
+          :disabled="updatingStatusId === row.id"
+          class="inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-full cursor-pointer transition hover:opacity-85 shadow-2xs"
+          :class="row.tna_status === 'Aktif' ? 'bg-emerald-50 text-emerald-700 border border-emerald-300' : 'bg-gray-100 text-gray-600 border border-gray-300'"
+          :title="`Klik untuk mengubah status menjadi ${row.tna_status === 'Aktif' ? 'Closed' : 'Aktif'}`"
+        >
+          <span
+            class="w-2 h-2 rounded-full shrink-0"
+            :class="row.tna_status === 'Aktif' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'"
+          ></span>
+          <span>{{ row.tna_status || 'Aktif' }}</span>
+        </button>
+        <span
+          v-else
+          class="inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-full"
+          :class="row.tna_status === 'Aktif' ? 'bg-emerald-50 text-emerald-700 border border-emerald-300' : 'bg-gray-100 text-gray-600 border border-gray-300'"
+        >
+          <span
+            class="w-2 h-2 rounded-full shrink-0"
+            :class="row.tna_status === 'Aktif' ? 'bg-emerald-500' : 'bg-gray-400'"
+          ></span>
+          <span>{{ row.tna_status || 'Aktif' }}</span>
         </span>
       </template>
 

@@ -34,6 +34,25 @@ const proposal = ref(null)
 const flowSteps = ref([])
 const currentStep = ref(null)
 const canApprove = ref(false)
+const updatingStatus = ref(false)
+
+async function toggleStatus() {
+  if (!proposal.value) return
+  const newStatus = proposal.value.tna_status === 'Aktif' ? 'Closed' : 'Aktif'
+  updatingStatus.value = true
+  try {
+    const { data } = await apiClient.post(`/tna/${proposal.value.id}/status`, {
+      tna_status: newStatus
+    })
+    proposal.value.tna_status = newStatus
+    emit('refresh-list')
+  } catch (err) {
+    console.error('Failed to update status:', err)
+    alert(err.response?.data?.message || 'Gagal mengubah status TNA.')
+  } finally {
+    updatingStatus.value = false
+  }
+}
 
 function formatRupiah(num) {
   if (num === null || num === undefined) return 'Rp 0'
@@ -164,8 +183,8 @@ async function downloadDocument() {
       </template>
     </SubpageHeader>
 
-    <!-- 1. Top Information Card: Year, Document, Regulator Target -->
-    <div v-if="proposal" class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- 1. Top Information Card: Year, Status TNA, Document, Regulator Target -->
+    <div v-if="proposal" class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
       
       <!-- Year -->
       <div class="flex items-center gap-3.5">
@@ -175,6 +194,39 @@ async function downloadDocument() {
         <div>
           <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Tahun Anggaran</span>
           <span class="text-xl font-extrabold text-gray-900 font-mono">{{ proposal.year }}</span>
+        </div>
+      </div>
+
+      <!-- Status TNA (Aktif / Closed) with Toggle -->
+      <div class="flex items-center gap-3.5">
+        <div
+          class="w-11 h-11 rounded-2xl flex items-center justify-center font-bold shrink-0 transition"
+          :class="proposal.tna_status === 'Aktif' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'"
+        >
+          <ShieldCheck class="w-5 h-5" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Status Siklus TNA</span>
+          <div class="flex items-center gap-2">
+            <span
+              class="inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-0.5 rounded-full"
+              :class="proposal.tna_status === 'Aktif' ? 'bg-emerald-50 text-emerald-700 border border-emerald-300' : 'bg-gray-100 text-gray-600 border border-gray-300'"
+            >
+              <span
+                class="w-2 h-2 rounded-full"
+                :class="proposal.tna_status === 'Aktif' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'"
+              ></span>
+              <span>{{ proposal.tna_status || 'Aktif' }}</span>
+            </span>
+            <button
+              @click="toggleStatus"
+              :disabled="updatingStatus"
+              class="text-[11px] font-bold px-2.5 py-1 rounded-lg border border-gray-200 hover:bg-gray-100 text-gray-700 transition cursor-pointer disabled:opacity-50"
+              :title="`Ubah status siklus TNA menjadi ${proposal.tna_status === 'Aktif' ? 'Closed' : 'Aktif'}`"
+            >
+              {{ updatingStatus ? 'Menyimpan...' : (proposal.tna_status === 'Aktif' ? 'Tutup TNA' : 'Set Aktif') }}
+            </button>
+          </div>
         </div>
       </div>
 

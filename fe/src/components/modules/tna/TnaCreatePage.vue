@@ -58,6 +58,7 @@ const isYearAlreadyRegistered = computed(() => {
 // Form State matching Excel wireframe
 const form = ref({
   year: 2026,
+  tna_status: 'Aktif',
   minimum_regulator_investment: 1100000000,
   investment_projection: 0,
   strategic_objective: 'Akselerasi kapabilitas digital perbankan, kepatuhan regulasi OJK & BI, serta mitigasi risiko operasional.',
@@ -418,6 +419,7 @@ async function loadMasterData() {
       editingProposal.value = p
 
       form.value.year = p.year || 2026
+      form.value.tna_status = p.tna_status || 'Aktif'
       form.value.minimum_regulator_investment = p.minimum_regulator_investment || 1000000000
       form.value.strategic_objective = p.strategic_objective || ''
       form.value.department = p.department || 'Human Capital & Corporate Academy'
@@ -494,6 +496,7 @@ async function submitForm() {
 
     const formData = new FormData()
     formData.append('year', form.value.year)
+    formData.append('tna_status', form.value.tna_status || 'Aktif')
     formData.append('minimum_regulator_investment', form.value.minimum_regulator_investment || 0)
     formData.append('investment_projection', totalInvestment.value)
     formData.append('strategic_objective', form.value.strategic_objective)
@@ -573,39 +576,48 @@ async function submitForm() {
         <!-- Top 4 Fields matching Excel Mockup -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 bg-gray-50/70 p-5 rounded-2xl border border-gray-200">
           
-          <!-- Field 1: Year -->
-          <div>
-            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>Year (Tahun Anggaran)</span>
-              <span class="text-[11px] text-[#0067AC] font-semibold">Wajib (Master Data)</span>
-            </label>
-            <div class="relative">
-              <select
-                v-model.number="form.year"
-                :disabled="isEditMode || loadingMasters"
-                class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-4 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs appearance-none pr-10 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option v-if="loadingMasters" :value="form.year" disabled>Memuat master tahun anggaran...</option>
-                <option
-                  v-for="fy in fiscalYears"
-                  :key="fy.id"
-                  :value="fy.year"
+          <!-- Field 1: Year & Status TNA -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Year (Tahun)</span>
+                <span class="text-[10px] text-[#0067AC] font-semibold">Wajib</span>
+              </label>
+              <div class="relative">
+                <select
+                  v-model.number="form.year"
+                  :disabled="isEditMode || loadingMasters"
+                  class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-3 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs appearance-none pr-8 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
-                  {{ fy.year }} &mdash; {{ fy.name || `Tahun Anggaran ${fy.year}` }} ({{ fy.status === 'AKTIF' ? 'Aktif' : (fy.status === 'PERENCANAAN' ? 'Perencanaan' : 'Tutup Buku') }}){{ fy.tna_proposals_count > 0 && (!isEditMode || editingProposal?.year !== fy.year) ? ' • [Sudah Ada TNA]' : '' }}
-                </option>
-              </select>
-              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
-                <ChevronDown class="w-4 h-4" />
+                  <option v-if="loadingMasters" :value="form.year" disabled>Memuat...</option>
+                  <option
+                    v-for="fy in fiscalYears"
+                    :key="fy.id"
+                    :value="fy.year"
+                  >
+                    {{ fy.year }} &mdash; {{ fy.status === 'AKTIF' ? 'Aktif' : 'Tutup' }}
+                  </option>
+                </select>
+                <div class="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-gray-400">
+                  <ChevronDown class="w-4 h-4" />
+                </div>
               </div>
             </div>
-            <div class="mt-1.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-[10px]">
-              <p :class="isYearAlreadyRegistered ? 'text-amber-600 font-semibold' : 'text-gray-400'">
-                <span v-if="isYearAlreadyRegistered">⚠️ Tahun {{ form.year }} sudah memiliki dokumen TNA. Pilih tahun lain untuk usulan baru.</span>
-                <span v-else>Pilihan ditarik otomatis dari Master Tahun Anggaran. (1 tahun = 1 dokumen TNA)</span>
-              </p>
-              <span v-if="selectedFiscalYear" class="text-gray-500 font-mono text-[10px]">
-                Pagu: {{ formatRupiah(selectedFiscalYear.total_budget_cap) }}
-              </span>
+
+            <div>
+              <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Status Siklus TNA</span>
+                <span class="text-[10px] font-bold" :class="form.tna_status === 'Aktif' ? 'text-emerald-600' : 'text-gray-500'">
+                  {{ form.tna_status }}
+                </span>
+              </label>
+              <select
+                v-model="form.tna_status"
+                class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-3 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer"
+              >
+                <option value="Aktif">Aktif (Dapat Dirujuk Program)</option>
+                <option value="Closed">Closed (Siklus Selesai / Arsip)</option>
+              </select>
             </div>
           </div>
 

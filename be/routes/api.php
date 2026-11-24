@@ -47,6 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/tna/{id}', [TnaApiController::class, 'show']);
     Route::post('/tna', [TnaApiController::class, 'store']);
     Route::match(['put', 'post'], '/tna/{id}', [TnaApiController::class, 'update']);
+    Route::post('/tna/{id}/status', [TnaApiController::class, 'updateStatus']);
     Route::post('/tna/{id}/workflow-action', [TnaApiController::class, 'workflowAction']);
     Route::post('/tna/{id}/approve', [TnaApiController::class, 'workflowAction']);
     Route::delete('/tna/{id}', [TnaApiController::class, 'destroy']);

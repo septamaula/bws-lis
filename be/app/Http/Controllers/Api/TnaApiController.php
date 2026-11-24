@@ -39,6 +39,10 @@ class TnaApiController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('tna_status') && $request->tna_status !== 'ALL') {
+            $query->where('tna_status', $request->tna_status);
+        }
+
         $proposals = $query->get();
 
         $stats = [
@@ -104,6 +108,7 @@ class TnaApiController extends Controller
         $validated = $request->validate([
             'department' => 'nullable|string|max:100',
             'year' => 'required|integer|min:2020|max:2040',
+            'tna_status' => 'nullable|in:Aktif,Closed',
             'minimum_regulator_investment' => 'nullable|numeric|min:0',
             'realization_amount' => 'nullable|numeric|min:0',
             'priority' => 'nullable|in:Critical,High,Medium,Low',
@@ -193,6 +198,7 @@ class TnaApiController extends Controller
                 'minimum_regulator_investment' => $validated['minimum_regulator_investment'] ?? 0,
                 'realization_amount' => $validated['realization_amount'] ?? 0,
                 'status' => $status,
+                'tna_status' => $validated['tna_status'] ?? 'Aktif',
                 'strategic_objective' => $strategicObjective,
                 'target_quarter' => $targetQuarter,
                 'current_step_order' => 1,
@@ -468,6 +474,7 @@ class TnaApiController extends Controller
         $validated = $request->validate([
             'department' => 'sometimes|required|string|max:100',
             'year' => 'sometimes|required|integer|min:2020|max:2040',
+            'tna_status' => 'nullable|in:Aktif,Closed',
             'priority' => 'nullable|in:Critical,High,Medium,Low',
             'target_quarter' => 'nullable|string|max:50',
             'strategic_objective' => 'sometimes|required|string',
@@ -513,6 +520,9 @@ class TnaApiController extends Controller
             }
             if (isset($validated['strategic_objective'])) {
                 $proposal->strategic_objective = $validated['strategic_objective'];
+            }
+            if (isset($validated['tna_status'])) {
+                $proposal->tna_status = $validated['tna_status'];
             }
 
             // Handle Fiscal Year
@@ -733,6 +743,36 @@ class TnaApiController extends Controller
         return response()->file($filePath, [
             'Content-Type' => $mime,
             'Content-Disposition' => 'inline; filename="'.$fileName.'"',
+        ]);
+    }
+
+    /**
+     * POST /api/tna/{id}/status
+     * Memperbarui status siklus TNA (Aktif / Closed)
+     */
+    public function updateStatus(Request $request, int $id): JsonResponse
+    {
+        $proposal = TnaProposal::findOrFail($id);
+
+        $validated = $request->validate([
+            'tna_status' => 'required|in:Aktif,Closed',
+        ]);
+
+        $proposal->tna_status = $validated['tna_status'];
+        $proposal->save();
+
+        AuditLog::create([
+            'user_id' => $request->user()?->id ?? 1,
+            'action' => 'UPDATE_TNA_STATUS',
+            'entity_type' => 'TnaProposal',
+            'entity_id' => $proposal->id,
+            'ip_address' => $request->ip(),
+            'details' => json_encode(['tna_status' => $proposal->tna_status, 'code' => $proposal->proposal_code]),
+        ]);
+
+        return response()->json([
+            'message' => "Status TNA {$proposal->proposal_code} berhasil diubah menjadi {$proposal->tna_status}.",
+            'proposal' => $proposal,
         ]);
     }
 }

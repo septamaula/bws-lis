@@ -147,4 +147,65 @@ class LisApplicationTest extends TestCase
 
         TnaProposal::where('year', $testYear)->delete();
     }
+
+    public function test_tna_status_can_be_updated_and_filtered(): void
+    {
+        $admin = User::where('role_name', 'Super Admin')->first();
+        Sanctum::actingAs($admin);
+
+        $tna = TnaProposal::first();
+        $this->assertNotNull($tna);
+
+        // Update status to Closed
+        $res = $this->postJson("/api/tna/{$tna->id}/status", [
+            'tna_status' => 'Closed',
+        ]);
+        $res->assertStatus(200);
+        $this->assertEquals('Closed', $tna->fresh()->tna_status);
+
+        // Update back to Aktif
+        $res2 = $this->postJson("/api/tna/{$tna->id}/status", [
+            'tna_status' => 'Aktif',
+        ]);
+        $res2->assertStatus(200);
+        $this->assertEquals('Aktif', $tna->fresh()->tna_status);
+
+        // Test filter ?tna_status=Aktif
+        $resFilter = $this->getJson('/api/tna?tna_status=Aktif');
+        $resFilter->assertStatus(200);
+        $proposals = $resFilter->json('proposals');
+        foreach ($proposals as $p) {
+            $this->assertEquals('Aktif', $p['tna_status']);
+        }
+    }
+
+    public function test_program_can_be_created_with_active_tna_and_category(): void
+    {
+        $admin = User::where('role_name', 'Super Admin')->first();
+        Sanctum::actingAs($admin);
+
+        $tna = TnaProposal::where('tna_status', 'Aktif')->with('items')->first();
+        $this->assertNotNull($tna);
+
+        $item = $tna->items->first();
+        $catName = $item?->category_name ?? 'Operasional & Layanan Perbankan';
+
+        $programCode = 'PRG-TEST-'.uniqid();
+        $res = $this->postJson('/api/programs', [
+            'program_code' => $programCode,
+            'title' => 'Program Test Otomasi TNA',
+            'category' => $catName,
+            'tna_proposal_id' => $tna->id,
+            'tna_item_id' => $item?->id,
+            'year' => 2026,
+            'is_submit' => true,
+        ]);
+
+        $res->assertStatus(201);
+        $this->assertDatabaseHas('training_programs', [
+            'program_code' => $programCode,
+            'tna_proposal_id' => $tna->id,
+            'category' => $catName,
+        ]);
+    }
 }

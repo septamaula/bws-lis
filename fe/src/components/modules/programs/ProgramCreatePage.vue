@@ -22,7 +22,8 @@ import {
   Clock,
   ShieldCheck,
   Building2,
-  HelpCircle
+  HelpCircle,
+  ChevronDown
 } from 'lucide-vue-next'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
@@ -48,6 +49,8 @@ const categories = ref([])
 
 // Form state matching Excel wireframe
 const form = ref({
+  tna_proposal_id: null,
+  tna_item_id: null,
   program_code: '',
   title: '',
   category: 'Operasional & Layanan Perbankan',
@@ -195,6 +198,67 @@ function onApprovalDocChange(e) {
   if (f) approvalDocFile.value = f
 }
 
+// Active TNA Proposals (Filtered by tna_status === 'Aktif')
+const activeTnaList = computed(() => {
+  return tnaProposals.value.filter(t => t.tna_status === 'Aktif')
+})
+
+// Currently selected TNA Proposal
+const selectedTna = computed(() => {
+  if (!form.value.tna_proposal_id) return null
+  return tnaProposals.value.find(t => Number(t.id) === Number(form.value.tna_proposal_id)) || null
+})
+
+// Categories dynamically derived from the selected active TNA's items
+const availableCategories = computed(() => {
+  if (!selectedTna.value || !selectedTna.value.items || selectedTna.value.items.length === 0) {
+    return categories.value.map(c => c.name)
+  }
+  const catSet = new Set()
+  selectedTna.value.items.forEach(it => {
+    const cat = it.category_name || it.category?.name || it.job_family
+    if (cat) catSet.add(cat)
+  })
+  const list = Array.from(catSet)
+  return list.length > 0 ? list : categories.value.map(c => c.name)
+})
+
+// TNA items that belong to the currently selected category
+const tnaItemsForCategory = computed(() => {
+  if (!selectedTna.value || !selectedTna.value.items) return []
+  return selectedTna.value.items.filter(it => {
+    const cat = it.category_name || it.category?.name || it.job_family
+    return cat === form.value.category
+  })
+})
+
+function onTnaChange() {
+  if (selectedTna.value) {
+    if (selectedTna.value.year) form.value.year = selectedTna.value.year
+    if (selectedTna.value.department) form.value.unit_initiator = selectedTna.value.department
+  }
+  // If current category is not in available categories of this TNA, switch to first available
+  const cats = availableCategories.value
+  if (!cats.includes(form.value.category)) {
+    form.value.category = cats[0] || ''
+  }
+  form.value.tna_item_id = null
+}
+
+function onCategoryChange() {
+  form.value.tna_item_id = null
+}
+
+function onTnaItemSelect() {
+  if (!form.value.tna_item_id) return
+  const item = selectedTna.value?.items?.find(it => Number(it.id) === Number(form.value.tna_item_id))
+  if (item) {
+    if (!form.value.title || form.value.title.startsWith('D26_') || form.value.title.startsWith('Program') || form.value.title.startsWith('PRG')) {
+      form.value.title = item.recommended_program || item.sub_category_name || form.value.title
+    }
+  }
+}
+
 async function loadData() {
   loadingInit.value = true
   try {
@@ -208,9 +272,11 @@ async function loadData() {
     if (isEditMode.value) {
       const { data } = await apiClient.get(`/programs/${props.editProgramId}`)
       const p = data.program
+      form.value.tna_proposal_id = p.tna_proposal_id || null
+      form.value.tna_item_id = p.tna_item_id || null
       form.value.program_code = p.program_code || ''
       form.value.title = p.title || ''
-      form.value.category = p.category || 'Operasional & Layanan Perbankan'
+      form.value.category = p.category || (availableCategories.value[0] || 'Operasional & Layanan Perbankan')
       form.value.location = p.location || 'Ruang 1'
       form.value.facilitator = p.facilitator || ''
       form.value.duration_text = p.duration_text || (p.duration_hours ? `${p.duration_hours} Jam` : '')
@@ -252,6 +318,20 @@ async function loadData() {
       // Auto-generate program code suggestion
       const randNum = Math.floor(100 + Math.random() * 900)
       form.value.program_code = `D26_${randNum}`
+
+      // Auto-select the first active TNA
+      const activeTna = activeTnaList.value[0] || tnaProposals.value[0]
+      if (activeTna) {
+        form.value.tna_proposal_id = activeTna.id
+        if (activeTna.year) form.value.year = activeTna.year
+        if (activeTna.department) form.value.unit_initiator = activeTna.department
+        
+        // Auto select first available category from this TNA
+        const firstCat = availableCategories.value[0]
+        if (firstCat) {
+          form.value.category = firstCat
+        }
+      }
     }
   } catch (err) {
     feedback.value = { type: 'error', message: 'Gagal memuat data program.' }
@@ -265,6 +345,14 @@ onMounted(() => {
 })
 
 async function submitProgram() {
+  if (!form.value.tna_proposal_id) {
+    feedback.value = { type: 'error', message: 'Silakan pilih Dokumen TNA Aktif terlebih dahulu.' }
+    return
+  }
+  if (!form.value.category) {
+    feedback.value = { type: 'error', message: 'TNA Category (Kategori TNA) wajib dipilih dari TNA aktif.' }
+    return
+  }
   if (!form.value.title) {
     feedback.value = { type: 'error', message: 'Program Name (Nama Program) wajib diisi.' }
     return
@@ -275,6 +363,8 @@ async function submitProgram() {
 
   try {
     const formData = new FormData()
+    if (form.value.tna_proposal_id) formData.append('tna_proposal_id', form.value.tna_proposal_id)
+    if (form.value.tna_item_id) formData.append('tna_item_id', form.value.tna_item_id)
     formData.append('program_code', form.value.program_code)
     formData.append('title', form.value.title)
     formData.append('category', form.value.category)
@@ -387,22 +477,110 @@ async function submitProgram() {
             <span>Informasi Pokok Program</span>
           </h3>
 
+          <!-- Step 1: Pilih Dokumen TNA Aktif (Mandatory Basis) -->
+          <div class="mb-6 p-4 rounded-2xl bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50 border border-blue-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
+            <div class="flex items-center gap-3.5">
+              <div class="w-11 h-11 rounded-2xl bg-[#0067AC] text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                <FileCheck2 class="w-5 h-5" />
+              </div>
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <label class="text-xs font-extrabold text-gray-900 uppercase tracking-wider">
+                    Pilih TNA Aktif
+                  </label>
+                  <span class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Status Aktif</span>
+                  </span>
+                </div>
+                <p class="text-[11px] text-gray-600 mt-0.5">
+                  Setiap usulan program diklat wajib merujuk pada dokumen TNA yang berstatus Aktif. Kategori program di bawah diambil langsung dari TNA ini.
+                </p>
+              </div>
+            </div>
+
+            <div class="w-full md:w-88 shrink-0 flex flex-col gap-1">
+              <div class="relative">
+                <select
+                  v-model="form.tna_proposal_id"
+                  @change="onTnaChange"
+                  class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-4 py-2.5 border-2 border-blue-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer appearance-none pr-10"
+                >
+                  <option :value="null" disabled>-- Pilih Dokumen TNA Aktif --</option>
+                  <option
+                    v-for="tna in activeTnaList"
+                    :key="tna.id"
+                    :value="tna.id"
+                  >
+                    {{ tna.proposal_code }} (Tahun {{ tna.year }}) &bull; {{ tna.tna_status }}
+                  </option>
+                </select>
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-[#0067AC]">
+                  <ChevronDown class="w-4 h-4" />
+                </div>
+              </div>
+              <div v-if="selectedTna" class="flex items-center justify-between text-[10px] font-mono text-gray-500 px-1">
+                <span>Pagu TNA: {{ formatRupiah(selectedTna.total_budget_requested) }}</span>
+                <span class="text-emerald-700 font-bold">{{ availableCategories.length }} Kategori Tersedia</span>
+              </div>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
             
             <!-- Left Column: TNA Category, Program Name, Location, Facilitator, Duration -->
             <div class="flex flex-col gap-4">
               
-              <!-- TNA Category -->
+              <!-- TNA Category (Populated from selected active TNA) -->
               <div>
-                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  TNA Category
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <span>TNA Category</span>
+                  <span class="text-[10px] text-[#0067AC] font-bold">Ditarik dari TNA Aktif</span>
                 </label>
-                <input
-                  v-model="form.category"
-                  type="text"
-                  placeholder="Category 1 / Operasional & Layanan Perbankan"
-                  class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
-                />
+                <div class="relative">
+                  <select
+                    v-model="form.category"
+                    @change="onCategoryChange"
+                    class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer appearance-none pr-9"
+                  >
+                    <option value="" disabled>-- Pilih Kategori dari TNA Aktif --</option>
+                    <option v-for="cat in availableCategories" :key="cat" :value="cat">
+                      {{ cat }}
+                    </option>
+                  </select>
+                  <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                    <ChevronDown class="w-4 h-4" />
+                  </div>
+                </div>
+                <p v-if="!selectedTna" class="text-[10px] text-amber-600 mt-1">
+                  * Harap pilih dokumen TNA Aktif terlebih dahulu.
+                </p>
+                <p v-else-if="availableCategories.length === 0" class="text-[10px] text-amber-600 mt-1">
+                  * TNA ini belum memiliki rincian kategori program.
+                </p>
+              </div>
+
+              <!-- Rujukan Usulan Program TNA (Opsional) -->
+              <div v-if="tnaItemsForCategory.length > 0">
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <span>Rujukan Usulan Program TNA</span>
+                  <span class="text-[10px] text-gray-400 font-normal">Pilih untuk auto-fill judul</span>
+                </label>
+                <div class="relative">
+                  <select
+                    v-model="form.tna_item_id"
+                    @change="onTnaItemSelect"
+                    class="w-full bg-blue-50/50 text-xs font-semibold text-gray-800 rounded-xl px-3.5 py-2 border border-blue-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer appearance-none pr-9"
+                  >
+                    <option :value="null">-- Program Baru (Ketik Sendiri) --</option>
+                    <option v-for="item in tnaItemsForCategory" :key="item.id" :value="item.id">
+                      {{ item.recommended_program || item.sub_category_name }} (Pagu: {{ formatRupiah(item.budget || item.estimated_cost) }})
+                    </option>
+                  </select>
+                  <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                    <ChevronDown class="w-4 h-4" />
+                  </div>
+                </div>
               </div>
 
               <!-- Program Name -->

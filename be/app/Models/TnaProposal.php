@@ -21,6 +21,7 @@ class TnaProposal extends Model
         'total_budget_requested',
         'total_budget_approved',
         'status',
+        'tna_status',
         'rejection_reason',
         'hcbp_notes',
         'approved_by',
@@ -72,6 +73,11 @@ class TnaProposal extends Model
         $real = (float) ($this->realization_amount ?? 0);
 
         return round(($real / $proj) * 100, 1);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('tna_status', 'Aktif');
     }
 
     public function fiscalYear(): BelongsTo
