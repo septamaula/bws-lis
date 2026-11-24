@@ -298,4 +298,90 @@ class LisApplicationTest extends TestCase
         $resBiCreate->assertStatus(201);
         $this->assertDatabaseHas('bi_categories', ['code' => $biCode]);
     }
+
+    public function test_class_crud_with_ss2_fields_and_delete(): void
+    {
+        $admin = User::where('role_name', 'Super Admin')->first();
+        Sanctum::actingAs($admin);
+
+        $tna = TnaProposal::first();
+        $program = TrainingProgram::first();
+
+        $classCode = 'C26_TEST_' . rand(100, 999);
+        $createRes = $this->postJson('/api/classes', [
+            'program_id' => $program->id,
+            'tna_proposal_id' => $tna->id,
+            'class_code' => $classCode,
+            'batch_name' => 'Batch 99',
+            'pic_name' => 'PIC Test BWS',
+            'method' => 'In-Classroom',
+            'start_date' => '2026-05-01',
+            'end_date' => '2026-05-02',
+            'daily_schedule' => '08:30 - 16:30 WIB',
+            'location_or_url' => 'Ruang 1 - BWS Learning Center',
+            'max_quota' => 30,
+            'trainer_name' => 'PT Mitra Konsultan Perbankan',
+            'passing_grade' => 75,
+            'sessions' => [
+                [
+                    'session_number' => 1,
+                    'topic' => 'Materi 1: Regulasi Perbankan',
+                    'duration_hours' => 2,
+                    'trainer_name' => 'Instruktur Utama',
+                ]
+            ],
+            'documents' => [
+                [
+                    'doc_number' => 1,
+                    'file_label' => 'File 1',
+                    'file_name' => 'silabus_training.pdf',
+                    'file_path' => '/storage/classes/docs/silabus_training.pdf'
+                ]
+            ],
+            'documentation_photos' => [
+                [
+                    'photo_number' => 1,
+                    'name' => 'Foto 1',
+                    'file_name' => 'dokumentasi_1.jpg',
+                    'file_path' => '/storage/classes/photos/dokumentasi_1.jpg'
+                ]
+            ],
+            'evaluation_config' => [
+                [
+                    'id' => 1,
+                    'category' => 'Materi',
+                    'question' => 'Memberikan manfaat dalam meningkatkan wawasan pengetahuan',
+                    'rating' => 4
+                ]
+            ]
+        ]);
+
+        $createRes->assertStatus(201);
+        $classId = $createRes->json('class.id');
+        $this->assertNotNull($classId);
+        $this->assertDatabaseHas('training_classes', [
+            'id' => $classId,
+            'class_code' => $classCode,
+            'pic_name' => 'PIC Test BWS',
+            'tna_proposal_id' => $tna->id,
+        ]);
+
+        // Test Update
+        $updateRes = $this->putJson("/api/classes/{$classId}", [
+            'pic_name' => 'PIC Senior BWS',
+            'batch_name' => 'Batch 99 Updated',
+            'location_or_url' => 'Ruang 2 - BWS Innovation Hub',
+        ]);
+        $updateRes->assertStatus(200);
+        $this->assertDatabaseHas('training_classes', [
+            'id' => $classId,
+            'pic_name' => 'PIC Senior BWS',
+            'batch_name' => 'Batch 99 Updated',
+        ]);
+
+        // Test Delete
+        $deleteRes = $this->deleteJson("/api/classes/{$classId}");
+        $deleteRes->assertStatus(200);
+        $this->assertDatabaseMissing('training_classes', ['id' => $classId]);
+    }
 }

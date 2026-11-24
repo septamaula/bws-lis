@@ -10,7 +10,9 @@ class TrainingClass extends Model
 {
     protected $fillable = [
         'program_id',
+        'tna_proposal_id',
         'class_code',
+        'pic_name',
         'batch_name',
         'method',
         'start_date',
@@ -29,6 +31,9 @@ class TrainingClass extends Model
         'passing_grade',
         'description',
         'notes',
+        'documents',
+        'documentation_photos',
+        'evaluation_config',
         'is_attendance_open',
     ];
 
@@ -40,7 +45,15 @@ class TrainingClass extends Model
         'enrolled_count' => 'integer',
         'passing_grade' => 'integer',
         'is_attendance_open' => 'boolean',
+        'documents' => 'array',
+        'documentation_photos' => 'array',
+        'evaluation_config' => 'array',
     ];
+
+    public function tnaProposal(): BelongsTo
+    {
+        return $this->belongsTo(TnaProposal::class, 'tna_proposal_id');
+    }
 
     public function program(): BelongsTo
     {

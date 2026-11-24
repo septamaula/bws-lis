@@ -18,14 +18,28 @@ import {
   AlertCircle,
   Sparkles,
   ChevronRight,
+  ChevronDown,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  FileCheck2,
+  FileText,
+  Upload,
+  Image,
+  Star,
+  Check,
+  HelpCircle,
+  Layers
 } from 'lucide-vue-next'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
+import SubpageHeader from '@/components/SubpageHeader.vue'
 
 const props = defineProps({
   initialProgramId: {
+    type: [Number, String],
+    default: null
+  },
+  editClassId: {
     type: [Number, String],
     default: null
   }
@@ -34,163 +48,319 @@ const props = defineProps({
 const emit = defineEmits(['back', 'created'])
 const auth = useAuthStore()
 
-const loadingPrograms = ref(true)
-const programs = ref([])
-const selectedProgram = ref(null)
-const loadingProgramDetail = ref(false)
-const availableNominations = ref([])
+const isEditMode = computed(() => !!props.editClassId)
+const loadingInit = ref(true)
 const isSubmitting = ref(false)
 const feedback = ref({ type: '', message: '' })
 
-// Form State
+// Master data lists
+const tnaProposals = ref([])
+const allPrograms = ref([])
+const masterFacilitators = ref([])
+
+// Form State matching SS2 Excel Wireframe
 const form = ref({
+  tna_id: null,
   program_id: props.initialProgramId || '',
-  batch_name: 'Batch 1 - 2026',
+  class_code: '',
+  pic_name: auth.user?.name || 'Budi Pratama (Super Admin)',
+  batch_name: 'Batch 1',
   method: 'In-Classroom',
   start_date: new Date().toISOString().substring(0, 10),
   end_date: new Date(Date.now() + 2 * 86400000).toISOString().substring(0, 10),
   daily_schedule: '08:30 - 16:30 WIB',
-  location_or_url: 'BWS Corporate Learning Center, Ruang Diklat Lt. 8',
+  location_or_url: 'Ruang 1 - BWS Corporate Learning Center',
   max_quota: 25,
-  trainer_name: 'Dr. Bambang Soedjarwo, M.M. (Senior Banking Trainer)',
+  trainer_name: 'PT Mitra Konsultan Perbankan',
   passing_grade: 75,
   description: '',
   notes: '',
   auto_approve: true,
+  
+  // SS2 Section: Agenda
   sessions: [],
+  
+  // SS2 Section: Document
+  documents: [],
+  
+  // SS2 Section: Upload Documentation (Foto 1 - 10)
+  documentation_photos: Array.from({ length: 10 }, (_, i) => ({
+    photo_number: i + 1,
+    name: `Foto ${i + 1}`,
+    file_name: '',
+    file_path: '',
+    preview_url: ''
+  })),
+
+  // SS2 Section: Evaluation (9 Pertanyaan Skala 1 - 4)
+  evaluation_config: [
+    { id: 1, category: 'Materi', question: 'Memberikan manfaat dalam meningkatkan wawasan pengetahuan', rating: 4 },
+    { id: 2, category: 'Materi', question: 'Memberikan manfaat dalam menunjang kinerja pekerjaan', rating: 4 },
+    { id: 3, category: 'Materi', question: 'Tampilan presentasi modul dapat dimengerti', rating: 4 },
+    { id: 4, category: 'Pengajar', question: 'Kemampuan menjelaskan materi dengan bahasa yang mudah dipahami', rating: 4 },
+    { id: 5, category: 'Pengajar', question: 'Menguasai isi materi yang dibawakan', rating: 4 },
+    { id: 6, category: 'Pengajar', question: 'Kemampuan menciptakan suasana belajar yang efektif baik dari sisi Metode dan Waktu', rating: 4 },
+    { id: 7, category: 'Kepanitiaan', question: 'Support panitia terhadap kelancaran proses training', rating: 4 },
+    { id: 8, category: 'Kepanitiaan', question: 'Support panitia terhadap pemenuhan kebutuhan peserta training', rating: 4 },
+    { id: 9, category: 'Kepanitiaan', question: 'Etika panitia dalam berinteraksi dengan peserta training', rating: 4 }
+  ],
+
   enrolled_participants: []
 })
 
-// New manual participant input
-const newParticipant = ref({
-  nik: '',
-  name: '',
-  department: '',
-  branch: 'Kantor Pusat',
-  position: ''
+// Active TNA proposals
+const activeTnaList = computed(() => {
+  return tnaProposals.value.filter(t => t.tna_status === 'Aktif')
 })
 
-async function fetchPrograms() {
-  loadingPrograms.value = true
-  try {
-    const { data } = await apiClient.get('/programs')
-    programs.value = data.programs || []
-    if (form.value.program_id) {
+const displayedTnaList = computed(() => {
+  const list = [...activeTnaList.value]
+  if (form.value.tna_id) {
+    const cur = tnaProposals.value.find(t => Number(t.id) === Number(form.value.tna_id))
+    if (cur && !list.some(t => Number(t.id) === Number(cur.id))) {
+      list.unshift(cur)
+    }
+  }
+  return list.length > 0 ? list : tnaProposals.value
+})
+
+// Selected TNA
+const selectedTna = computed(() => {
+  if (!form.value.tna_id) return null
+  return tnaProposals.value.find(t => Number(t.id) === Number(form.value.tna_id)) || null
+})
+
+// Programs filtered by chosen TNA (or all programs if TNA has no filter)
+const filteredPrograms = computed(() => {
+  if (!form.value.tna_id) return allPrograms.value
+  return allPrograms.value.filter(p => Number(p.tna_proposal_id) === Number(form.value.tna_id))
+})
+
+// Selected Program
+const selectedProgram = computed(() => {
+  if (!form.value.program_id) return null
+  return allPrograms.value.find(p => Number(p.id) === Number(form.value.program_id)) || null
+})
+
+// Available Nominations from Selected Program
+const availableNominations = computed(() => {
+  return selectedProgram.value?.participants || []
+})
+
+function formatRupiah(num) {
+  if (num === null || num === undefined) return 'Rp 0'
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0
+  }).format(num)
+}
+
+function onTnaChange() {
+  // If current program doesn't belong to this TNA, clear or pick first
+  if (form.value.program_id) {
+    const p = allPrograms.value.find(prog => Number(prog.id) === Number(form.value.program_id))
+    if (p && Number(p.tna_proposal_id) !== Number(form.value.tna_id)) {
+      const firstProg = filteredPrograms.value[0]
+      form.value.program_id = firstProg ? firstProg.id : ''
       onProgramSelected()
     }
-  } catch (err) {
-    console.error('Failed to load programs:', err)
-  } finally {
-    loadingPrograms.value = false
+  } else {
+    const firstProg = filteredPrograms.value[0]
+    if (firstProg) {
+      form.value.program_id = firstProg.id
+      onProgramSelected()
+    }
   }
 }
 
-async function onProgramSelected() {
-  if (!form.value.program_id) {
-    selectedProgram.value = null
-    availableNominations.value = []
-    return
+function onProgramSelected() {
+  if (!selectedProgram.value) return
+  const prog = selectedProgram.value
+
+  // Sync TNA if not set
+  if (prog.tna_proposal_id && !form.value.tna_id) {
+    form.value.tna_id = prog.tna_proposal_id
   }
-  loadingProgramDetail.value = true
-  try {
-    const { data } = await apiClient.get(`/programs/${form.value.program_id}`)
-    selectedProgram.value = data.program
-    availableNominations.value = data.program?.participants || []
+
+  // Pre-fill location & trainer from program
+  if (prog.location && (!form.value.location_or_url || form.value.location_or_url.startsWith('Ruang 1'))) {
+    form.value.location_or_url = prog.location
+  }
+  if (prog.facilitator) {
+    form.value.trainer_name = prog.facilitator
+  }
+  if (prog.passing_grade) {
+    form.value.passing_grade = prog.passing_grade
+  }
+
+  // Suggest batch name based on existing count (Supports: 1 program multiple classes!)
+  if (!isEditMode.value) {
+    const existingCount = prog.classes_count || prog.classes?.length || 0
+    form.value.batch_name = `Batch ${existingCount + 1}`
     
-    // Auto fill suggested batch name if default
-    if (form.value.batch_name.startsWith('Batch 1')) {
-      const existingCount = data.program?.classes_count || 0
-      form.value.batch_name = `Batch ${existingCount + 1} - ${data.program.title}`
+    // Auto populate initial participants from program nominations
+    if (prog.participants && prog.participants.length > 0 && form.value.enrolled_participants.length === 0) {
+      form.value.enrolled_participants = prog.participants.map(p => ({
+        nik: p.nik || '',
+        name: p.name,
+        department: p.department || prog.department,
+        branch: p.branch || 'Kantor Pusat',
+        position: p.position || 'Staff'
+      }))
     }
-    if (data.program.passing_grade) {
-      form.value.passing_grade = data.program.passing_grade
-    }
-    generateSessions()
-  } catch (err) {
-    console.error('Failed to load program detail:', err)
-  } finally {
-    loadingProgramDetail.value = false
+  }
+
+  // If agenda empty, generate default sessions
+  if (form.value.sessions.length === 0) {
+    generateDefaultSessions()
   }
 }
 
-function generateSessions() {
-  if (!form.value.start_date || !form.value.end_date) return
-  const start = new Date(form.value.start_date)
-  const end = new Date(form.value.end_date)
-  if (isNaN(start) || isNaN(end) || end < start) return
+// Generate default sessions / agenda from dates
+function generateDefaultSessions() {
+  const topics = [
+    'Materi 1: Pengenalan Regulasi & Tata Kelola Risiko Perbankan',
+    'Materi 2: Kerangka Kerja Operasional & Pengendalian Internal',
+    'Materi 3: Studi Kasus, Simulasi Praktik & Problem Solving',
+    'Materi 4: Ujian Evaluasi Kompetensi & Action Plan'
+  ]
 
-  const sessions = []
-  let current = new Date(start)
-  let count = 1
-
-  while (current <= end && count <= 10) {
-    const dateStr = current.toISOString().substring(0, 10)
-    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']
-    const dayName = dayNames[current.getDay()]
-    
-    sessions.push({
-      session_number: count,
-      session_name: `Hari ke-${count}: ${dayName}, ${dateStr}`,
-      session_date: dateStr,
-      start_time: '08:30',
-      end_time: '16:30',
-      topic: `Modul Pembelajaran Sesi ${count}`,
-      trainer_name: form.value.trainer_name,
-      location_or_url: form.value.location_or_url
+  const list = []
+  topics.forEach((t, i) => {
+    list.push({
+      session_number: i + 1,
+      topic: t,
+      duration_hours: 2,
+      trainer_name: form.value.trainer_name || 'Tim Fasilitator BWS',
+      material_file_name: '',
+      material_file_path: ''
     })
-    current.setDate(current.getDate() + 1)
-    count++
-  }
-  form.value.sessions = sessions
+  })
+  form.value.sessions = list
 }
 
-function addSessionRow() {
+// Add Agenda (ss2: Add Agenda [+])
+function addAgendaRow() {
   const nextNum = form.value.sessions.length + 1
   form.value.sessions.push({
     session_number: nextNum,
-    session_name: `Sesi Tambahan ${nextNum}`,
-    session_date: form.value.end_date || form.value.start_date,
-    start_time: '08:30',
-    end_time: '16:30',
-    topic: 'Workshop & Diskusi Studi Kasus',
-    trainer_name: form.value.trainer_name,
-    location_or_url: form.value.location_or_url
+    topic: `Materi ${nextNum}: Modul Pelatihan Lanjutan`,
+    duration_hours: 2,
+    trainer_name: form.value.trainer_name || 'Instruktur',
+    material_file_name: '',
+    material_file_path: ''
   })
 }
 
-function removeSession(idx) {
+function removeAgendaRow(idx) {
   form.value.sessions.splice(idx, 1)
   form.value.sessions.forEach((s, i) => {
     s.session_number = i + 1
   })
 }
 
-function isParticipantSelected(p) {
-  return form.value.enrolled_participants.some(ep => ep.nik === p.nik || (ep.name === p.name && ep.department === p.department))
+// Add Document (ss2: Add Document [+])
+function addDocumentRow() {
+  const nextNum = form.value.documents.length + 1
+  form.value.documents.push({
+    id: Date.now() + Math.random(),
+    label: `File ${nextNum}`,
+    name: nextNum === 1 ? 'Surat Undangan Pelatihan Resmi' : nextNum === 2 ? 'Kerangka Acuan Kerja (TOR)' : `Dokumen Pendukung ${nextNum}`,
+    file_name: '',
+    file_path: '',
+    file_size: null
+  })
 }
 
-function toggleNomination(p) {
-  const idx = form.value.enrolled_participants.findIndex(ep => ep.nik === p.nik)
-  if (idx > -1) {
-    form.value.enrolled_participants.splice(idx, 1)
-  } else {
-    form.value.enrolled_participants.push({
-      nik: p.nik,
-      name: p.name,
-      department: p.department,
-      branch: p.branch || 'Kantor Pusat',
-      position: p.position || 'Staff'
+function removeDocumentRow(idx) {
+  form.value.documents.splice(idx, 1)
+}
+
+// Mock/Upload file for Agenda Material
+async function handleMaterialFileUpload(e, session) {
+  const file = e.target.files[0]
+  if (!file) return
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('type', 'material')
+    const { data } = await apiClient.post('/classes/upload-attachment', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
     })
+    session.material_file_name = data.file_name
+    session.material_file_path = data.file_path
+  } catch (err) {
+    // Fallback: save client-side file name
+    session.material_file_name = file.name
   }
+}
+
+// Mock/Upload file for Document
+async function handleDocumentFileUpload(e, doc) {
+  const file = e.target.files[0]
+  if (!file) return
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('type', 'document')
+    const { data } = await apiClient.post('/classes/upload-attachment', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    doc.file_name = data.file_name
+    doc.file_path = data.file_path
+    doc.file_size = data.file_size
+  } catch (err) {
+    doc.file_name = file.name
+    doc.file_size = file.size
+  }
+}
+
+// Upload Documentation Photo (Foto 1 s/d Foto 10)
+async function handlePhotoUpload(e, photoItem) {
+  const file = e.target.files[0]
+  if (!file) return
+  photoItem.preview_url = URL.createObjectURL(file)
+  photoItem.file_name = file.name
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('type', 'photo')
+    const { data } = await apiClient.post('/classes/upload-attachment', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    photoItem.file_path = data.file_path
+  } catch (err) {
+    // Fallback keep local preview
+  }
+}
+
+function clearPhoto(photoItem) {
+  photoItem.file_name = ''
+  photoItem.file_path = ''
+  photoItem.preview_url = ''
+}
+
+// Participant management
+const newParticipant = ref({ nik: '', name: '', department: '', position: '' })
+
+function addManualParticipant() {
+  if (!newParticipant.value.name.trim()) return
+  form.value.enrolled_participants.push({ ...newParticipant.value, branch: 'Kantor Pusat' })
+  newParticipant.value = { nik: '', name: '', department: '', position: '' }
+}
+
+function removeParticipant(idx) {
+  form.value.enrolled_participants.splice(idx, 1)
 }
 
 function selectAllNominations() {
   availableNominations.value.forEach(p => {
-    if (!isParticipantSelected(p)) {
+    if (!form.value.enrolled_participants.some(ep => ep.nik === p.nik || ep.name === p.name)) {
       form.value.enrolled_participants.push({
         nik: p.nik,
         name: p.name,
-        department: p.department,
+        department: p.department || selectedProgram.value?.department,
         branch: p.branch || 'Kantor Pusat',
         position: p.position || 'Staff'
       })
@@ -198,37 +368,144 @@ function selectAllNominations() {
   })
 }
 
-function clearAllSelectedParticipants() {
+function clearAllParticipants() {
   form.value.enrolled_participants = []
 }
 
-function addManualParticipant() {
-  if (!newParticipant.value.name) return
-  form.value.enrolled_participants.push({ ...newParticipant.value })
-  newParticipant.value = {
-    nik: '',
-    name: '',
-    department: '',
-    branch: 'Kantor Pusat',
-    position: ''
+// Load data on Mount
+async function loadData() {
+  loadingInit.value = true
+  try {
+    const [resTna, resProg, resFac] = await Promise.all([
+      apiClient.get('/tna'),
+      apiClient.get('/programs'),
+      apiClient.get('/facilitators')
+    ])
+    tnaProposals.value = resTna.data.proposals || []
+    allPrograms.value = resProg.data.programs || []
+    masterFacilitators.value = resFac.data.facilitators || []
+
+    if (isEditMode.value) {
+      const { data } = await apiClient.get(`/classes/${props.editClassId}`)
+      const c = data.class
+      form.value.tna_id = c.tna_proposal_id || c.program?.tna_proposal_id || null
+      form.value.program_id = c.program_id
+      form.value.class_code = c.class_code || ''
+      form.value.pic_name = c.pic_name || (c.maker?.name || 'Staff HC')
+      form.value.batch_name = c.batch_name || 'Batch 1'
+      form.value.method = c.method || 'In-Classroom'
+      form.value.start_date = c.start_date ? c.start_date.substring(0, 10) : ''
+      form.value.end_date = c.end_date ? c.end_date.substring(0, 10) : ''
+      form.value.daily_schedule = c.daily_schedule || '08:30 - 16:30 WIB'
+      form.value.location_or_url = c.location_or_url || 'Ruang 1'
+      form.value.max_quota = c.max_quota || 25
+      form.value.trainer_name = c.trainer_name || ''
+      form.value.passing_grade = c.passing_grade || 75
+      form.value.description = c.description || ''
+      form.value.notes = c.notes || ''
+
+      // Sessions
+      if (c.sessions && c.sessions.length > 0) {
+        form.value.sessions = c.sessions.map((s, idx) => ({
+          session_number: s.session_number || idx + 1,
+          topic: s.topic || s.session_name || `Materi ${idx + 1}`,
+          duration_hours: 2,
+          trainer_name: s.trainer_name || c.trainer_name,
+          material_file_name: s.location_or_url?.includes('attachments') ? s.location_or_url.split('/').pop() : '',
+          material_file_path: s.location_or_url || ''
+        }))
+      } else {
+        generateDefaultSessions()
+      }
+
+      // Documents
+      if (c.documents && Array.isArray(c.documents) && c.documents.length > 0) {
+        form.value.documents = c.documents
+      } else {
+        form.value.documents = [
+          { id: 1, label: 'File 1', name: 'Surat Undangan Pelatihan Resmi', file_name: '', file_path: '' },
+          { id: 2, label: 'File 2', name: 'Kerangka Acuan Kerja (TOR)', file_name: '', file_path: '' }
+        ]
+      }
+
+      // Photos
+      if (c.documentation_photos && Array.isArray(c.documentation_photos) && c.documentation_photos.length > 0) {
+        c.documentation_photos.forEach((cp, idx) => {
+          if (form.value.documentation_photos[idx]) {
+            form.value.documentation_photos[idx].file_name = cp.file_name || ''
+            form.value.documentation_photos[idx].file_path = cp.file_path || ''
+          }
+        })
+      }
+
+      // Evaluation
+      if (c.evaluation_config && Array.isArray(c.evaluation_config) && c.evaluation_config.length > 0) {
+        form.value.evaluation_config = c.evaluation_config
+      }
+
+      // Enrollments
+      if (c.enrollments && c.enrollments.length > 0) {
+        form.value.enrolled_participants = c.enrollments.map(e => ({
+          user_id: e.user_id,
+          nik: e.nik,
+          name: e.participant_name || e.user?.name || 'Peserta',
+          department: e.department,
+          branch: e.branch,
+          position: e.position
+        }))
+      }
+    } else {
+      // Create mode defaults
+      const randNum = String(Math.floor(100 + Math.random() * 900))
+      form.value.class_code = `C26_${randNum}`
+
+      // Default active TNA
+      const activeTna = activeTnaList.value[0] || tnaProposals.value[0]
+      if (activeTna) {
+        form.value.tna_id = activeTna.id
+      }
+
+      // If initialProgramId given
+      if (props.initialProgramId) {
+        form.value.program_id = props.initialProgramId
+      } else if (filteredPrograms.value.length > 0) {
+        form.value.program_id = filteredPrograms.value[0].id
+      }
+
+      onProgramSelected()
+
+      // Default 2 documents
+      form.value.documents = [
+        { id: 1, label: 'File 1', name: 'Surat Undangan Pelatihan Resmi', file_name: '', file_path: '' },
+        { id: 2, label: 'File 2', name: 'Kerangka Acuan Kerja (TOR)', file_name: '', file_path: '' }
+      ]
+    }
+  } catch (err) {
+    feedback.value = { type: 'error', message: 'Gagal memuat data formulir kelas.' }
+  } finally {
+    loadingInit.value = false
   }
 }
 
-function removeEnrolled(idx) {
-  form.value.enrolled_participants.splice(idx, 1)
-}
+onMounted(() => {
+  loadData()
+})
 
+// Submit Form
 async function submitForm() {
   if (!form.value.program_id) {
     feedback.value = { type: 'error', message: 'Silakan pilih Program Pelatihan induk terlebih dahulu.' }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
   if (!form.value.batch_name) {
-    feedback.value = { type: 'error', message: 'Nama batch kelas wajib diisi.' }
+    feedback.value = { type: 'error', message: 'Nama batch kelas wajib diisi (e.g. Batch 1).' }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
   if (!form.value.start_date || !form.value.end_date) {
-    feedback.value = { type: 'error', message: 'Tanggal pelaksanaan mulai dan selesai wajib diisi.' }
+    feedback.value = { type: 'error', message: 'Tanggal mulai dan selesai kelas wajib diisi.' }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
 
@@ -236,528 +513,843 @@ async function submitForm() {
   feedback.value = { type: '', message: '' }
 
   try {
-    const payload = { ...form.value }
-    const { data } = await apiClient.post('/classes', payload)
-    emit('created', data.message || 'Batch Kelas berhasil dibuka!')
+    const payload = {
+      tna_proposal_id: form.value.tna_id,
+      program_id: form.value.program_id,
+      class_code: form.value.class_code,
+      pic_name: form.value.pic_name,
+      batch_name: form.value.batch_name,
+      method: form.value.method,
+      start_date: form.value.start_date,
+      end_date: form.value.end_date,
+      daily_schedule: form.value.daily_schedule,
+      location_or_url: form.value.location_or_url,
+      max_quota: form.value.max_quota,
+      trainer_name: form.value.trainer_name,
+      passing_grade: form.value.passing_grade,
+      description: form.value.description,
+      notes: form.value.notes,
+      auto_approve: true,
+      sessions: form.value.sessions,
+      documents: form.value.documents,
+      documentation_photos: form.value.documentation_photos.map(p => ({
+        photo_number: p.photo_number,
+        name: p.name,
+        file_name: p.file_name,
+        file_path: p.file_path
+      })),
+      evaluation_config: form.value.evaluation_config,
+      enrolled_participants: form.value.enrolled_participants
+    }
+
+    if (isEditMode.value) {
+      const { data } = await apiClient.put(`/classes/${props.editClassId}`, payload)
+      feedback.value = { type: 'success', message: data.message || 'Data kelas berhasil disimpan.' }
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      const { data } = await apiClient.post('/classes', payload)
+      emit('created', data.message || 'Batch Kelas berhasil dibuka!')
+    }
   } catch (err) {
-    console.error('Submit class error:', err)
     feedback.value = {
       type: 'error',
-      message: err.response?.data?.message || 'Gagal menyimpan batch kelas. Periksa kembali input Anda.'
+      message: err.response?.data?.message || 'Gagal menyimpan data kelas. Periksa kembali inputan Anda.'
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   } finally {
     isSubmitting.value = false
   }
 }
-
-onMounted(() => {
-  fetchPrograms()
-})
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 w-full pb-16">
-    
-    <!-- Standard Subpage Header (Navigation) -->
+  <div class="flex flex-col gap-6 w-full pb-20">
+
+    <!-- Subpage Navigation Header -->
     <SubpageHeader
-      back-label="Kembali ke Daftar Kelas"
-      title="Buka Batch Kelas Pelatihan Baru"
-      subtitle="Pendaftaran batch pelaksanaan diklat, alokasi sesi jadwal harian, instruktur, dan nominasi peserta"
-      badge="Class Batch Maker"
+      back-label="Kembali ke Daftar Class"
+      :title="isEditMode ? `Edit Batch Kelas: ${form.class_code}` : 'Form Buat Kelas Pelatihan Baru'"
+      subtitle="Pengaturan kelas diklat perbankan, pemilihan TNA & program, agenda materi, dokumen, foto dokumentasi, dan evaluasi"
+      :badge="isEditMode ? 'Mode Edit Kelas' : 'Create Class Batch'"
       @back="emit('back')"
     />
 
-    <!-- Feedback Banner -->
-    <div v-if="feedback.message" class="p-4 rounded-2xl text-xs font-semibold flex items-center gap-2.5 shadow-2xs"
-      :class="feedback.type === 'error' ? 'bg-rose-50 border border-rose-200 text-rose-700' : 'bg-emerald-50 border border-emerald-200 text-emerald-800'">
-      <AlertCircle v-if="feedback.type === 'error'" class="w-4 h-4 shrink-0" />
-      <CheckCircle2 v-else class="w-4 h-4 shrink-0" />
+    <!-- Feedback Message Banner -->
+    <div
+      v-if="feedback.message"
+      :class="[
+        'p-4 rounded-2xl flex items-center gap-3 text-xs font-semibold shadow-2xs border transition',
+        feedback.type === 'error' ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+      ]"
+    >
+      <CheckCircle2 v-if="feedback.type !== 'error'" class="w-5 h-5 text-emerald-600 shrink-0" />
+      <AlertCircle v-else class="w-5 h-5 text-rose-600 shrink-0" />
       <span>{{ feedback.message }}</span>
     </div>
 
-    <!-- Section 1: Pilihan Program Pelatihan Induk -->
-    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs space-y-4">
-      <div class="flex items-center gap-2.5 pb-3 border-b border-gray-100">
-        <div class="w-8 h-8 rounded-xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
-          <BookOpen class="w-4 h-4" />
-        </div>
-        <div>
-          <h2 class="text-sm font-extrabold text-[#002855]">1. Program Pelatihan Induk (Work Plan)</h2>
-          <p class="text-[11px] text-gray-500">Pilih program kerja pelatihan yang menjadi payung kurikulum dari batch kelas ini.</p>
-        </div>
-      </div>
+    <!-- MAIN FORM BODY -->
+    <form @submit.prevent="submitForm" class="flex flex-col gap-6">
 
-      <div>
-        <label class="block text-xs font-bold text-gray-700 mb-1.5">
-          Program Pelatihan Terdaftar <span class="text-rose-500">*</span>
-        </label>
-        <select
-          v-model="form.program_id"
-          @change="onProgramSelected"
-          class="w-full bg-[#f8fafc] border border-gray-200 rounded-2xl px-4 py-3 text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#0067AC] transition cursor-pointer"
-          :disabled="loadingPrograms"
-        >
-          <option value="" disabled>-- Pilih Program Pelatihan --</option>
-          <option v-for="p in programs" :key="p.id" :value="p.id">
-            [{{ p.program_code }}] {{ p.title }} (Target: {{ p.target_participants_count || 0 }} Pegawai) - Kuartal {{ p.execution_quarter || 'Q1' }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Preview Program Selected Details -->
-      <div v-if="selectedProgram" class="p-4 rounded-2xl bg-[#EBF4FC]/60 border border-blue-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="font-mono font-bold text-[#0067AC]">{{ selectedProgram.program_code }}</span>
-            <span class="text-gray-300">•</span>
-            <span class="text-gray-700 font-semibold">{{ selectedProgram.category || 'Perbankan' }}</span>
+      <!-- ========================================== -->
+      <!-- SECTION 1: PILIH TNA & PROGRAM KERJA INDUK -->
+      <!-- ========================================== -->
+      <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-5">
+        
+        <!-- TNA Selection Banner -->
+        <div class="p-4 rounded-2xl bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-white border border-blue-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#0067AC] text-white flex items-center justify-center font-bold shadow-xs shrink-0">
+              <FileCheck2 class="w-5 h-5" />
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-extrabold text-gray-900 uppercase tracking-wider">Pilih TNA Aktif</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>TNA Aktif</span>
+                </span>
+              </div>
+              <p class="text-[11px] text-gray-600 mt-0.5">
+                Pilih usulan TNA aktif untuk memfilter program kerja diklat yang tersedia.
+              </p>
+            </div>
           </div>
-          <p class="font-extrabold text-sm text-[#002855] mt-0.5">{{ selectedProgram.title }}</p>
-          <p class="text-gray-500 text-[11px] mt-0.5">{{ selectedProgram.target_audience || 'Seluruh Pegawai Terkait' }}</p>
-        </div>
-        <div class="flex items-center gap-4 shrink-0 bg-white px-4 py-2 rounded-xl border border-blue-100 text-right">
-          <div>
-            <span class="text-[10px] text-gray-400 block font-medium">Batch Dibuka</span>
-            <span class="text-xs font-black text-[#0067AC]">{{ selectedProgram.classes_count || 0 }} Batch</span>
-          </div>
-          <div class="h-6 w-px bg-gray-200"></div>
-          <div>
-            <span class="text-[10px] text-gray-400 block font-medium">Passing Grade</span>
-            <span class="text-xs font-black text-emerald-600">{{ selectedProgram.passing_grade || 75 }} / 100</span>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Section 2: Informasi Batch & Jadwal -->
-    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs space-y-4">
-      <div class="flex items-center gap-2.5 pb-3 border-b border-gray-100">
-        <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-          <Calendar class="w-4 h-4" />
-        </div>
-        <div>
-          <h2 class="text-sm font-extrabold text-[#002855]">2. Informasi Batch, Metode &amp; Lokasi</h2>
-          <p class="text-[11px] text-gray-500">Atur nama batch, metode pengajaran, jadwal tanggal, dan kapasitas kursi.</p>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="md:col-span-2">
-          <label class="block text-xs font-bold text-gray-700 mb-1.5">
-            Nama Batch Pelaksanaan <span class="text-rose-500">*</span>
-          </label>
-          <input
-            type="text"
-            v-model="form.batch_name"
-            placeholder="Contoh: Batch 1 - Regular Kantor Pusat"
-            class="w-full bg-[#f8fafc] border border-gray-200 rounded-2xl px-4 py-2.5 text-xs text-gray-800 focus:outline-none focus:border-[#0067AC] transition"
-          />
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1.5">
-            Kapasitas Kuota Kursi <span class="text-rose-500">*</span>
-          </label>
-          <AppNumberInput
-            v-model="form.max_quota"
-            suffix="Peserta"
-            :min="5"
-            :max="200"
-            placeholder="30"
-          />
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1.5">
-            Metode Pelaksanaan <span class="text-rose-500">*</span>
-          </label>
-          <select
-            v-model="form.method"
-            class="w-full bg-[#f8fafc] border border-gray-200 rounded-2xl px-4 py-2.5 text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#0067AC] transition cursor-pointer"
-          >
-            <option value="In-Classroom">In-Classroom (Tatap Muka Diklat)</option>
-            <option value="Virtual Classroom">Virtual Classroom (Zoom / Teams)</option>
-            <option value="Hybrid (ELAPSE + In-Classroom)">Hybrid (ELAPSE + In-Classroom)</option>
-            <option value="ELAPSE E-Learning">ELAPSE E-Learning (Self-Paced)</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1.5">
-            Tanggal Mulai <span class="text-rose-500">*</span>
-          </label>
-          <input
-            type="date"
-            v-model="form.start_date"
-            @change="generateSessions"
-            class="w-full bg-[#f8fafc] border border-gray-200 rounded-2xl px-4 py-2 text-xs text-gray-800 focus:outline-none focus:border-[#0067AC] transition"
-          />
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1.5">
-            Tanggal Selesai <span class="text-rose-500">*</span>
-          </label>
-          <input
-            type="date"
-            v-model="form.end_date"
-            @change="generateSessions"
-            class="w-full bg-[#f8fafc] border border-gray-200 rounded-2xl px-4 py-2 text-xs text-gray-800 focus:outline-none focus:border-[#0067AC] transition"
-          />
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1.5">
-            Lokasi Ruangan / Tautan Virtual Meeting <span class="text-rose-500">*</span>
-          </label>
-          <div class="relative">
-            <MapPin class="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
-            <input
-              type="text"
-              v-model="form.location_or_url"
-              placeholder="Contoh: BWS Corporate Learning Center Lt. 8, Ruang Diklat 801"
-              class="w-full bg-[#f8fafc] border border-gray-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-gray-800 focus:outline-none focus:border-[#0067AC] transition"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1.5">
-            Jam Pelaksanaan Harian
-          </label>
-          <div class="relative">
-            <Clock class="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
-            <input
-              type="text"
-              v-model="form.daily_schedule"
-              placeholder="Contoh: 08:30 - 16:30 WIB"
-              class="w-full bg-[#f8fafc] border border-gray-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-gray-800 focus:outline-none focus:border-[#0067AC] transition"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1.5">
-            Instruktur / Fasilitator Utama
-          </label>
-          <input
-            type="text"
-            v-model="form.trainer_name"
-            placeholder="Nama Instruktur Internal / Eksternal"
-            class="w-full bg-[#f8fafc] border border-gray-200 rounded-2xl px-4 py-2.5 text-xs text-gray-800 focus:outline-none focus:border-[#0067AC] transition"
-          />
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1.5">
-            Passing Grade Kelulusan (Standar BWS: 75)
-          </label>
-          <AppNumberInput
-            v-model="form.passing_grade"
-            suffix="/ 100 Poin"
-            :min="50"
-            :max="100"
-            placeholder="75"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Section 3: Jadwal Sesi Pelatihan Harian -->
-    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-gray-100">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
-            <Clock class="w-4 h-4" />
-          </div>
-          <div>
-            <h2 class="text-sm font-extrabold text-[#002855]">3. Rincian Sesi &amp; Jadwal Harian Pelatihan</h2>
-            <p class="text-[11px] text-gray-500">Sesi harian ini akan menjadi dasar daftar hadir (presensi) per sesi.</p>
-          </div>
-        </div>
-
-        <AppButton
-          type="button"
-          variant="purple"
-          pill
-          icon="plus"
-          @click="addSessionRow"
-        >
-          Tambah Sesi
-        </AppButton>
-      </div>
-
-      <div class="overflow-x-auto border border-gray-100 rounded-2xl">
-        <table class="w-full text-left text-xs">
-          <thead class="bg-gray-50/80 text-gray-600 font-bold border-b border-gray-100">
-            <tr>
-              <th class="py-2.5 px-3 w-12 text-center">Sesi</th>
-              <th class="py-2.5 px-3">Nama Sesi / Tanggal</th>
-              <th class="py-2.5 px-3 w-32">Waktu Sesi</th>
-              <th class="py-2.5 px-3">Materi / Topik Pembahasan</th>
-              <th class="py-2.5 px-3 w-16 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100 text-gray-700">
-            <tr v-for="(s, idx) in form.sessions" :key="idx" class="hover:bg-gray-50/50">
-              <td class="py-2.5 px-3 text-center font-mono font-bold text-[#0067AC]">
-                #{{ s.session_number }}
-              </td>
-              <td class="py-2.5 px-3">
-                <input
-                  type="text"
-                  v-model="s.session_name"
-                  class="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-[#0067AC]"
-                />
-              </td>
-              <td class="py-2.5 px-3">
-                <div class="flex items-center gap-1">
-                  <input
-                    type="text"
-                    v-model="s.start_time"
-                    class="w-14 bg-white border border-gray-200 rounded-xl px-1.5 py-1.5 text-center text-xs text-gray-800"
-                  />
-                  <span>-</span>
-                  <input
-                    type="text"
-                    v-model="s.end_time"
-                    class="w-14 bg-white border border-gray-200 rounded-xl px-1.5 py-1.5 text-center text-xs text-gray-800"
-                  />
-                </div>
-              </td>
-              <td class="py-2.5 px-3">
-                <input
-                  type="text"
-                  v-model="s.topic"
-                  placeholder="Materi yang dibahas..."
-                  class="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1.5 text-xs text-gray-800 focus:outline-none focus:border-[#0067AC]"
-                />
-              </td>
-              <td class="py-2.5 px-3 text-center">
-                <button
-                  type="button"
-                  @click="removeSession(idx)"
-                  class="p-1 rounded-lg text-rose-500 hover:bg-rose-50 transition cursor-pointer"
-                  title="Hapus Sesi"
+          <div class="w-full md:w-80 shrink-0">
+            <div class="relative">
+              <select
+                v-model="form.tna_id"
+                @change="onTnaChange"
+                class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-4 py-2.5 border-2 border-blue-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer appearance-none pr-10"
+              >
+                <option :value="null">-- Seluruh Dokumen TNA --</option>
+                <option
+                  v-for="tna in displayedTnaList"
+                  :key="tna.id"
+                  :value="tna.id"
                 >
-                  <Trash2 class="w-3.5 h-3.5" />
-                </button>
-              </td>
-            </tr>
-            <tr v-if="!form.sessions.length">
-              <td colspan="5" class="py-6 text-center text-gray-400">
-                Belum ada sesi harian. Masukkan tanggal mulai &amp; selesai atau klik "Tambah Sesi".
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Section 4: Nominasi & Pendaftaran Peserta -->
-    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs space-y-4">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
-            <Users class="w-4 h-4" />
-          </div>
-          <div>
-            <h2 class="text-sm font-extrabold text-[#002855]">4. Pendaftaran Peserta Batch Diklat</h2>
-            <p class="text-[11px] text-gray-500">
-              Impor pegawai dari nominasi Program Kerja atau daftarkan peserta baru secara manual.
-            </p>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            v-if="availableNominations.length"
-            @click="selectAllNominations"
-            class="px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold transition cursor-pointer"
-          >
-            Pilih Semua Nominasi Program ({{ availableNominations.length }})
-          </button>
-          <button
-            type="button"
-            v-if="form.enrolled_participants.length"
-            @click="clearAllSelectedParticipants"
-            class="px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-[11px] font-bold transition cursor-pointer"
-          >
-            Hapus Semua ({{ form.enrolled_participants.length }})
-          </button>
-        </div>
-      </div>
-
-      <!-- Quick Nomination Selector from Program -->
-      <div v-if="availableNominations.length" class="space-y-2">
-        <p class="text-xs font-bold text-gray-700">Pegawai Ternominasi dari Program Terkait:</p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          <div
-            v-for="p in availableNominations"
-            :key="p.id"
-            @click="toggleNomination(p)"
-            class="p-3 rounded-2xl border transition cursor-pointer flex items-center justify-between gap-2"
-            :class="isParticipantSelected(p) ? 'bg-[#EBF4FC] border-[#0067AC] text-[#002855]' : 'bg-gray-50 border-gray-200 hover:border-gray-300 text-gray-700'"
-          >
-            <div class="min-w-0">
-              <p class="text-xs font-bold truncate">{{ p.name }}</p>
-              <div class="flex items-center gap-1.5 text-[10px] text-gray-500 mt-0.5">
-                <span class="font-mono">{{ p.nik }}</span>
-                <span>•</span>
-                <span class="truncate">{{ p.department || p.branch }}</span>
+                  {{ tna.proposal_code }} (Tahun {{ tna.year }}) &bull; {{ tna.tna_status }}
+                </option>
+              </select>
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-[#0067AC]">
+                <ChevronDown class="w-4 h-4" />
               </div>
             </div>
-            <div class="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-              :class="isParticipantSelected(p) ? 'bg-[#0067AC] text-white' : 'border border-gray-300 bg-white'">
-              <CheckCircle2 v-if="isParticipantSelected(p)" class="w-3.5 h-3.5" />
+          </div>
+        </div>
+
+        <!-- Program Induction (1 Program bisa untuk beberapa kelas) -->
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <label class="block text-xs font-bold text-gray-800 uppercase tracking-wider">
+              Program Pelatihan Induk (Work Plan) <span class="text-rose-500">*</span>
+            </label>
+            <span class="text-[11px] text-[#0067AC] font-bold bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
+              1 Program Bisa Untuk Beberapa Batch Kelas
+            </span>
+          </div>
+
+          <div class="relative">
+            <select
+              v-model="form.program_id"
+              @change="onProgramSelected"
+              required
+              class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-4 py-3 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer appearance-none pr-10"
+            >
+              <option value="" disabled>-- Pilih Program Pelatihan --</option>
+              <option
+                v-for="p in filteredPrograms"
+                :key="p.id"
+                :value="p.id"
+              >
+                [{{ p.program_code }}] {{ p.title }} &bull; (Pagu: {{ formatRupiah(p.total_budget) }}) &bull; Target: {{ p.target_participants_count || 0 }} Peserta
+              </option>
+            </select>
+            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+              <ChevronDown class="w-4 h-4" />
+            </div>
+          </div>
+
+          <!-- Highlight Preview Selected Program -->
+          <div
+            v-if="selectedProgram"
+            class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs"
+          >
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center gap-2">
+                <span class="font-mono font-extrabold text-[#0067AC] bg-blue-100/70 px-2.5 py-0.5 rounded-md">
+                  {{ selectedProgram.program_code }}
+                </span>
+                <span class="text-gray-400">•</span>
+                <span class="font-bold text-gray-800">{{ selectedProgram.category }}</span>
+                <span class="text-gray-400">•</span>
+                <span class="text-gray-600 font-semibold">Tahun {{ selectedProgram.year }}</span>
+              </div>
+              <h4 class="font-extrabold text-sm text-gray-900">{{ selectedProgram.title }}</h4>
+              <p class="text-[11px] text-gray-500 line-clamp-1">
+                Unit Pengusul: {{ selectedProgram.unit_initiator || selectedProgram.department }} &bull; Lokasi Rujukan: {{ selectedProgram.location || '-' }}
+              </p>
+            </div>
+
+            <div class="flex items-center gap-4 bg-white p-3 rounded-xl border border-gray-200 shrink-0">
+              <div class="text-center px-2">
+                <span class="text-[10px] text-gray-400 block font-bold uppercase">Batch Terdaftar</span>
+                <span class="text-sm font-black text-[#0067AC]">
+                  {{ selectedProgram.classes_count || selectedProgram.classes?.length || 1 }} Batch
+                </span>
+              </div>
+              <div class="h-6 w-px bg-gray-200"></div>
+              <div class="text-center px-2">
+                <span class="text-[10px] text-gray-400 block font-bold uppercase">Passing Grade</span>
+                <span class="text-sm font-black text-emerald-600">
+                  {{ selectedProgram.passing_grade || 75 }} / 100
+                </span>
+              </div>
             </div>
           </div>
         </div>
+
       </div>
 
-      <!-- Manual Add Participant Row -->
-      <div class="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
-        <p class="text-xs font-bold text-gray-700">Daftarkan Peserta Tambahan Secara Mandiri:</p>
-        <div class="grid grid-cols-1 sm:grid-cols-5 gap-2.5 text-xs">
-          <div>
-            <input
-              type="text"
-              v-model="newParticipant.nik"
-              placeholder="NIK Pegawai..."
-              class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#0067AC]"
-            />
-          </div>
-          <div class="sm:col-span-2">
-            <input
-              type="text"
-              v-model="newParticipant.name"
-              placeholder="Nama Lengkap Pegawai..."
-              class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#0067AC]"
-            />
+      <!-- ========================================== -->
+      <!-- SECTION 2: INFORMASI KELAS (SS2 WIREFRAME) -->
+      <!-- ========================================== -->
+      <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-5">
+        <div class="flex items-center gap-2.5 pb-3 border-b border-gray-100">
+          <div class="w-9 h-9 rounded-2xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
+            <Presentation class="w-5 h-5" />
           </div>
           <div>
+            <h3 class="text-sm font-extrabold text-gray-900">Informasi Pokok Kelas (Create/Edit Class)</h3>
+            <p class="text-[11px] text-gray-500">Parameter batch, penanggung jawab PIC, jadwal, lokasi, dan instruktur</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 text-xs">
+          
+          <!-- Class ID (e.g. C26_001 / C24_001) -->
+          <div>
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>Class ID</span>
+              <span class="text-[10px] text-[#0067AC] font-mono font-bold">Kode Unik</span>
+            </label>
             <input
+              v-model="form.class_code"
               type="text"
-              v-model="newParticipant.department"
-              placeholder="Divisi / Unit..."
-              class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#0067AC]"
+              required
+              placeholder="e.g. C26_001"
+              class="w-full bg-white text-xs font-mono font-bold text-[#0067AC] rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
             />
           </div>
+
+          <!-- PIC Name (e.g. PIC 1) -->
           <div>
-            <AppButton
-              type="button"
-              variant="primary"
-              size="md"
-              icon="plus"
-              class="w-full"
-              :disabled="!newParticipant.name"
-              @click="addManualParticipant"
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              PIC Name (Koordinator Kelas) <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="form.pic_name"
+              type="text"
+              required
+              placeholder="Nama PIC Koordinator Kelas"
+              class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+            />
+          </div>
+
+          <!-- Batch (e.g. Batch 1 / Batch 2) -->
+          <div>
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              Batch Pelaksanaan <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="form.batch_name"
+              type="text"
+              required
+              placeholder="e.g. Batch 1"
+              class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+            />
+          </div>
+
+          <!-- Start Date -->
+          <div>
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              Start Date <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="form.start_date"
+              type="date"
+              required
+              class="w-full bg-white text-xs font-mono text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+            />
+          </div>
+
+          <!-- End Date -->
+          <div>
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              End Date <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="form.end_date"
+              type="date"
+              required
+              class="w-full bg-white text-xs font-mono text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+            />
+          </div>
+
+          <!-- Location (e.g. Ruang 1, Ruang 2, Virtual) -->
+          <div>
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+              Location / Ruang <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="form.location_or_url"
+              type="text"
+              required
+              placeholder="e.g. Ruang 1 / Ruang 2 / Virtual Zoom"
+              class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+            />
+          </div>
+
+          <!-- Facilitator (e.g. PT A, PT B) with Autocomplete from Master -->
+          <div>
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>Facilitator / Lembaga</span>
+              <span class="text-[10px] text-gray-400 font-normal">Pilih / Ketik</span>
+            </label>
+            <div class="relative">
+              <input
+                v-model="form.trainer_name"
+                type="text"
+                list="class-facilitator-options"
+                placeholder="e.g. PT Mitra Konsultan Perbankan"
+                class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+              />
+              <datalist id="class-facilitator-options">
+                <option v-for="fac in masterFacilitators" :key="fac.id" :value="fac.name">
+                  {{ fac.code }} • {{ fac.type }}
+                </option>
+              </datalist>
+            </div>
+          </div>
+
+          <!-- Metode Diklat -->
+          <div>
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">Metode Diklat</label>
+            <select
+              v-model="form.method"
+              class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer"
             >
-              Tambah
-            </AppButton>
+              <option value="In-Classroom">Tatap Muka (In-Classroom)</option>
+              <option value="Virtual">Virtual Classroom (Zoom/Teams)</option>
+              <option value="Hybrid">Hybrid Learning</option>
+              <option value="E-Learning">ELAPSE E-Learning LMS</option>
+            </select>
           </div>
+
+          <!-- Kuota Peserta -->
+          <div>
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">Kapasitas Kuota Kelas</label>
+            <input
+              v-model.number="form.max_quota"
+              type="number"
+              min="1"
+              max="200"
+              class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+            />
+          </div>
+
         </div>
       </div>
 
-      <!-- Selected Participant Table -->
-      <div class="space-y-2">
-        <div class="flex items-center justify-between text-xs">
-          <span class="font-bold text-gray-800">
-            Daftar Peserta Terdaftar ({{ form.enrolled_participants.length }} / {{ form.max_quota }} Kursi)
-          </span>
-          <span v-if="form.enrolled_participants.length > form.max_quota" class="text-rose-600 font-bold">
-            Peringatan: Melebihi kuota maksimal!
-          </span>
+      <!-- ========================================== -->
+      <!-- SECTION 3: AGENDA (SS2 WIREFRAME)          -->
+      <!-- ========================================== -->
+      <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-4">
+        <div class="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-gray-100">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+              <Clock class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-sm font-extrabold text-gray-900">Agenda</h3>
+              <p class="text-[11px] text-gray-500">Materi, durasi jam, pengajar/facilitator, dan file modul diklat</p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            @click="addAgendaRow"
+            class="px-3.5 py-2 bg-[#0067AC] hover:bg-[#00558F] text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus class="w-3.5 h-3.5" />
+            <span>Add Agenda [+]</span>
+          </button>
         </div>
 
-        <div class="overflow-x-auto border border-gray-100 rounded-2xl">
-          <table class="w-full text-left text-xs">
-            <thead class="bg-gray-50/80 text-gray-600 font-bold border-b border-gray-100">
-              <tr>
-                <th class="py-2.5 px-3 w-12 text-center">No</th>
-                <th class="py-2.5 px-3 w-28">NIK</th>
-                <th class="py-2.5 px-3">Nama Pegawai</th>
-                <th class="py-2.5 px-3">Divisi / Unit Kerja</th>
-                <th class="py-2.5 px-3">Jabatan</th>
-                <th class="py-2.5 px-3 w-16 text-center">Aksi</th>
+        <!-- Table Agenda -->
+        <div class="overflow-x-auto rounded-2xl border border-gray-100">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-gray-50 text-[11px] font-extrabold text-gray-600 uppercase tracking-wider border-b border-gray-200">
+                <th class="py-3 px-3 w-14 text-center">No</th>
+                <th class="py-3 px-4">Material (Topik Materi)</th>
+                <th class="py-3 px-4 w-32 text-center">Duration (Jam)</th>
+                <th class="py-3 px-4 w-52">Facilitator</th>
+                <th class="py-3 px-4 w-64">Upload Materi</th>
+                <th class="py-3 px-3 w-16 text-center">Aksi</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 text-gray-700">
-              <tr v-for="(p, idx) in form.enrolled_participants" :key="idx" class="hover:bg-gray-50/50">
-                <td class="py-2 px-3 text-center text-gray-400">{{ idx + 1 }}</td>
-                <td class="py-2 px-3 font-mono font-bold text-[#0067AC]">{{ p.nik || '-' }}</td>
-                <td class="py-2 px-3 font-bold text-gray-900">{{ p.name }}</td>
-                <td class="py-2 px-3 text-gray-600">{{ p.department || p.branch || '-' }}</td>
-                <td class="py-2 px-3 text-gray-500">{{ p.position || '-' }}</td>
-                <td class="py-2 px-3 text-center">
-                  <button
-                    type="button"
-                    @click="removeEnrolled(idx)"
-                    class="p-1 rounded-lg text-rose-500 hover:bg-rose-50 transition cursor-pointer"
-                    title="Hapus dari Batch"
-                  >
-                    <Trash2 class="w-3.5 h-3.5" />
-                  </button>
+            <tbody class="divide-y divide-gray-100">
+              <tr v-if="form.sessions.length === 0">
+                <td colspan="6" class="py-8 text-center text-gray-400 font-semibold">
+                  Belum ada sesi agenda. Klik "Add Agenda [+]" di atas untuk menambahkan sesi materi.
                 </td>
               </tr>
-              <tr v-if="!form.enrolled_participants.length">
-                <td colspan="6" class="py-6 text-center text-gray-400">
-                  Belum ada peserta yang dimasukkan. Pilih dari nominasi di atas atau masukkan secara manual.
+              <tr
+                v-for="(session, idx) in form.sessions"
+                :key="idx"
+                class="hover:bg-blue-50/20 transition"
+              >
+                <!-- No -->
+                <td class="py-3 px-3 text-center font-bold text-gray-500">
+                  {{ idx + 1 }}
+                </td>
+
+                <!-- Material Topic -->
+                <td class="py-3 px-4">
+                  <input
+                    v-model="session.topic"
+                    type="text"
+                    required
+                    placeholder="e.g. Materi 1: Modul Dasar"
+                    class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-300 font-semibold text-gray-900 focus:border-[#0067AC] focus:outline-none"
+                  />
+                </td>
+
+                <!-- Duration -->
+                <td class="py-3 px-4 text-center">
+                  <div class="flex items-center justify-center gap-1">
+                    <input
+                      v-model.number="session.duration_hours"
+                      type="number"
+                      min="1"
+                      class="w-16 bg-white rounded-xl px-2 py-1.5 border border-gray-300 font-mono font-bold text-center text-gray-900 focus:border-[#0067AC] focus:outline-none"
+                    />
+                    <span class="text-gray-500 font-medium text-[11px]">Jam</span>
+                  </div>
+                </td>
+
+                <!-- Facilitator -->
+                <td class="py-3 px-4">
+                  <input
+                    v-model="session.trainer_name"
+                    type="text"
+                    placeholder="Nama Instruktur"
+                    class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-300 font-semibold text-gray-800 focus:border-[#0067AC] focus:outline-none"
+                  />
+                </td>
+
+                <!-- Upload Materi -->
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-2">
+                    <label class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-[11px] font-bold cursor-pointer transition shrink-0 flex items-center gap-1">
+                      <Upload class="w-3 h-3" />
+                      <span>Browse</span>
+                      <input
+                        type="file"
+                        class="hidden"
+                        @change="handleMaterialFileUpload($event, session)"
+                      />
+                    </label>
+                    <span
+                      class="text-[11px] truncate text-gray-600 font-medium"
+                      :title="session.material_file_name || 'Belum ada file modul'"
+                    >
+                      {{ session.material_file_name || 'Pilih modul PPT/PDF...' }}
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Action -->
+                <td class="py-3 px-3 text-center">
+                  <button
+                    type="button"
+                    @click="removeAgendaRow(idx)"
+                    class="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg transition cursor-pointer"
+                    title="Hapus Agenda"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
-    </div>
 
-    <!-- Bottom Sticky Bar -->
-    <div class="sticky bottom-4 z-20 bg-white/95 backdrop-blur-md p-4 rounded-3xl border border-gray-200 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="flex items-center gap-4 text-xs">
-        <div>
-          <span class="text-[10px] text-gray-400 block font-medium uppercase tracking-wider">Kapasitas Batch</span>
-          <span class="text-sm font-extrabold text-[#002855]">
-            {{ form.enrolled_participants.length }} / {{ form.max_quota }} Peserta Terisi
-          </span>
+      <!-- ========================================== -->
+      <!-- SECTION 4: DOCUMENT (SS2 WIREFRAME)        -->
+      <!-- ========================================== -->
+      <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-4">
+        <div class="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-gray-100">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
+              <FileText class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-sm font-extrabold text-gray-900">Document</h3>
+              <p class="text-[11px] text-gray-500">Unggah dokumen resmi pelaksanaan (Surat Undangan, TOR, Rundown, Absensi)</p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            @click="addDocumentRow"
+            class="px-3.5 py-2 bg-[#0067AC] hover:bg-[#00558F] text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus class="w-3.5 h-3.5" />
+            <span>Add Document [+]</span>
+          </button>
         </div>
-        <div class="h-6 w-px bg-gray-200"></div>
-        <div>
-          <span class="text-[10px] text-gray-400 block font-medium uppercase tracking-wider">Total Sesi Harian</span>
-          <span class="text-sm font-extrabold text-[#0067AC]">{{ form.sessions.length }} Sesi Presensi</span>
-        </div>
-        <div class="h-6 w-px bg-gray-200"></div>
-        <div>
-          <span class="text-[10px] text-gray-400 block font-medium uppercase tracking-wider">Passing Grade</span>
-          <span class="text-sm font-extrabold text-emerald-600">{{ form.passing_grade }} / 100</span>
+
+        <!-- Table Document -->
+        <div class="overflow-x-auto rounded-2xl border border-gray-100">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-gray-50 text-[11px] font-extrabold text-gray-600 uppercase tracking-wider border-b border-gray-200">
+                <th class="py-3 px-4 w-28">File</th>
+                <th class="py-3 px-4">File Name / Deskripsi Dokumen</th>
+                <th class="py-3 px-4 w-72">Action / File Attachment</th>
+                <th class="py-3 px-3 w-16 text-center">Hapus</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr v-if="form.documents.length === 0">
+                <td colspan="4" class="py-8 text-center text-gray-400 font-semibold">
+                  Belum ada dokumen. Klik "Add Document [+]" untuk menambahkan.
+                </td>
+              </tr>
+              <tr
+                v-for="(doc, idx) in form.documents"
+                :key="doc.id || idx"
+                class="hover:bg-blue-50/20 transition"
+              >
+                <!-- File Label (File 1, File 2) -->
+                <td class="py-3 px-4 font-mono font-bold text-gray-700">
+                  <span class="px-2.5 py-1 bg-gray-100 rounded-md border border-gray-200 text-[11px]">
+                    {{ doc.label || `File ${idx + 1}` }}
+                  </span>
+                </td>
+
+                <!-- File Description Name -->
+                <td class="py-3 px-4">
+                  <input
+                    v-model="doc.name"
+                    type="text"
+                    required
+                    placeholder="e.g. Surat Undangan Resmi Diklat"
+                    class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-300 font-semibold text-gray-900 focus:border-[#0067AC] focus:outline-none"
+                  />
+                </td>
+
+                <!-- Action Browse/Upload -->
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-2">
+                    <label class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0067AC] rounded-lg text-[11px] font-bold cursor-pointer transition shrink-0 flex items-center gap-1 border border-blue-200">
+                      <Upload class="w-3 h-3" />
+                      <span>Browse / Replace</span>
+                      <input
+                        type="file"
+                        class="hidden"
+                        @change="handleDocumentFileUpload($event, doc)"
+                      />
+                    </label>
+                    <span
+                      class="text-[11px] truncate text-gray-600 font-semibold"
+                      :title="doc.file_name || 'Belum ada file terpilih'"
+                    >
+                      {{ doc.file_name || 'Belum ada file diunggah' }}
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Delete Action -->
+                <td class="py-3 px-3 text-center">
+                  <button
+                    type="button"
+                    @click="removeDocumentRow(idx)"
+                    class="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg transition cursor-pointer"
+                    title="Hapus Dokumen"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+      <!-- ========================================== -->
+      <!-- SECTION 5: UPLOAD DOCUMENTATION (FOTO 1-10)-->
+      <!-- ========================================== -->
+      <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-4">
+        <div class="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-gray-100">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+              <Image class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-sm font-extrabold text-gray-900">Upload Documentation</h3>
+              <p class="text-[11px] text-gray-500">Unggah foto dokumentasi kegiatan pelatihan perbankan (Foto 1 s/d Foto 10)</p>
+            </div>
+          </div>
+          <span class="text-xs font-mono font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+            Class ID: {{ form.class_code || 'C26_001' }}
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
+          <div
+            v-for="photo in form.documentation_photos"
+            :key="photo.photo_number"
+            class="bg-gray-50/80 rounded-2xl border border-gray-200 p-3 flex flex-col items-center justify-between text-center gap-2 transition hover:border-blue-300 hover:bg-blue-50/20 group"
+          >
+            <span class="text-[11px] font-bold text-gray-700 uppercase">{{ photo.name }}</span>
+            
+            <!-- Thumbnail or Placeholder -->
+            <div class="w-full h-20 rounded-xl bg-white border border-dashed border-gray-300 flex items-center justify-center overflow-hidden relative">
+              <img
+                v-if="photo.preview_url || photo.file_path"
+                :src="photo.preview_url || `/storage/${photo.file_path}`"
+                alt="Foto Dokumentasi"
+                class="w-full h-full object-cover"
+              />
+              <div v-else class="flex flex-col items-center justify-center text-gray-400">
+                <Image class="w-6 h-6 stroke-1 mb-1" />
+                <span class="text-[9px] font-semibold">Kosong</span>
+              </div>
+            </div>
+
+            <!-- Upload / Clear Buttons -->
+            <div class="flex items-center gap-1 w-full justify-center">
+              <label class="px-2 py-1 bg-white hover:bg-gray-100 border border-gray-300 rounded-lg text-[10px] font-bold text-gray-700 cursor-pointer shadow-2xs transition flex items-center gap-1">
+                <Upload class="w-2.5 h-2.5" />
+                <span>Browse</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  class="hidden"
+                  @change="handlePhotoUpload($event, photo)"
+                />
+              </label>
+              <button
+                v-if="photo.file_name || photo.preview_url"
+                type="button"
+                @click="clearPhoto(photo)"
+                class="p-1 text-gray-400 hover:text-rose-600 rounded-lg cursor-pointer"
+                title="Hapus Foto"
+              >
+                <Trash2 class="w-3 h-3" />
+              </button>
+            </div>
+            
+            <span v-if="photo.file_name" class="text-[9px] text-gray-500 truncate max-w-[100px]" :title="photo.file_name">
+              {{ photo.file_name }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- SECTION 6: EVALUATION (SS2 9 QUESTIONNAIRE)-->
+      <!-- ========================================== -->
+      <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-4">
+        <div class="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-gray-100">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-rose-50 text-rose-700 flex items-center justify-center font-bold">
+              <Award class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-sm font-extrabold text-gray-900">Evaluation</h3>
+              <p class="text-[11px] text-gray-500">Standar kuesioner evaluasi Level 1 Kirkpatrick (skala kepuasan 1 s/d 4)</p>
+            </div>
+          </div>
+          <span class="text-[11px] font-bold text-gray-500">Skala Penilaian: 1 (Kurang) &bull; 2 (Cukup) &bull; 3 (Baik) &bull; 4 (Sangat Baik)</span>
+        </div>
+
+        <div class="space-y-3 divide-y divide-gray-100 text-xs">
+          <div
+            v-for="item in form.evaluation_config"
+            :key="item.id"
+            class="pt-3 first:pt-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+          >
+            <div class="flex items-center gap-2.5">
+              <span
+                class="px-2 py-0.5 rounded-md font-bold text-[10px] uppercase border"
+                :class="item.category === 'Materi' ? 'bg-blue-50 text-[#0067AC] border-blue-200' : item.category === 'Pengajar' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-purple-50 text-purple-700 border-purple-200'"
+              >
+                {{ item.category }}
+              </span>
+              <span class="font-bold text-gray-800">{{ item.question }}</span>
+            </div>
+
+            <!-- Radio 1 - 2 - 3 - 4 matching SS2 -->
+            <div class="flex items-center gap-4 bg-gray-50 px-3.5 py-1.5 rounded-xl border border-gray-200 shrink-0">
+              <label
+                v-for="val in [1, 2, 3, 4]"
+                :key="val"
+                class="flex items-center gap-1.5 font-bold text-xs cursor-pointer"
+                :class="item.rating === val ? 'text-[#0067AC]' : 'text-gray-500'"
+              >
+                <input
+                  type="radio"
+                  :name="`eval-${item.id}`"
+                  :value="val"
+                  v-model="item.rating"
+                  class="w-3.5 h-3.5 text-[#0067AC] focus:ring-[#0067AC] cursor-pointer"
+                />
+                <span>{{ val }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- SECTION 7: PESERTA DIKLAT (ENROLLMENT)     -->
+      <!-- ========================================== -->
+      <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-4">
+        <div class="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-gray-100">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
+              <Users class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-sm font-extrabold text-gray-900">Peserta Terdaftar di Batch Kelas Ini</h3>
+              <p class="text-[11px] text-gray-500">
+                Total terdaftar: <strong>{{ form.enrolled_participants.length }}</strong> dari kuota <strong>{{ form.max_quota }}</strong> peserta
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              v-if="availableNominations.length > 0"
+              type="button"
+              @click="selectAllNominations"
+              class="px-3 py-1.5 bg-blue-50 text-[#0067AC] rounded-xl text-xs font-bold hover:bg-blue-100 transition cursor-pointer"
+            >
+              Pilih Semua Nominasi ({{ availableNominations.length }})
+            </button>
+            <button
+              v-if="form.enrolled_participants.length > 0"
+              type="button"
+              @click="clearAllParticipants"
+              class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-200 transition cursor-pointer"
+            >
+              Kosongkan
+            </button>
+          </div>
+        </div>
+
+        <!-- Manual Add Participant Input Strip -->
+        <div class="bg-gray-50/70 p-3.5 rounded-2xl border border-gray-200 grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-xs">
+          <input
+            v-model="newParticipant.nik"
+            type="text"
+            placeholder="NIK Pegawai"
+            class="bg-white rounded-xl px-3 py-2 border border-gray-300 font-mono focus:border-[#0067AC] focus:outline-none"
+          />
+          <input
+            v-model="newParticipant.name"
+            type="text"
+            placeholder="Nama Lengkap *"
+            class="bg-white rounded-xl px-3 py-2 border border-gray-300 font-bold text-gray-900 focus:border-[#0067AC] focus:outline-none"
+          />
+          <input
+            v-model="newParticipant.department"
+            type="text"
+            placeholder="Divisi / Departemen"
+            class="bg-white rounded-xl px-3 py-2 border border-gray-300 focus:border-[#0067AC] focus:outline-none"
+          />
+          <button
+            type="button"
+            @click="addManualParticipant"
+            class="bg-[#0067AC] hover:bg-[#00558F] text-white font-bold rounded-xl py-2 px-4 shadow-xs transition flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <Plus class="w-4 h-4" />
+            <span>Tambah Peserta</span>
+          </button>
+        </div>
+
+        <!-- Participant List Table -->
+        <div class="overflow-x-auto rounded-2xl border border-gray-100">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-gray-50 text-[11px] font-extrabold text-gray-600 uppercase tracking-wider border-b border-gray-200">
+                <th class="py-3 px-3 w-12 text-center">No</th>
+                <th class="py-3 px-4 w-32">NIK</th>
+                <th class="py-3 px-4">Nama Peserta</th>
+                <th class="py-3 px-4">Divisi / Unit Kerja</th>
+                <th class="py-3 px-4 w-40">Jabatan</th>
+                <th class="py-3 px-3 w-16 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr v-if="form.enrolled_participants.length === 0">
+                <td colspan="6" class="py-8 text-center text-gray-400 font-semibold">
+                  Belum ada peserta terdaftar. Tambahkan manual atau klik "Pilih Semua Nominasi".
+                </td>
+              </tr>
+              <tr
+                v-for="(p, idx) in form.enrolled_participants"
+                :key="idx"
+                class="hover:bg-blue-50/20 transition"
+              >
+                <td class="py-2.5 px-3 text-center font-bold text-gray-500">{{ idx + 1 }}</td>
+                <td class="py-2.5 px-4 font-mono font-bold text-gray-700">{{ p.nik || '-' }}</td>
+                <td class="py-2.5 px-4 font-extrabold text-gray-900">{{ p.name }}</td>
+                <td class="py-2.5 px-4 font-medium text-gray-700">{{ p.department || '-' }}</td>
+                <td class="py-2.5 px-4 text-gray-600">{{ p.position || 'Staff' }}</td>
+                <td class="py-2.5 px-3 text-center">
+                  <button
+                    type="button"
+                    @click="removeParticipant(idx)"
+                    class="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg transition cursor-pointer"
+                    title="Hapus Peserta"
+                  >
+                    <Trash2 class="w-4 h-4" />
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- BOTTOM ACTIONS: SUBMIT & CANCEL            -->
+      <!-- ========================================== -->
+      <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
         <button
           type="button"
           @click="emit('back')"
-          class="px-4 py-2.5 rounded-full border border-gray-200 text-gray-700 hover:bg-gray-100 text-xs font-bold transition cursor-pointer"
+          class="px-6 py-3 rounded-2xl text-xs font-bold text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 transition cursor-pointer"
         >
-          Batal
+          Cancel (Batal)
         </button>
         <button
-          type="button"
+          type="submit"
           :disabled="isSubmitting"
-          @click="submitForm"
-          class="px-6 py-2.5 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold transition shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-60"
+          class="px-8 py-3 rounded-2xl text-xs font-bold bg-[#0067AC] hover:bg-[#00558F] text-white shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
         >
-          <Send class="w-3.5 h-3.5" />
-          <span>{{ isSubmitting ? 'Memproses...' : 'Buka Batch Kelas Sekarang' }}</span>
+          <Save class="w-4 h-4" />
+          <span>{{ isSubmitting ? 'Menyimpan...' : (isEditMode ? 'SUBMIT (Simpan Perubahan Kelas)' : 'SUBMIT (Buka Batch Kelas Baru)') }}</span>
         </button>
       </div>
-    </div>
+
+    </form>
 
   </div>
 </template>

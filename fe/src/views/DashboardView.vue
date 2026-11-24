@@ -701,7 +701,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <FolderKanban class="w-3.5 h-3.5" />
-                            Daftar TNA & Pagu Budget
+                            Daftar TNA
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -782,7 +782,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <BookOpenCheck class="w-3.5 h-3.5" />
-                            Approved Program & Budget
+                            Daftar Program
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -827,7 +827,7 @@ const totalPendingApprovalsForUser = computed(() => {
               <!-- Class Implementation -->
               <div class="relative group">
                 <button
-                  @click="activeTab = 'class'"
+                  @click="activeTab = 'class'; classViewMode = 'list'"
                   id="side-class"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
                   :class="activeTab === 'class' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
@@ -837,27 +837,35 @@ const totalPendingApprovalsForUser = computed(() => {
                 </button>
                 <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
-                    <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">Class & Implementation</span>
+                    <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5 flex items-center justify-between">
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">Class & Implementation</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">Batch</span>
                     </div>
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
                         <button
-                          @click="activeTab = 'class'"
-                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'class' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                          @click="activeTab = 'class'; classViewMode = 'list'"
+                          class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                          :class="activeTab === 'class' && classViewMode === 'list' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
-                          <CalendarClock class="w-3.5 h-3.5 text-gray-400" />
-                          Jadwal Kelas & 6 Upload PIC
+                          <span class="flex items-center gap-2">
+                            <Presentation class="w-3.5 h-3.5" />
+                            Daftar Class
+                          </span>
+                          <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
                       </li>
                       <li>
                         <button
-                          @click="openModal('modal-class')"
-                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#0067AC] transition"
+                          @click="activeTab = 'class'; classViewMode = 'create'"
+                          class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                          :class="activeTab === 'class' && classViewMode === 'create' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
-                          <MailCheck class="w-3.5 h-3.5 text-gray-400" />
-                          Buat Kelas & Send Invitation
+                          <span class="flex items-center gap-2">
+                            <Plus class="w-3.5 h-3.5" />
+                            Buat Kelas Baru
+                          </span>
+                          <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
                       </li>
                     </ul>

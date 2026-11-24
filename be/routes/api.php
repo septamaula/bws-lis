@@ -108,6 +108,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/classes/{id}', [ClassApiController::class, 'show']);
     Route::post('/classes', [ClassApiController::class, 'store']);
     Route::put('/classes/{id}', [ClassApiController::class, 'update']);
+    Route::delete('/classes/{id}', [ClassApiController::class, 'destroy']);
+    Route::post('/classes/upload-attachment', [ClassApiController::class, 'uploadAttachment']);
     Route::post('/classes/{id}/approve', [ClassApiController::class, 'approve']);
     Route::post('/classes/{id}/enroll', [ClassApiController::class, 'enroll']);
     Route::delete('/classes/{id}/enroll/{enrollmentId}', [ClassApiController::class, 'removeEnrollment']);

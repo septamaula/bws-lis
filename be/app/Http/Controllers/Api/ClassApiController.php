@@ -22,8 +22,16 @@ class ClassApiController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = TrainingClass::with(['program', 'facilitator', 'maker', 'checker'])
+        $query = TrainingClass::with(['program.tnaProposal', 'tnaProposal', 'facilitator', 'maker', 'checker'])
             ->withCount(['enrollments', 'sessions']);
+
+        if ($request->filled('tna_id') && $request->tna_id !== 'ALL') {
+            $tnaId = (int) $request->tna_id;
+            $query->where(function ($q) use ($tnaId) {
+                $q->where('tna_proposal_id', $tnaId)
+                    ->orWhereHas('program', fn ($pq) => $pq->where('tna_proposal_id', $tnaId));
+            });
+        }
 
         if ($request->filled('program_id')) {
             $query->where('program_id', $request->program_id);
@@ -146,6 +154,9 @@ class ClassApiController extends Controller
     {
         $validated = $request->validate([
             'program_id' => 'required|exists:training_programs,id',
+            'tna_proposal_id' => 'nullable|exists:tna_proposals,id',
+            'class_code' => 'nullable|string|max:50',
+            'pic_name' => 'nullable|string|max:150',
             'batch_name' => 'required|string|max:255',
             'method' => 'required|string|max:100',
             'start_date' => 'required|date',
@@ -155,27 +166,30 @@ class ClassApiController extends Controller
             'max_quota' => 'required|integer|min:1|max:200',
             'facilitator_id' => 'nullable|exists:users,id',
             'trainer_name' => 'nullable|string|max:150',
-            'passing_grade' => 'nullable|integer|min:50|max:100',
+            'passing_grade' => 'nullable|integer|min:0|max:100',
             'description' => 'nullable|string',
             'notes' => 'nullable|string',
             'sessions' => 'nullable|array',
+            'documents' => 'nullable|array',
+            'documentation_photos' => 'nullable|array',
+            'evaluation_config' => 'nullable|array',
             'enrolled_participants' => 'nullable|array',
             'auto_approve' => 'nullable|boolean',
         ]);
 
         $program = TrainingProgram::findOrFail($validated['program_id']);
 
-        // Determine batch number & class code
-        $existingClassesCount = TrainingClass::where('program_id', $program->id)->count();
-        $batchNumber = $existingClassesCount + 1;
-
-        // Clean code prefix
-        $progCodeClean = preg_replace('/[^A-Za-z0-9]/', '', $program->program_code);
-        $classCode = 'CLS-'.date('Y').'-'.substr($progCodeClean, -6).'-B'.$batchNumber;
-
-        // Ensure unique
-        while (TrainingClass::where('class_code', $classCode)->exists()) {
-            $classCode = 'CLS-'.date('Y').'-'.substr($progCodeClean, -6).'-B'.(++$batchNumber);
+        // Class Code: use provided or auto generate
+        if (! empty($validated['class_code'])) {
+            $classCode = $validated['class_code'];
+        } else {
+            $existingClassesCount = TrainingClass::where('program_id', $program->id)->count();
+            $batchNumber = $existingClassesCount + 1;
+            $progCodeClean = preg_replace('/[^A-Za-z0-9]/', '', $program->program_code);
+            $classCode = 'CLS-'.date('Y').'-'.substr($progCodeClean, -6).'-B'.$batchNumber;
+            while (TrainingClass::where('class_code', $classCode)->exists()) {
+                $classCode = 'CLS-'.date('Y').'-'.substr($progCodeClean, -6).'-B'.(++$batchNumber);
+            }
         }
 
         $user = $request->user();
@@ -186,7 +200,9 @@ class ClassApiController extends Controller
 
         $class = TrainingClass::create([
             'program_id' => $program->id,
+            'tna_proposal_id' => $validated['tna_proposal_id'] ?? $program->tna_proposal_id,
             'class_code' => $classCode,
+            'pic_name' => $validated['pic_name'] ?? ($user->name ?? 'Staff HC Training'),
             'batch_name' => $validated['batch_name'],
             'method' => $validated['method'],
             'start_date' => $validated['start_date'],
@@ -196,10 +212,13 @@ class ClassApiController extends Controller
             'max_quota' => $validated['max_quota'],
             'enrolled_count' => 0,
             'facilitator_id' => $validated['facilitator_id'] ?? null,
-            'trainer_name' => $validated['trainer_name'] ?? ($program->trainer_name ?? 'Tim Fasilitator BWS'),
+            'trainer_name' => $validated['trainer_name'] ?? ($program->trainer_name ?? ($program->facilitator ?? 'Tim Fasilitator BWS')),
             'passing_grade' => $validated['passing_grade'] ?? ($program->passing_grade ?? 75),
-            'description' => $validated['description'] ?? "Batch pelaksanaan ke-{$batchNumber} untuk program {$program->title}",
+            'description' => $validated['description'] ?? "Batch pelaksanaan untuk program {$program->title}",
             'notes' => $validated['notes'] ?? null,
+            'documents' => $validated['documents'] ?? [],
+            'documentation_photos' => $validated['documentation_photos'] ?? [],
+            'evaluation_config' => $validated['evaluation_config'] ?? [],
             'dual_control_status' => $dualControlStatus,
             'maker_id' => $user->id,
             'checker_id' => $autoApprove ? $user->id : null,
@@ -214,7 +233,7 @@ class ClassApiController extends Controller
                 ClassSession::create([
                     'training_class_id' => $class->id,
                     'session_number' => $idx + 1,
-                    'session_name' => $s['session_name'] ?? 'Sesi '.($idx + 1),
+                    'session_name' => $s['session_name'] ?? ($s['topic'] ?? 'Sesi '.($idx + 1)),
                     'session_date' => $s['session_date'] ?? $class->start_date,
                     'start_time' => $s['start_time'] ?? '08:30',
                     'end_time' => $s['end_time'] ?? '16:30',
@@ -231,7 +250,6 @@ class ClassApiController extends Controller
 
             $sessNum = 1;
             foreach ($period as $date) {
-                // Skip Sundays if needed, or include all days
                 ClassSession::create([
                     'training_class_id' => $class->id,
                     'session_number' => $sessNum,
@@ -246,11 +264,11 @@ class ClassApiController extends Controller
                 $sessNum++;
                 if ($sessNum > 10) {
                     break;
-                } // limit to 10 days max auto-gen
+                }
             }
         }
 
-        // Enroll Initial Participants (from Program Nominations or custom list)
+        // Enroll Initial Participants
         $enrolledCount = 0;
         if (! empty($validated['enrolled_participants']) && is_array($validated['enrolled_participants'])) {
             foreach ($validated['enrolled_participants'] as $p) {
@@ -281,7 +299,7 @@ class ClassApiController extends Controller
 
         return response()->json([
             'message' => "Batch Kelas {$classCode} ({$class->batch_name}) berhasil dibuat untuk program {$program->title}.",
-            'class' => $class->load(['program', 'sessions', 'enrollments']),
+            'class' => $class->load(['program.tnaProposal', 'tnaProposal', 'sessions', 'enrollments']),
         ], 201);
     }
 
@@ -293,6 +311,10 @@ class ClassApiController extends Controller
         $class = TrainingClass::findOrFail($id);
 
         $validated = $request->validate([
+            'program_id' => 'sometimes|required|exists:training_programs,id',
+            'tna_proposal_id' => 'nullable|exists:tna_proposals,id',
+            'class_code' => 'nullable|string|max:50',
+            'pic_name' => 'nullable|string|max:150',
             'batch_name' => 'sometimes|required|string|max:255',
             'method' => 'sometimes|required|string|max:100',
             'start_date' => 'sometimes|required|date',
@@ -302,18 +324,104 @@ class ClassApiController extends Controller
             'max_quota' => 'sometimes|required|integer|min:1',
             'facilitator_id' => 'nullable|exists:users,id',
             'trainer_name' => 'nullable|string|max:150',
-            'passing_grade' => 'nullable|integer|min:50|max:100',
+            'passing_grade' => 'nullable|integer|min:0|max:100',
             'description' => 'nullable|string',
             'notes' => 'nullable|string',
             'is_attendance_open' => 'nullable|boolean',
             'dual_control_status' => 'nullable|string',
+            'sessions' => 'nullable|array',
+            'documents' => 'nullable|array',
+            'documentation_photos' => 'nullable|array',
+            'evaluation_config' => 'nullable|array',
+            'enrolled_participants' => 'nullable|array',
         ]);
 
         $class->update($validated);
 
+        // Update sessions if explicitly provided
+        if (isset($validated['sessions']) && is_array($validated['sessions'])) {
+            $class->sessions()->delete();
+            foreach ($validated['sessions'] as $idx => $s) {
+                ClassSession::create([
+                    'training_class_id' => $class->id,
+                    'session_number' => $idx + 1,
+                    'session_name' => $s['session_name'] ?? ($s['topic'] ?? 'Sesi '.($idx + 1)),
+                    'session_date' => $s['session_date'] ?? $class->start_date,
+                    'start_time' => $s['start_time'] ?? '08:30',
+                    'end_time' => $s['end_time'] ?? '16:30',
+                    'topic' => $s['topic'] ?? null,
+                    'trainer_name' => $s['trainer_name'] ?? $class->trainer_name,
+                    'location_or_url' => $s['location_or_url'] ?? $class->location_or_url,
+                ]);
+            }
+        }
+
+        // Update enrolled participants if provided
+        if (isset($validated['enrolled_participants']) && is_array($validated['enrolled_participants'])) {
+            $class->enrollments()->delete();
+            $enrolledCount = 0;
+            foreach ($validated['enrolled_participants'] as $p) {
+                ClassEnrollment::create([
+                    'training_class_id' => $class->id,
+                    'user_id' => $p['user_id'] ?? null,
+                    'nik' => $p['nik'] ?? null,
+                    'participant_name' => $p['name'] ?? $p['participant_name'] ?? 'Peserta BWS',
+                    'department' => $p['department'] ?? 'Operations',
+                    'branch' => $p['branch'] ?? 'Kantor Pusat',
+                    'position' => $p['position'] ?? 'Staff',
+                    'attendance_status' => 'REGISTERED',
+                    'completion_status' => 'NOT_STARTED',
+                    'attendance_percentage' => 0,
+                ]);
+                $enrolledCount++;
+            }
+            $class->update(['enrolled_count' => $enrolledCount]);
+        }
+
         return response()->json([
             'message' => "Data Batch Kelas {$class->class_code} berhasil diperbarui.",
-            'class' => $class->fresh(['program', 'sessions']),
+            'class' => $class->fresh(['program.tnaProposal', 'tnaProposal', 'sessions', 'enrollments']),
+        ]);
+    }
+
+    /**
+     * Delete a training class batch.
+     */
+    public function destroy(int $id): JsonResponse
+    {
+        $class = TrainingClass::findOrFail($id);
+        $classCode = $class->class_code;
+        $class->sessions()->delete();
+        $class->enrollments()->delete();
+        $class->attendances()->delete();
+        $class->evaluations()->delete();
+        $class->delete();
+
+        return response()->json([
+            'message' => "Kelas {$classCode} berhasil dihapus.",
+        ]);
+    }
+
+    /**
+     * Upload an attachment file for class (materials, documents, or photos).
+     */
+    public function uploadAttachment(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|max:20480',
+            'type' => 'nullable|string',
+        ]);
+
+        $file = $request->file('file');
+        $fileName = $file->getClientOriginalName();
+        $subfolder = $request->input('type') === 'photo' ? 'attachments/classes/photos' : 'attachments/classes/docs';
+        $path = $file->store($subfolder, 'public');
+
+        return response()->json([
+            'message' => 'File berhasil diunggah.',
+            'file_name' => $fileName,
+            'file_path' => $path,
+            'file_size' => $file->getSize(),
         ]);
     }
 
