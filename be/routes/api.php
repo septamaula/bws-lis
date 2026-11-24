@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\Api\ApprovalSettingApiController;
 use App\Http\Controllers\Api\AuthApiController;
+use App\Http\Controllers\Api\BiCategoryApiController;
 use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\ClassApiController;
 use App\Http\Controllers\Api\DashboardApiController;
+use App\Http\Controllers\Api\FacilitatorApiController;
 use App\Http\Controllers\Api\FiscalYearApiController;
 use App\Http\Controllers\Api\OperationApiController;
 use App\Http\Controllers\Api\ProgramApiController;
@@ -86,6 +88,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::match(['put', 'post'], '/programs/{id}', [ProgramApiController::class, 'update']);
     Route::post('/programs/{id}/workflow-action', [ProgramApiController::class, 'workflowAction']);
     Route::delete('/programs/{id}', [ProgramApiController::class, 'destroy']);
+
+    // Master Facilitators & Training Providers
+    Route::get('/facilitators', [FacilitatorApiController::class, 'index']);
+    Route::post('/facilitators', [FacilitatorApiController::class, 'store']);
+    Route::get('/facilitators/{id}', [FacilitatorApiController::class, 'show']);
+    Route::put('/facilitators/{id}', [FacilitatorApiController::class, 'update']);
+    Route::delete('/facilitators/{id}', [FacilitatorApiController::class, 'destroy']);
+
+    // Master BI Categories (Regulasi BI & OJK)
+    Route::get('/bi-categories', [BiCategoryApiController::class, 'index']);
+    Route::post('/bi-categories', [BiCategoryApiController::class, 'store']);
+    Route::get('/bi-categories/{id}', [BiCategoryApiController::class, 'show']);
+    Route::put('/bi-categories/{id}', [BiCategoryApiController::class, 'update']);
+    Route::delete('/bi-categories/{id}', [BiCategoryApiController::class, 'destroy']);
 
     // Class Batch Operations (1 Program to Many Classes), Attendance & Evaluation
     Route::get('/classes', [ClassApiController::class, 'index']);

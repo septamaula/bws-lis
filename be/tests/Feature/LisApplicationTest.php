@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FinancialTransaction;
 use App\Models\TnaProposal;
 use App\Models\TrainingClass;
+use App\Models\TrainingProgram;
 use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -207,5 +208,94 @@ class LisApplicationTest extends TestCase
             'tna_proposal_id' => $tna->id,
             'category' => $catName,
         ]);
+    }
+
+    public function test_program_can_be_updated_with_tna_facilitator_and_custom_budget_items(): void
+    {
+        $admin = User::where('role_name', 'Super Admin')->first();
+        Sanctum::actingAs($admin);
+
+        $program = TrainingProgram::first();
+        $this->assertNotNull($program);
+
+        $tna = TnaProposal::where('tna_status', 'Aktif')->first();
+        $this->assertNotNull($tna);
+
+        $res = $this->putJson("/api/programs/{$program->id}", [
+            'title' => 'Updated Program Title for Testing',
+            'tna_proposal_id' => $tna->id,
+            'facilitator' => 'PT Mitra Konsultan Perbankan',
+            'bi_category' => 'Operasional Perbankan & Sistem Pembayaran',
+            'duration_text' => '3 Hari (24 Jam)',
+            'start_date' => '2026-04-10',
+            'end_date' => '2026-04-12',
+            'has_custom_budget' => '1',
+            'budget_items' => [
+                [
+                    'item_type' => 'OTHER',
+                    'description' => 'Biaya Ujian Sertifikasi Tambahan',
+                    'quantity' => 1,
+                    'unit' => 'Paket',
+                    'unit_price' => 2500000,
+                    'subtotal' => 2500000,
+                    'notes' => 'Tambahan vendor sertifikasi',
+                ],
+            ],
+        ]);
+
+        $res->assertStatus(200);
+        $fresh = $program->fresh();
+        $this->assertEquals($tna->id, $fresh->tna_proposal_id);
+        $this->assertEquals('PT Mitra Konsultan Perbankan', $fresh->facilitator);
+        $this->assertEquals('Operasional Perbankan & Sistem Pembayaran', $fresh->bi_category);
+        $this->assertEquals('3 Hari (24 Jam)', $fresh->duration_text);
+        $this->assertEquals('2026-04-10', substr($fresh->start_date, 0, 10));
+        $this->assertDatabaseHas('program_budget_items', [
+            'training_program_id' => $program->id,
+            'description' => 'Biaya Ujian Sertifikasi Tambahan',
+            'subtotal' => 2500000,
+        ]);
+    }
+
+    public function test_master_facilitator_and_bi_category_crud(): void
+    {
+        $admin = User::where('role_name', 'Super Admin')->first();
+        Sanctum::actingAs($admin);
+
+        // Test Facilitator API
+        $resFacList = $this->getJson('/api/facilitators');
+        $resFacList->assertStatus(200);
+        $this->assertGreaterThan(0, count($resFacList->json('facilitators')));
+
+        $facCode = 'FAC-TEST-'.uniqid();
+        $resFacCreate = $this->postJson('/api/facilitators', [
+            'code' => $facCode,
+            'name' => 'Lembaga Pelatihan Test Otomasi',
+            'type' => 'External Vendor',
+            'contact_person' => 'Budi Tester',
+            'phone' => '08123456789',
+            'email' => 'test@vendor.com',
+            'specialization' => 'Risk & Audit',
+            'is_active' => true,
+        ]);
+        $resFacCreate->assertStatus(201);
+        $this->assertDatabaseHas('facilitators', ['code' => $facCode]);
+
+        // Test BI Category API
+        $resBiList = $this->getJson('/api/bi-categories');
+        $resBiList->assertStatus(200);
+        $this->assertGreaterThan(0, count($resBiList->json('categories')));
+
+        $biCode = 'BI-TEST-'.uniqid();
+        $resBiCreate = $this->postJson('/api/bi-categories', [
+            'code' => $biCode,
+            'name' => 'Kategori Regulasi BI Test',
+            'regulation_reference' => 'POJK No. 99/2026',
+            'description' => 'Materi regulasi uji coba sistem',
+            'is_mandatory' => true,
+            'is_active' => true,
+        ]);
+        $resBiCreate->assertStatus(201);
+        $this->assertDatabaseHas('bi_categories', ['code' => $biCode]);
     }
 }

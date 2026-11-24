@@ -48,7 +48,8 @@ import {
   Download,
   FolderTree,
   CalendarRange,
-  Workflow
+  Workflow,
+  Users2
 } from 'lucide-vue-next'
 
 // Import Modular Components
@@ -68,6 +69,8 @@ import TnaDetailPage from '@/components/modules/tna/TnaDetailPage.vue'
 import MultiApprovalSettingModule from '@/components/modules/settings/MultiApprovalSettingModule.vue'
 import CategoryMasterModule from '@/components/modules/CategoryMasterModule.vue'
 import YearMasterModule from '@/components/modules/YearMasterModule.vue'
+import FacilitatorMasterModule from '@/components/modules/FacilitatorMasterModule.vue'
+import BiCategoryMasterModule from '@/components/modules/BiCategoryMasterModule.vue'
 import BusinessProcessFlowchartModule from '@/components/modules/BusinessProcessFlowchartModule.vue'
 
 // Import Modals
@@ -192,7 +195,10 @@ const currentTabTitle = computed(() => {
       if (tnaViewMode.value === 'categories') return 'Master Kategori Pelatihan'
       if (tnaViewMode.value === 'years') return 'Tahun Anggaran Pelatihan'
       return 'TNA & Annual Training Plan'
-    case 'program': return 'Program Pelatihan & Work Plan'
+    case 'program':
+      if (programViewMode.value === 'facilitator') return 'Master Lembaga & Facilitator'
+      if (programViewMode.value === 'bi_categories') return 'Master Kategori Regulasi BI / OJK'
+      return 'Program Pelatihan & Work Plan'
     case 'class': return 'Class Implementation & Schedule'
     case 'participants': return 'Peserta & Activity Tracking'
     case 'eval': return 'Evaluasi & Nilai Peserta'
@@ -214,7 +220,10 @@ const currentTabSubtitle = computed(() => {
       if (tnaViewMode.value === 'categories') return 'Kelola rumpun kompetensi, mata diklat, dan standar kurikulum perbankan'
       if (tnaViewMode.value === 'years') return 'Kelola tahun buku anggaran, batas pagu regulator, dan status periode aktif'
       return 'Perencanaan Kebutuhan Diklat & Usulan Anggaran Kompetensi Divisi Bank Woori Saudara'
-    case 'program': return 'Katalog Program Kerja, Kurikulum Diklat, dan Sertifikasi Wajib Regulasi OJK / BI'
+    case 'program':
+      if (programViewMode.value === 'facilitator') return 'Kelola database rekanan lembaga diklat, vendor eksternal, institusi, dan instruktur'
+      if (programViewMode.value === 'bi_categories') return 'Kelola klasifikasi kepatuhan regulasi Bank Indonesia & Otoritas Jasa Keuangan'
+      return 'Katalog Program Kerja, Kurikulum Diklat, dan Sertifikasi Wajib Regulasi OJK / BI'
     case 'class': return 'Manajemen Batch Pelatihan, Alokasi Ruangan, dan Otorisasi Maker-Checker'
     case 'participants': return 'Database Peserta Diklat, Kehadiran, dan Monitoring Progres Pelatihan LIS'
     case 'eval': return 'Rekapitulasi Skor Pre-Test & Post-Test, Efektivitas Peningkatan Kompetensi Pegawai'
@@ -750,7 +759,7 @@ const totalPendingApprovalsForUser = computed(() => {
               <!-- Program L&D -->
               <div class="relative group">
                 <button
-                  @click="activeTab = 'program'"
+                  @click="activeTab = 'program'; programViewMode = 'list'"
                   id="side-program"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
                   :class="activeTab === 'program' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
@@ -760,27 +769,66 @@ const totalPendingApprovalsForUser = computed(() => {
                 </button>
                 <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
-                    <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">Program Pelatihan</span>
+                    <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5 flex items-center justify-between">
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">Program Pelatihan</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">Work Plan</span>
                     </div>
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
                         <button
-                          @click="activeTab = 'program'"
-                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'program' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                          @click="activeTab = 'program'; programViewMode = 'list'"
+                          class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                          :class="activeTab === 'program' && programViewMode === 'list' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
-                          <BookOpenCheck class="w-3.5 h-3.5 text-gray-400" />
-                          Approved Program & Budget
+                          <span class="flex items-center gap-2">
+                            <BookOpenCheck class="w-3.5 h-3.5" />
+                            Approved Program & Budget
+                          </span>
+                          <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
                       </li>
                       <li>
                         <button
                           @click="openModal('modal-class')"
-                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#0067AC] transition"
+                          class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#0067AC] transition"
                         >
-                          <Send class="w-3.5 h-3.5 text-gray-400" />
-                          Siap Dibuatkan Kelas
+                          <span class="flex items-center gap-2">
+                            <Send class="w-3.5 h-3.5 text-gray-400" />
+                            Siap Dibuatkan Kelas
+                          </span>
+                          <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
+                        </button>
+                      </li>
+
+                      <!-- Section Header: Master Data -->
+                      <li class="pt-2 pb-1 px-3 border-t border-gray-100 mt-1 flex items-center justify-between">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Master Data</span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                      </li>
+                      <li>
+                        <button
+                          @click="activeTab = 'program'; programViewMode = 'facilitator'"
+                          class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                          :class="activeTab === 'program' && programViewMode === 'facilitator' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                        >
+                          <span class="flex items-center gap-2">
+                            <Users2 class="w-3.5 h-3.5" />
+                            Master Facilitator
+                          </span>
+                          <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
+                        </button>
+                      </li>
+                      <li>
+                        <button
+                          @click="activeTab = 'program'; programViewMode = 'bi_categories'"
+                          class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                          :class="activeTab === 'program' && programViewMode === 'bi_categories' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                        >
+                          <span class="flex items-center gap-2">
+                            <Scale class="w-3.5 h-3.5" />
+                            Master Category BI
+                          </span>
+                          <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
                       </li>
                     </ul>
@@ -1434,13 +1482,23 @@ const totalPendingApprovalsForUser = computed(() => {
               />
             </template>
 
-            <ProgramModule
-              v-else-if="activeTab === 'program'"
-              ref="programModuleRef"
-              v-model:view-mode="programViewMode"
-              :training-programs="trainingPrograms"
-              @open-class-create="handleOpenClassCreateFromProgram"
-            />
+            <template v-else-if="activeTab === 'program'">
+              <FacilitatorMasterModule
+                v-if="programViewMode === 'facilitator'"
+                @back="programViewMode = 'list'"
+              />
+              <BiCategoryMasterModule
+                v-else-if="programViewMode === 'bi_categories'"
+                @back="programViewMode = 'list'"
+              />
+              <ProgramModule
+                v-else
+                ref="programModuleRef"
+                v-model:view-mode="programViewMode"
+                :training-programs="trainingPrograms"
+                @open-class-create="handleOpenClassCreateFromProgram"
+              />
+            </template>
 
             <ClassModule
               v-else-if="activeTab === 'class'"

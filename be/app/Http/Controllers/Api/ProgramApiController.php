@@ -435,8 +435,8 @@ class ProgramApiController extends Controller
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255',
             'category' => 'sometimes|required|string|max:100',
-            'tna_proposal_id' => 'nullable|exists:tna_proposals,id',
-            'tna_item_id' => 'nullable|exists:tna_items,id',
+            'tna_proposal_id' => 'nullable',
+            'tna_item_id' => 'nullable',
             'department' => 'nullable|string|max:100',
             'year' => 'nullable|integer|min:2020|max:2040',
             'execution_quarter' => 'nullable|string|max:50',
@@ -446,9 +446,19 @@ class ProgramApiController extends Controller
             'method' => 'nullable|string|max:50',
             'location' => 'nullable|string|max:255',
             'duration_hours' => 'nullable|integer|min:1',
+            'duration_text' => 'nullable|string|max:100',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'facilitator' => 'nullable|string|max:150',
+            'program_type' => 'nullable|string|max:100',
+            'unit_initiator' => 'nullable|string|max:150',
+            'activity_type' => 'nullable|string|max:100',
+            'bi_category' => 'nullable|string|max:150',
             'passing_grade' => 'nullable|integer|min:0|max:100',
             'is_mandatory' => 'nullable|boolean',
             'description' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'approval_scenario' => 'nullable|string|max:50',
             'approval_type' => 'sometimes|required|in:DOCUMENT,WORKFLOW',
             'approval_doc_number' => 'nullable|string|max:100',
             'approval_doc_date' => 'nullable|date',
@@ -456,7 +466,13 @@ class ProgramApiController extends Controller
             'document' => 'nullable|file|max:15360',
             'approval_doc_name' => 'nullable|string|max:255',
             'approval_doc_size' => 'nullable|integer',
+            'doc1' => 'nullable|file|max:15360',
+            'doc1_name' => 'nullable|string|max:255',
+            'doc1_remarks' => 'nullable|string',
+            'doc2' => 'nullable|file|max:15360',
+            'doc2_name' => 'nullable|string|max:255',
             'is_submit' => 'nullable|boolean',
+            'has_custom_budget' => 'nullable',
             'budget_items' => 'nullable|array',
             'budget_items.*.item_type' => 'nullable|string',
             'budget_items.*.description' => 'nullable|string',
@@ -483,11 +499,11 @@ class ProgramApiController extends Controller
             if (isset($validated['category'])) {
                 $program->category = $validated['category'];
             }
-            if (array_key_exists('tna_proposal_id', $validated)) {
-                $program->tna_proposal_id = $validated['tna_proposal_id'];
+            if ($request->has('tna_proposal_id')) {
+                $program->tna_proposal_id = $request->filled('tna_proposal_id') ? (int) $request->tna_proposal_id : null;
             }
-            if (array_key_exists('tna_item_id', $validated)) {
-                $program->tna_item_id = $validated['tna_item_id'];
+            if ($request->has('tna_item_id')) {
+                $program->tna_item_id = $request->filled('tna_item_id') ? (int) $request->tna_item_id : null;
             }
             if (isset($validated['department'])) {
                 $program->department = $validated['department'];
@@ -515,6 +531,36 @@ class ProgramApiController extends Controller
             }
             if (isset($validated['duration_hours'])) {
                 $program->duration_hours = $validated['duration_hours'];
+            }
+            if ($request->has('duration_text')) {
+                $program->duration_text = $request->input('duration_text');
+            }
+            if ($request->has('start_date')) {
+                $program->start_date = $request->filled('start_date') ? $request->input('start_date') : null;
+            }
+            if ($request->has('end_date')) {
+                $program->end_date = $request->filled('end_date') ? $request->input('end_date') : null;
+            }
+            if ($request->has('facilitator')) {
+                $program->facilitator = $request->input('facilitator');
+            }
+            if ($request->has('program_type')) {
+                $program->program_type = $request->input('program_type');
+            }
+            if ($request->has('unit_initiator')) {
+                $program->unit_initiator = $request->input('unit_initiator');
+            }
+            if ($request->has('activity_type')) {
+                $program->activity_type = $request->input('activity_type');
+            }
+            if ($request->has('bi_category')) {
+                $program->bi_category = $request->input('bi_category');
+            }
+            if ($request->has('notes')) {
+                $program->notes = $request->input('notes');
+            }
+            if ($request->has('approval_scenario')) {
+                $program->approval_scenario = $request->input('approval_scenario');
             }
             if (isset($validated['passing_grade'])) {
                 $program->passing_grade = $validated['passing_grade'];
@@ -545,6 +591,19 @@ class ProgramApiController extends Controller
                 $program->approval_doc_size = $file->getSize();
                 $program->approval_doc_path = $file->store('attachments/programs', 'public');
             }
+            if ($request->hasFile('doc1')) {
+                $file = $request->file('doc1');
+                $program->doc1_name = $file->getClientOriginalName();
+                $program->doc1_path = $file->store('attachments/programs', 'public');
+            }
+            if ($request->has('doc1_remarks')) {
+                $program->doc1_remarks = $request->input('doc1_remarks');
+            }
+            if ($request->hasFile('doc2')) {
+                $file = $request->file('doc2');
+                $program->doc2_name = $file->getClientOriginalName();
+                $program->doc2_path = $file->store('attachments/programs', 'public');
+            }
 
             // Handle 10 budget fields if provided
             $bFields = [
@@ -565,15 +624,16 @@ class ProgramApiController extends Controller
                 }
             }
 
-            // Hitung ulang RAB jika diberikan
-            if (isset($validated['budget_items'])) {
+            // Hitung ulang RAB jika diberikan (atau jika has_custom_budget dikirim)
+            if ($request->has('has_custom_budget') || isset($validated['budget_items'])) {
                 $program->budgetItems()->delete();
-                $additionalSum = 0;
-                foreach ($validated['budget_items'] as $item) {
+                $items = $validated['budget_items'] ?? [];
+                $customSum = 0;
+                foreach ($items as $item) {
                     $qty = (float) ($item['quantity'] ?? 1);
                     $unitPrice = (float) ($item['unit_price'] ?? 0);
                     $subtotal = (float) ($item['subtotal'] ?? ($qty * $unitPrice));
-                    $additionalSum += $subtotal;
+                    $customSum += $subtotal;
 
                     ProgramBudgetItem::create([
                         'training_program_id' => $program->id,
@@ -598,16 +658,7 @@ class ProgramApiController extends Controller
                     (float) $program->budget_internet +
                     (float) $program->budget_miscellaneous;
 
-                $customSum = collect($validated['budget_items'])
-                    ->filter(fn ($i) => ($i['item_type'] ?? '') === 'OTHER' || ! empty($i['is_custom']))
-                    ->sum(function ($i) {
-                        return (float) ($i['subtotal'] ?? ((float) ($i['quantity'] ?? 1) * (float) ($i['unit_price'] ?? 0)));
-                    });
-
                 $program->total_budget = $sum10 + $customSum;
-                if ($program->total_budget <= 0 && $additionalSum > 0) {
-                    $program->total_budget = $additionalSum;
-                }
             } else {
                 $sum10 = (float) $program->budget_fee_facilitator +
                     (float) $program->budget_meals +

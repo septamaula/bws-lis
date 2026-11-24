@@ -203,6 +203,22 @@ const activeTnaList = computed(() => {
   return tnaProposals.value.filter(t => t.tna_status === 'Aktif')
 })
 
+// Displayed TNA Proposals in select: active TNAs + current selected TNA (if any)
+const displayedTnaList = computed(() => {
+  const list = [...activeTnaList.value]
+  if (form.value.tna_proposal_id) {
+    const current = tnaProposals.value.find(t => Number(t.id) === Number(form.value.tna_proposal_id))
+    if (current && !list.some(t => Number(t.id) === Number(current.id))) {
+      list.unshift(current)
+    }
+  }
+  return list
+})
+
+// Master data lists for Facilitator & BI Category
+const masterFacilitators = ref([])
+const masterBiCategories = ref([])
+
 // Currently selected TNA Proposal
 const selectedTna = computed(() => {
   if (!form.value.tna_proposal_id) return null
@@ -262,12 +278,16 @@ function onTnaItemSelect() {
 async function loadData() {
   loadingInit.value = true
   try {
-    const [resCats, resTna] = await Promise.all([
+    const [resCats, resTna, resFac, resBi] = await Promise.all([
       apiClient.get('/categories'),
-      apiClient.get('/tna')
+      apiClient.get('/tna'),
+      apiClient.get('/facilitators'),
+      apiClient.get('/bi-categories')
     ])
     categories.value = resCats.data.categories || []
     tnaProposals.value = resTna.data.proposals || []
+    masterFacilitators.value = resFac.data.facilitators || []
+    masterBiCategories.value = resBi.data.categories || []
 
     if (isEditMode.value) {
       const { data } = await apiClient.get(`/programs/${props.editProgramId}`)
@@ -285,7 +305,7 @@ async function loadData() {
       form.value.program_type = p.program_type || 'In-House Training'
       form.value.unit_initiator = p.unit_initiator || p.department || 'Divisi Operasional & Layanan'
       form.value.activity_type = p.activity_type || 'Pelatihan'
-      form.value.bi_category = p.bi_category || 'Operasional Perbankan'
+      form.value.bi_category = p.bi_category || (masterBiCategories.value[0]?.name || 'Operasional Perbankan & Sistem Pembayaran')
       form.value.year = p.year || 2026
       form.value.notes = p.notes || ''
       form.value.approval_scenario = p.approval_scenario || (p.total_budget > 0 ? 'WITH_BUDGET' : 'WITHOUT_BUDGET')
@@ -332,6 +352,13 @@ async function loadData() {
           form.value.category = firstCat
         }
       }
+
+      if (masterBiCategories.value.length > 0) {
+        form.value.bi_category = masterBiCategories.value[0].name
+      }
+      if (masterFacilitators.value.length > 0) {
+        form.value.facilitator = masterFacilitators.value[0].name
+      }
     }
   } catch (err) {
     feedback.value = { type: 'error', message: 'Gagal memuat data program.' }
@@ -363,24 +390,25 @@ async function submitProgram() {
 
   try {
     const formData = new FormData()
-    if (form.value.tna_proposal_id) formData.append('tna_proposal_id', form.value.tna_proposal_id)
-    if (form.value.tna_item_id) formData.append('tna_item_id', form.value.tna_item_id)
+    formData.append('tna_proposal_id', form.value.tna_proposal_id ?? '')
+    formData.append('tna_item_id', form.value.tna_item_id ?? '')
     formData.append('program_code', form.value.program_code)
     formData.append('title', form.value.title)
     formData.append('category', form.value.category)
     formData.append('location', form.value.location)
-    formData.append('facilitator', form.value.facilitator)
-    formData.append('duration_text', form.value.duration_text)
-    formData.append('start_date', form.value.start_date)
-    formData.append('end_date', form.value.end_date)
-    formData.append('program_type', form.value.program_type)
-    formData.append('unit_initiator', form.value.unit_initiator)
-    formData.append('activity_type', form.value.activity_type)
-    formData.append('bi_category', form.value.bi_category)
+    formData.append('facilitator', form.value.facilitator || '')
+    formData.append('duration_text', form.value.duration_text || '')
+    formData.append('start_date', form.value.start_date || '')
+    formData.append('end_date', form.value.end_date || '')
+    formData.append('program_type', form.value.program_type || '')
+    formData.append('unit_initiator', form.value.unit_initiator || '')
+    formData.append('activity_type', form.value.activity_type || '')
+    formData.append('bi_category', form.value.bi_category || '')
     formData.append('year', form.value.year)
     formData.append('notes', form.value.notes || '')
     formData.append('approval_scenario', form.value.approval_scenario)
     formData.append('is_submit', '1')
+    formData.append('has_custom_budget', '1')
 
     // 10 Budget items
     formData.append('budget_fee_facilitator', form.value.budget_fee_facilitator || 0)
@@ -418,18 +446,59 @@ async function submitProgram() {
       res = await apiClient.post(`/programs/${props.editProgramId}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
+
+      // STAY ON EDIT PAGE - do not throw user to grid!
+      feedback.value = {
+        type: 'success',
+        message: res.data.message || 'Perubahan program kerja berhasil disimpan.'
+      }
+
+      // Update form with fresh returned data
+      if (res.data.program) {
+        const p = res.data.program
+        form.value.tna_proposal_id = p.tna_proposal_id || null
+        form.value.tna_item_id = p.tna_item_id || null
+        form.value.program_code = p.program_code || form.value.program_code
+        form.value.title = p.title || form.value.title
+        form.value.category = p.category || form.value.category
+        form.value.location = p.location || form.value.location
+        form.value.facilitator = p.facilitator || form.value.facilitator
+        form.value.duration_text = p.duration_text || form.value.duration_text
+        form.value.start_date = p.start_date ? p.start_date.substring(0, 10) : ''
+        form.value.end_date = p.end_date ? p.end_date.substring(0, 10) : ''
+        form.value.program_type = p.program_type || form.value.program_type
+        form.value.unit_initiator = p.unit_initiator || form.value.unit_initiator
+        form.value.activity_type = p.activity_type || form.value.activity_type
+        form.value.bi_category = p.bi_category || form.value.bi_category
+        form.value.year = p.year || form.value.year
+        form.value.notes = p.notes || ''
+        form.value.approval_scenario = p.approval_scenario || form.value.approval_scenario
+
+        if (p.budget_items) {
+          customBudgetItems.value = p.budget_items
+            .filter(bi => bi.item_type === 'OTHER' || !bi.item_type)
+            .map(bi => ({
+              id: bi.id || Date.now() + Math.random(),
+              name: bi.description || '',
+              amount: Number(bi.subtotal || (bi.quantity * bi.unit_price) || 0),
+              notes: bi.notes || ''
+            }))
+        }
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
       res = await apiClient.post('/programs', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
+      emit('created', res.data.message || 'Program kerja berhasil disimpan.')
     }
-
-    emit('created', res.data.message || 'Program kerja berhasil disimpan.')
   } catch (err) {
     feedback.value = {
       type: 'error',
       message: err.response?.data?.message || 'Gagal menyimpan program kerja.'
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   } finally {
     isSubmitting.value = false
   }
@@ -508,7 +577,7 @@ async function submitProgram() {
                 >
                   <option :value="null" disabled>-- Pilih Dokumen TNA Aktif --</option>
                   <option
-                    v-for="tna in activeTnaList"
+                    v-for="tna in displayedTnaList"
                     :key="tna.id"
                     :value="tna.id"
                   >
@@ -612,15 +681,28 @@ async function submitProgram() {
 
               <!-- Facilitator -->
               <div>
-                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Facilitator
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <span>Facilitator</span>
+                  <span class="text-[10px] text-[#0067AC] font-semibold">Pilih Rekanan / Ketik Manual</span>
                 </label>
-                <input
-                  v-model="form.facilitator"
-                  type="text"
-                  placeholder="PT A / Lembaga Sertifikasi / Trainer Internal"
-                  class="w-full bg-white text-xs text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
-                />
+                <div class="relative">
+                  <input
+                    v-model="form.facilitator"
+                    type="text"
+                    list="facilitator-options"
+                    placeholder="Pilih rekanan atau ketik nama lembaga..."
+                    class="w-full bg-white text-xs text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+                  />
+                  <datalist id="facilitator-options">
+                    <option
+                      v-for="fac in masterFacilitators"
+                      :key="fac.id"
+                      :value="fac.name"
+                    >
+                      {{ fac.code }} • {{ fac.type }}
+                    </option>
+                  </datalist>
+                </div>
               </div>
 
               <!-- Duration & Tanggal -->
@@ -717,14 +799,32 @@ async function submitProgram() {
               <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center justify-between">
                   <span>BI Category</span>
-                  <span class="text-[10px] text-[#0067AC]">Regulasi BI / OJK</span>
+                  <span class="text-[10px] text-[#0067AC] font-bold">Regulasi BI / OJK</span>
                 </label>
-                <input
-                  v-model="form.bi_category"
-                  type="text"
-                  placeholder="Kategori Regulasi BI / OJK"
-                  class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
-                />
+                <div class="relative">
+                  <select
+                    v-model="form.bi_category"
+                    class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer appearance-none pr-9"
+                  >
+                    <option value="" disabled>-- Pilih Kategori Regulasi BI / OJK --</option>
+                    <option
+                      v-for="bi in masterBiCategories"
+                      :key="bi.id"
+                      :value="bi.name"
+                    >
+                      {{ bi.code }} • {{ bi.name }}
+                    </option>
+                    <option
+                      v-if="form.bi_category && !masterBiCategories.some(b => b.name === form.bi_category)"
+                      :value="form.bi_category"
+                    >
+                      {{ form.bi_category }} (Kustom)
+                    </option>
+                  </select>
+                  <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
+                    <ChevronDown class="w-4 h-4" />
+                  </div>
+                </div>
               </div>
 
             </div>
