@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ClassApiController;
 use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\Api\FacilitatorApiController;
 use App\Http\Controllers\Api\FiscalYearApiController;
+use App\Http\Controllers\Api\MemoApiController;
 use App\Http\Controllers\Api\OperationApiController;
 use App\Http\Controllers\Api\ProgramApiController;
 use App\Http\Controllers\Api\TnaApiController;
@@ -30,6 +31,7 @@ Route::post('/auth/login', [AuthApiController::class, 'login']);
 // Document & Attachment Stream Routes (viewable directly in browser tab or via API client)
 Route::get('/tna/{id}/attachment', [TnaApiController::class, 'downloadAttachment']);
 Route::get('/programs/{id}/document', [ProgramApiController::class, 'downloadDocument']);
+Route::get('/memos/{id}/document', [MemoApiController::class, 'downloadDocument']);
 
 // Authenticated Banking API Endpoints (Protected by Laravel Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
@@ -151,4 +153,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/rbac/levels', [UserRbacApiController::class, 'indexLevels']);
     Route::get('/rbac/levels/{id}/access', [UserRbacApiController::class, 'getLevelAccess']);
     Route::post('/rbac/levels/{id}/access', [UserRbacApiController::class, 'updateLevelAccess']);
+
+    // Memo Management (Internal & Eksternal) - SS2
+    Route::get('/memos', [MemoApiController::class, 'index']);
+    Route::get('/memos/{id}', [MemoApiController::class, 'show']);
+    Route::post('/memos', [MemoApiController::class, 'store']);
+    Route::match(['put', 'post'], '/memos/{id}', [MemoApiController::class, 'update']);
+    Route::delete('/memos/{id}', [MemoApiController::class, 'destroy']);
 });

@@ -275,31 +275,6 @@ defineExpose({
     <!-- Sub-View: Main Classes List View (SS2 Grid Table) -->
     <div v-else class="flex flex-col gap-5">
 
-      <!-- Header & Create Class Button -->
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-gray-100 shadow-2xs">
-        <div>
-          <div class="flex items-center gap-2.5">
-            <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">Daftar Class</h1>
-            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-[#0067AC] border border-blue-100">
-              {{ classes.length }} Batch Terdaftar
-            </span>
-          </div>
-          <p class="text-xs text-gray-500 mt-1">
-            Katalog pelaksanaan batch kelas pelatihan perbankan BWS, instruktur/fasilitator, jadwal, dan monitoring kelas
-          </p>
-        </div>
-
-        <button
-          v-if="canCreateClass"
-          type="button"
-          @click="openCreate()"
-          class="bg-[#0067AC] hover:bg-[#00528c] text-white px-5 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 shadow-sm transition cursor-pointer shrink-0"
-        >
-          <Plus class="w-4 h-4" />
-          <span>+ Buat Kelas Baru</span>
-        </button>
-      </div>
-
       <!-- Feedback Toast Banner -->
       <div
         v-if="feedbackMessage"

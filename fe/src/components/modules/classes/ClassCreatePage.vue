@@ -27,6 +27,7 @@ import {
   Image,
   Star,
   Check,
+  Search,
   HelpCircle,
   Layers
 } from 'lucide-vue-next'
@@ -57,6 +58,14 @@ const feedback = ref({ type: '', message: '' })
 const tnaProposals = ref([])
 const allPrograms = ref([])
 const masterFacilitators = ref([])
+const masterPegawai = ref([])
+
+// Master Pegawai Modal & Selection State
+const showPegawaiModal = ref(false)
+const searchPegawai = ref('')
+const filterPegawaiDept = ref('')
+const selectedPegawaiIds = ref([])
+const selectedQuickKaryawanId = ref('')
 
 // Form State matching SS2 Excel Wireframe
 const form = ref({
@@ -372,18 +381,121 @@ function clearAllParticipants() {
   form.value.enrolled_participants = []
 }
 
+// Master Pegawai Picker Logics
+const uniquePegawaiDepts = computed(() => {
+  const set = new Set()
+  masterPegawai.value.forEach(k => {
+    if (k.departemen) set.add(k.departemen)
+  })
+  return Array.from(set).sort()
+})
+
+const filteredMasterPegawai = computed(() => {
+  let list = masterPegawai.value
+  if (filterPegawaiDept.value) {
+    list = list.filter(k => k.departemen === filterPegawaiDept.value)
+  }
+  if (searchPegawai.value) {
+    const q = searchPegawai.value.toLowerCase()
+    list = list.filter(k =>
+      (k.nik && k.nik.toLowerCase().includes(q)) ||
+      (k.nama && k.nama.toLowerCase().includes(q)) ||
+      (k.departemen && k.departemen.toLowerCase().includes(q)) ||
+      (k.jabatan && k.jabatan.toLowerCase().includes(q)) ||
+      (k.kantor_cabang && k.kantor_cabang.toLowerCase().includes(q))
+    )
+  }
+  return list
+})
+
+function isPegawaiEnrolled(k) {
+  return form.value.enrolled_participants.some(p =>
+    (p.nik && k.nik && p.nik.toLowerCase() === k.nik.toLowerCase()) ||
+    (p.name && k.nama && p.name.toLowerCase() === k.nama.toLowerCase())
+  )
+}
+
+function toggleSelectPegawai(k) {
+  if (isPegawaiEnrolled(k)) return
+  const id = k.karyawan_id
+  const idx = selectedPegawaiIds.value.indexOf(id)
+  if (idx >= 0) {
+    selectedPegawaiIds.value.splice(idx, 1)
+  } else {
+    selectedPegawaiIds.value.push(id)
+  }
+}
+
+function selectAllFilteredPegawai() {
+  const available = filteredMasterPegawai.value.filter(k => !isPegawaiEnrolled(k))
+  const allSelected = available.length > 0 && available.every(k => selectedPegawaiIds.value.includes(k.karyawan_id))
+  if (allSelected) {
+    selectedPegawaiIds.value = []
+  } else {
+    selectedPegawaiIds.value = available.map(k => k.karyawan_id)
+  }
+}
+
+function addSelectedPegawaiToClass() {
+  const selected = masterPegawai.value.filter(k => selectedPegawaiIds.value.includes(k.karyawan_id))
+  selected.forEach(k => {
+    if (!isPegawaiEnrolled(k)) {
+      form.value.enrolled_participants.push({
+        user_id: k.user?.id || k.karyawan_id,
+        nik: k.nik,
+        name: k.nama,
+        department: k.departemen,
+        branch: k.kantor_cabang || 'Kantor Pusat Sudirman',
+        position: k.jabatan || 'Staff'
+      })
+    }
+  })
+  selectedPegawaiIds.value = []
+  showPegawaiModal.value = false
+}
+
+function onQuickKaryawanSelected() {
+  if (!selectedQuickKaryawanId.value) return
+  const k = masterPegawai.value.find(item => String(item.karyawan_id) === String(selectedQuickKaryawanId.value))
+  if (k) {
+    newParticipant.value.nik = k.nik
+    newParticipant.value.name = k.nama
+    newParticipant.value.department = k.departemen
+    newParticipant.value.position = k.jabatan
+  }
+}
+
+function addQuickKaryawan() {
+  if (!selectedQuickKaryawanId.value) return
+  const k = masterPegawai.value.find(item => String(item.karyawan_id) === String(selectedQuickKaryawanId.value))
+  if (k && !isPegawaiEnrolled(k)) {
+    form.value.enrolled_participants.push({
+      user_id: k.user?.id || k.karyawan_id,
+      nik: k.nik,
+      name: k.nama,
+      department: k.departemen,
+      branch: k.kantor_cabang || 'Kantor Pusat Sudirman',
+      position: k.jabatan || 'Staff'
+    })
+  }
+  selectedQuickKaryawanId.value = ''
+  newParticipant.value = { nik: '', name: '', department: '', position: '' }
+}
+
 // Load data on Mount
 async function loadData() {
   loadingInit.value = true
   try {
-    const [resTna, resProg, resFac] = await Promise.all([
+    const [resTna, resProg, resFac, resKaryawan] = await Promise.all([
       apiClient.get('/tna'),
       apiClient.get('/programs'),
-      apiClient.get('/facilitators')
+      apiClient.get('/facilitators'),
+      apiClient.get('/karyawan')
     ])
     tnaProposals.value = resTna.data.proposals || []
     allPrograms.value = resProg.data.programs || []
     masterFacilitators.value = resFac.data.facilitators || []
+    masterPegawai.value = resKaryawan.data?.karyawans || []
 
     if (isEditMode.value) {
       const { data } = await apiClient.get(`/classes/${props.editClassId}`)
@@ -1233,12 +1345,20 @@ async function submitForm() {
             </div>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              @click="showPegawaiModal = true"
+              class="px-4 py-2 bg-[#0067AC] hover:bg-[#00528c] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <Users class="w-3.5 h-3.5" />
+              <span>+ Pilih dari Master Pegawai</span>
+            </button>
             <button
               v-if="availableNominations.length > 0"
               type="button"
               @click="selectAllNominations"
-              class="px-3 py-1.5 bg-blue-50 text-[#0067AC] rounded-xl text-xs font-bold hover:bg-blue-100 transition cursor-pointer"
+              class="px-3 py-2 bg-blue-50 text-[#0067AC] rounded-xl text-xs font-bold hover:bg-blue-100 transition cursor-pointer"
             >
               Pilih Semua Nominasi ({{ availableNominations.length }})
             </button>
@@ -1246,40 +1366,42 @@ async function submitForm() {
               v-if="form.enrolled_participants.length > 0"
               type="button"
               @click="clearAllParticipants"
-              class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-200 transition cursor-pointer"
+              class="px-3 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-200 transition cursor-pointer"
             >
               Kosongkan
             </button>
           </div>
         </div>
 
-        <!-- Manual Add Participant Input Strip -->
-        <div class="bg-gray-50/70 p-3.5 rounded-2xl border border-gray-200 grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-xs">
-          <input
-            v-model="newParticipant.nik"
-            type="text"
-            placeholder="NIK Pegawai"
-            class="bg-white rounded-xl px-3 py-2 border border-gray-300 font-mono focus:border-[#0067AC] focus:outline-none"
-          />
-          <input
-            v-model="newParticipant.name"
-            type="text"
-            placeholder="Nama Lengkap *"
-            class="bg-white rounded-xl px-3 py-2 border border-gray-300 font-bold text-gray-900 focus:border-[#0067AC] focus:outline-none"
-          />
-          <input
-            v-model="newParticipant.department"
-            type="text"
-            placeholder="Divisi / Departemen"
-            class="bg-white rounded-xl px-3 py-2 border border-gray-300 focus:border-[#0067AC] focus:outline-none"
-          />
+        <!-- Quick Select from Master Pegawai Strip -->
+        <div class="bg-blue-50/50 p-3 rounded-2xl border border-blue-100 flex flex-col sm:flex-row items-center gap-2.5 text-xs">
+          <span class="text-gray-700 font-bold shrink-0 flex items-center gap-1.5">
+            <UserCheck class="w-4 h-4 text-[#0067AC]" />
+            <span>Pilih Cepat Pegawai:</span>
+          </span>
+          <select
+            v-model="selectedQuickKaryawanId"
+            @change="onQuickKaryawanSelected"
+            class="w-full bg-white rounded-xl px-3 py-2 border border-gray-300 font-medium text-gray-800 focus:border-[#0067AC] focus:outline-none"
+          >
+            <option value="">-- Pilih Pegawai dari Master Data Karyawan BWS --</option>
+            <option
+              v-for="k in masterPegawai"
+              :key="k.karyawan_id"
+              :value="k.karyawan_id"
+              :disabled="isPegawaiEnrolled(k)"
+            >
+              [{{ k.nik }}] {{ k.nama }} — {{ k.departemen }} ({{ k.jabatan }}) {{ isPegawaiEnrolled(k) ? '• (Sudah Terdaftar)' : '' }}
+            </option>
+          </select>
           <button
             type="button"
-            @click="addManualParticipant"
-            class="bg-[#0067AC] hover:bg-[#00558F] text-white font-bold rounded-xl py-2 px-4 shadow-xs transition flex items-center justify-center gap-1 cursor-pointer"
+            @click="addQuickKaryawan"
+            :disabled="!selectedQuickKaryawanId"
+            class="bg-[#0067AC] hover:bg-[#00528c] text-white font-bold rounded-xl py-2 px-4 shadow-xs transition flex items-center justify-center gap-1 cursor-pointer shrink-0 disabled:opacity-40"
           >
             <Plus class="w-4 h-4" />
-            <span>Tambah Peserta</span>
+            <span>Tambahkan</span>
           </button>
         </div>
 
@@ -1350,6 +1472,154 @@ async function submitForm() {
       </div>
 
     </form>
+
+    <!-- Modal Pilih dari Master Pegawai -->
+    <div
+      v-if="showPegawaiModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-opacity"
+    >
+      <div class="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-gray-100 flex flex-col max-h-[90vh]">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-blue-50 text-[#0067AC] flex items-center justify-center">
+              <Users class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="font-extrabold text-base text-gray-900">Pilih Peserta dari Master Pegawai</h3>
+              <p class="text-xs text-gray-500">
+                Pilih pegawai aktif Bank Woori Saudara untuk didaftarkan ke batch kelas ini
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            @click="showPegawaiModal = false; selectedPegawaiIds = []"
+            class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 pb-2 text-xs">
+          <div class="sm:col-span-2 relative">
+            <input
+              v-model="searchPegawai"
+              type="text"
+              placeholder="Cari NIK, Nama Pegawai, Jabatan, atau Cabang..."
+              class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#0067AC]"
+            />
+            <Search class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+          </div>
+
+          <div>
+            <select
+              v-model="filterPegawaiDept"
+              class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#0067AC]"
+            >
+              <option value="">-- Seluruh Unit Kerja --</option>
+              <option v-for="d in uniquePegawaiDepts" :key="d" :value="d">{{ d }}</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Table List of Pegawai -->
+        <div class="overflow-y-auto flex-1 my-3 border border-gray-100 rounded-2xl">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-gray-50 text-gray-600 font-bold sticky top-0 border-b border-gray-100">
+              <tr>
+                <th class="py-3 px-3 w-10 text-center">
+                  <input
+                    type="checkbox"
+                    @change="selectAllFilteredPegawai"
+                    :checked="filteredMasterPegawai.length > 0 && filteredMasterPegawai.filter(k => !isPegawaiEnrolled(k)).every(k => selectedPegawaiIds.includes(k.karyawan_id))"
+                    class="rounded text-[#0067AC] cursor-pointer"
+                  />
+                </th>
+                <th class="py-3 px-3">NIK</th>
+                <th class="py-3 px-3">Nama Pegawai</th>
+                <th class="py-3 px-3">Departemen & Jabatan</th>
+                <th class="py-3 px-3">Kantor Cabang</th>
+                <th class="py-3 px-3 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr v-if="filteredMasterPegawai.length === 0">
+                <td colspan="6" class="py-8 text-center text-gray-400">
+                  Tidak ada data pegawai yang sesuai dengan pencarian.
+                </td>
+              </tr>
+              <tr
+                v-for="k in filteredMasterPegawai"
+                :key="k.karyawan_id"
+                @click="toggleSelectPegawai(k)"
+                class="hover:bg-blue-50/30 transition cursor-pointer"
+                :class="isPegawaiEnrolled(k) ? 'bg-gray-50/70 opacity-60 cursor-not-allowed' : selectedPegawaiIds.includes(k.karyawan_id) ? 'bg-blue-50/50' : ''"
+              >
+                <td class="py-2.5 px-3 text-center" @click.stop>
+                  <input
+                    v-if="!isPegawaiEnrolled(k)"
+                    type="checkbox"
+                    :checked="selectedPegawaiIds.includes(k.karyawan_id)"
+                    @change="toggleSelectPegawai(k)"
+                    class="rounded text-[#0067AC] cursor-pointer"
+                  />
+                  <Check v-else class="w-4 h-4 text-emerald-600 mx-auto" />
+                </td>
+                <td class="py-2.5 px-3 font-mono font-bold text-[#0067AC]">{{ k.nik }}</td>
+                <td class="py-2.5 px-3 font-bold text-gray-800">{{ k.nama }}</td>
+                <td class="py-2.5 px-3 text-gray-600">
+                  <p class="font-medium text-gray-800">{{ k.departemen }}</p>
+                  <p class="text-[10px] text-gray-400">{{ k.jabatan }}</p>
+                </td>
+                <td class="py-2.5 px-3 text-gray-600">{{ k.kantor_cabang || 'Kantor Pusat Sudirman' }}</td>
+                <td class="py-2.5 px-3 text-center">
+                  <span
+                    v-if="isPegawaiEnrolled(k)"
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-200"
+                  >
+                    Terdaftar
+                  </span>
+                  <span
+                    v-else
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100"
+                  >
+                    {{ k.st_kerja || 'Aktif' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+          <p class="text-xs text-gray-500">
+            Terpilih: <strong class="text-[#0067AC]">{{ selectedPegawaiIds.length }} Pegawai</strong>
+          </p>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              @click="showPegawaiModal = false; selectedPegawaiIds = []"
+              class="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              @click="addSelectedPegawaiToClass"
+              :disabled="selectedPegawaiIds.length === 0"
+              class="px-5 py-2 rounded-xl bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold transition cursor-pointer disabled:opacity-40"
+            >
+              Tambahkan ke Kelas ({{ selectedPegawaiIds.length }})
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
 
   </div>
 </template>

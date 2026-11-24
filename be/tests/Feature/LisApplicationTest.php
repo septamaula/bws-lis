@@ -384,4 +384,40 @@ class LisApplicationTest extends TestCase
         $deleteRes->assertStatus(200);
         $this->assertDatabaseMissing('training_classes', ['id' => $classId]);
     }
+
+    public function test_memo_management_crud(): void
+    {
+        $admin = User::where('role_name', 'Super Admin')->first();
+        Sanctum::actingAs($admin);
+
+        // 1. Get memos
+        $listRes = $this->getJson('/api/memos');
+        $listRes->assertStatus(200);
+
+        // 2. Create Internal Memo
+        $num = 'TEST-' . rand(100, 999) . '/MEMO-LD/2026';
+        $createRes = $this->postJson('/api/memos', [
+            'category' => 'INTERNAL',
+            'memo_date' => '2026-02-10',
+            'memo_number' => $num,
+            'pic' => 'Aditya Nugraha',
+            'subject' => 'Memo Uji Otomasi Backend',
+            'description' => 'Testing memo internal'
+        ]);
+        $createRes->assertStatus(201);
+        $memoId = $createRes->json('data.id');
+        $this->assertDatabaseHas('memos', ['id' => $memoId, 'memo_number' => $num]);
+
+        // 3. Update Memo
+        $updateRes = $this->putJson("/api/memos/{$memoId}", [
+            'subject' => 'Memo Uji Otomasi Backend (Updated)'
+        ]);
+        $updateRes->assertStatus(200);
+        $this->assertDatabaseHas('memos', ['id' => $memoId, 'subject' => 'Memo Uji Otomasi Backend (Updated)']);
+
+        // 4. Delete Memo
+        $delRes = $this->deleteJson("/api/memos/{$memoId}");
+        $delRes->assertStatus(200);
+        $this->assertSoftDeleted('memos', ['id' => $memoId]);
+    }
 }

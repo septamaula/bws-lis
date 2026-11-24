@@ -49,7 +49,8 @@ import {
   FolderTree,
   CalendarRange,
   Workflow,
-  Users2
+  Users2,
+  FileText
 } from 'lucide-vue-next'
 
 // Import Modular Components
@@ -60,6 +61,7 @@ import ClassModule from '@/components/modules/ClassModule.vue'
 import ParticipantsModule from '@/components/modules/ParticipantsModule.vue'
 import EvalModule from '@/components/modules/EvalModule.vue'
 import TaskModule from '@/components/modules/TaskModule.vue'
+import MemoModule from '@/components/modules/MemoModule.vue'
 import TransactionModule from '@/components/modules/TransactionModule.vue'
 import CertificationModule from '@/components/modules/CertificationModule.vue'
 import ReportingModule from '@/components/modules/ReportingModule.vue'
@@ -110,11 +112,13 @@ const classViewMode = ref('list')
 const selectedTnaProposalId = ref(null)
 const programModuleRef = ref(null)
 const classModuleRef = ref(null)
+const memoModuleRef = ref(null)
 
 const isSubViewActive = computed(() => {
   if (activeTab.value === 'tna' && ['create', 'edit', 'detail'].includes(tnaViewMode.value)) return true
   if (activeTab.value === 'program' && programViewMode.value !== 'list') return true
   if (activeTab.value === 'class' && classViewMode.value !== 'list') return true
+  if (activeTab.value === 'memo' && memoModuleRef.value?.viewMode !== 'list') return true
   return false
 })
 
@@ -182,6 +186,7 @@ const navigationModules = [
   { id: 'participants', name: 'Peserta Diklat' },
   { id: 'eval', name: 'Evaluasi & Nilai' },
   { id: 'task', name: 'Penugasan' },
+  { id: 'memo', name: 'Memo' },
   { id: 'transaction', name: 'Transaksi & Reimburse' },
   { id: 'certification', name: 'Sertifikasi Wajib' },
   { id: 'reporting', name: 'Laporan & Audit' },
@@ -192,17 +197,18 @@ const currentTabTitle = computed(() => {
   switch (activeTab.value) {
     case 'dashboard': return 'Executive & Operational Dashboard'
     case 'tna':
-      if (tnaViewMode.value === 'categories') return 'Master Kategori Pelatihan'
-      if (tnaViewMode.value === 'years') return 'Tahun Anggaran Pelatihan'
-      return 'TNA & Annual Training Plan'
+      if (tnaViewMode.value === 'categories') return 'Master Kategori Pelatihan (TNA)'
+      if (tnaViewMode.value === 'years') return 'Master Tahun Anggaran & Status TNA'
+      return 'Daftar TNA'
     case 'program':
       if (programViewMode.value === 'facilitator') return 'Master Lembaga & Facilitator'
       if (programViewMode.value === 'bi_categories') return 'Master Kategori Regulasi BI / OJK'
-      return 'Program Pelatihan & Work Plan'
-    case 'class': return 'Class Implementation & Schedule'
+      return 'Daftar Program'
+    case 'class': return 'Daftar Class'
     case 'participants': return 'Peserta & Activity Tracking'
     case 'eval': return 'Evaluasi & Nilai Peserta'
     case 'task': return 'Penugasan & Task Management'
+    case 'memo': return 'Daftar Memo'
     case 'transaction': return 'Transaksi Keuangan & Reimbursement'
     case 'certification': return 'Sertifikasi Wajib & Lisensi Profesi'
     case 'reporting': return 'Reporting Center & Audit Trail'
@@ -224,10 +230,11 @@ const currentTabSubtitle = computed(() => {
       if (programViewMode.value === 'facilitator') return 'Kelola database rekanan lembaga diklat, vendor eksternal, institusi, dan instruktur'
       if (programViewMode.value === 'bi_categories') return 'Kelola klasifikasi kepatuhan regulasi Bank Indonesia & Otoritas Jasa Keuangan'
       return 'Katalog Program Kerja, Kurikulum Diklat, dan Sertifikasi Wajib Regulasi OJK / BI'
-    case 'class': return 'Manajemen Batch Pelatihan, Alokasi Ruangan, dan Otorisasi Maker-Checker'
+    case 'class': return 'Katalog pelaksanaan batch kelas pelatihan perbankan BWS, instruktur/fasilitator, jadwal, dan monitoring kelas'
     case 'participants': return 'Database Peserta Diklat, Kehadiran, dan Monitoring Progres Pelatihan LIS'
     case 'eval': return 'Rekapitulasi Skor Pre-Test & Post-Test, Efektivitas Peningkatan Kompetensi Pegawai'
     case 'task': return 'Monitoring Pengumpulan Action Learning Project & Penilaian Tugas Mandiri Peserta'
+    case 'memo': return 'Pencatatan nomor surat kedinasan, penugasan internal, dan korespondensi eksternal Divisi L&D'
     case 'transaction': return 'Buku Transaksi Realisasi Anggaran, Klaim Biaya Diklat, dan Otorisasi Maker-Checker'
     case 'certification': return 'Kepatuhan Lisensi Perbankan OJK & Bank Indonesia (Manajemen Risiko, SKSP, Tresuri)'
     case 'reporting': return 'Pusat Unduh Laporan Realisasi Diklat, Sign-Off Berjenjang, dan Rekam Jejak Audit OJK'
@@ -961,6 +968,39 @@ const totalPendingApprovalsForUser = computed(() => {
                 </div>
               </div>
 
+              <!-- Memo (Internal & Eksternal) SS2 -->
+              <div class="relative group">
+                <button
+                  @click="activeTab = 'memo'"
+                  id="side-memo"
+                  class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
+                  :class="activeTab === 'memo' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
+                  title="Memo (Internal/Eksternal)"
+                >
+                  <FileText class="w-4 h-4" />
+                </button>
+                <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
+                  <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
+                    <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5 flex items-center justify-between">
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">Memo Kedinasan</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">SS2</span>
+                    </div>
+                    <ul class="space-y-1 text-xs font-medium text-gray-600">
+                      <li>
+                        <button
+                          @click="activeTab = 'memo'"
+                          class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl transition"
+                          :class="activeTab === 'memo' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                        >
+                          <FileSpreadsheet class="w-3.5 h-3.5 text-gray-400" />
+                          Daftar Memo (Internal & Eksternal)
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
               <!-- Transaction & Reimbursement -->
               <div class="relative group">
                 <button
@@ -1242,20 +1282,24 @@ const totalPendingApprovalsForUser = computed(() => {
             <!-- 4. Class Implementation -->
             <div v-else-if="activeTab === 'class'" class="flex items-center gap-2">
               <button
-                v-if="canCreateClass"
-                @click="showClassModal = true"
-                class="bg-white px-3.5 py-2 rounded-full text-xs font-semibold text-gray-800 flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-100 transition"
-              >
-                <Send class="w-3.5 h-3.5 text-[#0067AC]" />
-                <span>Send Class Invitation</span>
-              </button>
-              <button
-                v-if="canCreateClass"
+                v-if="canCreateClass && classViewMode === 'list'"
                 @click="classModuleRef?.openCreate()"
-                class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition cursor-pointer"
+                class="bg-[#0067AC] hover:bg-[#00528c] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
               >
                 <Plus class="w-3.5 h-3.5" />
-                <span>Buat Batch Kelas (Maker)</span>
+                <span>Buat Kelas Baru</span>
+              </button>
+            </div>
+
+            <!-- Memo Module Header Action -->
+            <div v-else-if="activeTab === 'memo'" class="flex items-center gap-2">
+              <button
+                v-if="memoModuleRef?.viewMode === 'list'"
+                @click="memoModuleRef?.openCreateMemo('INTERNAL')"
+                class="bg-[#0067AC] hover:bg-[#00528c] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+              >
+                <Plus class="w-3.5 h-3.5" />
+                <span>Buat Memo Baru</span>
               </button>
             </div>
 
@@ -1521,6 +1565,12 @@ const totalPendingApprovalsForUser = computed(() => {
             <TaskModule
               v-else-if="activeTab === 'task'"
               :training-classes="trainingClasses"
+            />
+
+            <MemoModule
+              v-else-if="activeTab === 'memo'"
+              ref="memoModuleRef"
+              @back="activeTab = 'dashboard'"
             />
 
             <TransactionModule
