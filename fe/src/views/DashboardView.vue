@@ -787,18 +787,6 @@ const totalPendingApprovalsForUser = computed(() => {
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
                       </li>
-                      <li>
-                        <button
-                          @click="openModal('modal-class')"
-                          class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#0067AC] transition"
-                        >
-                          <span class="flex items-center gap-2">
-                            <Send class="w-3.5 h-3.5 text-gray-400" />
-                            Siap Dibuatkan Kelas
-                          </span>
-                          <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
-                        </button>
-                      </li>
 
                       <!-- Section Header: Master Data -->
                       <li class="pt-2 pb-1 px-3 border-t border-gray-100 mt-1 flex items-center justify-between">
