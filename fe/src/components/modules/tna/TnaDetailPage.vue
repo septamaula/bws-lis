@@ -184,7 +184,7 @@ async function downloadDocument() {
     </SubpageHeader>
 
     <!-- 1. Top Information Card: Year, Status TNA, Document, Regulator Target -->
-    <div v-if="proposal" class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+    <div v-if="proposal" class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-center">
       
       <!-- Year -->
       <div class="flex items-center gap-3.5">
@@ -237,29 +237,28 @@ async function downloadDocument() {
         </div>
         <div class="min-w-0 flex-1">
           <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Dokumen Lampiran</span>
-          <div v-if="proposal.attachment_name" class="mt-1 flex items-center gap-1.5 flex-wrap">
+          <div v-if="proposal.attachment_name" class="mt-1 flex items-center gap-1.5 min-w-0">
             <button
+              type="button"
               :disabled="downloadingDoc"
               @click="downloadDocument"
-              class="group inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50/70 hover:bg-[#0067AC] text-gray-800 hover:text-white border border-blue-200/80 hover:border-[#0067AC] transition-all duration-200 cursor-pointer shadow-2xs max-w-full disabled:opacity-50"
-              :title="`Klik untuk membuka file: ${proposal.attachment_name}`"
+              class="group flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50/70 hover:bg-[#0067AC] text-gray-800 hover:text-white border border-blue-200/80 hover:border-[#0067AC] transition cursor-pointer min-w-0 flex-1 max-w-[200px]"
+              :title="`Klik untuk melihat file: ${proposal.attachment_name}`"
             >
-              <div class="w-5 h-5 rounded-md bg-rose-50 text-rose-600 group-hover:bg-white group-hover:text-rose-600 flex items-center justify-center shrink-0 border border-rose-100 group-hover:border-transparent transition">
-                <FileText class="w-3 h-3" />
+              <div class="w-4 h-4 rounded bg-rose-50 text-rose-600 group-hover:bg-white group-hover:text-rose-600 flex items-center justify-center shrink-0 border border-rose-100 group-hover:border-transparent transition">
+                <FileText class="w-2.5 h-2.5" />
               </div>
-              <span class="text-xs font-bold text-gray-800 group-hover:text-white truncate max-w-[130px] sm:max-w-[170px] transition">
+              <span class="text-xs font-bold truncate">
                 {{ proposal.attachment_name }}
               </span>
-              <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-white/80 group-hover:bg-white/20 text-[#0067AC] group-hover:text-white border border-blue-100 group-hover:border-transparent transition shrink-0">
-                <Eye v-if="!downloadingDoc" class="w-2.5 h-2.5" />
-                <Loader2 v-else class="w-2.5 h-2.5 animate-spin" />
-                <span>Lihat File</span>
-              </span>
+              <Eye v-if="!downloadingDoc" class="w-3 h-3 text-[#0067AC] group-hover:text-white shrink-0 ml-auto" />
+              <Loader2 v-else class="w-3 h-3 animate-spin text-[#0067AC] group-hover:text-white shrink-0 ml-auto" />
             </button>
+
             <a
               :href="`${apiClient.defaults.baseURL || '/api'}/tna/${proposal.id}/attachment?download=1`"
               target="_blank"
-              class="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-[#0067AC] border border-gray-200 transition shadow-2xs cursor-pointer flex items-center justify-center shrink-0"
+              class="w-7 h-7 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-[#0067AC] border border-gray-200 transition shadow-2xs cursor-pointer flex items-center justify-center shrink-0"
               title="Unduh file dokumen"
             >
               <Download class="w-3.5 h-3.5" />
