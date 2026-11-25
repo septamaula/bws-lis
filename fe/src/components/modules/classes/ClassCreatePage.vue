@@ -382,6 +382,14 @@ function clearAllParticipants() {
 }
 
 // Master Pegawai Picker Logics
+const picOptions = computed(() => {
+  return masterPegawai.value.map(k => ({
+    value: k.nama,
+    label: k.nama,
+    subLabel: `[${k.nik}] ${k.departemen || '-'} • ${k.jabatan || '-'}`
+  }))
+})
+
 const uniquePegawaiDepts = computed(() => {
   const set = new Set()
   masterPegawai.value.forEach(k => {
@@ -612,6 +620,11 @@ async function submitForm() {
   }
   if (!form.value.batch_name) {
     feedback.value = { type: 'error', message: 'Nama batch kelas wajib diisi (e.g. Batch 1).' }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    return
+  }
+  if (!form.value.pic_name) {
+    feedback.value = { type: 'error', message: 'PIC Koordinator Kelas wajib dipilih dari Master Pegawai.' }
     window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
@@ -854,17 +867,18 @@ async function submitForm() {
             />
           </div>
 
-          <!-- PIC Name (e.g. PIC 1) -->
+          <!-- PIC Name (Koordinator Kelas - Master Pegawai) -->
           <div>
-            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              PIC Name (Koordinator Kelas) <span class="text-rose-500">*</span>
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>PIC Name (Koordinator Kelas) <span class="text-rose-500">*</span></span>
+              <span class="text-[10px] text-[#0067AC] font-medium font-mono">Master Pegawai</span>
             </label>
-            <input
+            <AppSearchableSelect
               v-model="form.pic_name"
-              type="text"
-              required
-              placeholder="Nama PIC Koordinator Kelas"
-              class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+              :options="picOptions"
+              placeholder="-- Pilih PIC Koordinator dari Master Pegawai --"
+              search-placeholder="Cari nama, NIK, unit, atau jabatan..."
+              input-class="bg-white font-bold text-gray-900 py-2.5 border-gray-300 shadow-2xs"
             />
           </div>
 

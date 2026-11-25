@@ -49,21 +49,24 @@ const searchInputRef = ref(null)
 const containerRef = ref(null)
 const highlightedIndex = ref(-1)
 
-// Normalize options to { value, label } format
+// Normalize options to { value, label, subLabel } format
 const normalizedOptions = computed(() => {
   return props.options.map(opt => {
     if (typeof opt === 'object' && opt !== null) {
       const val = opt[props.valueKey] !== undefined ? opt[props.valueKey] : (opt.value !== undefined ? opt.value : opt.id)
       const lbl = opt[props.labelKey] !== undefined ? opt[props.labelKey] : (opt.label !== undefined ? opt.label : (opt.name || opt.title || String(val ?? '')))
+      const sub = opt.subLabel || opt.description || ''
       return {
         value: val,
         label: String(lbl ?? ''),
+        subLabel: String(sub ?? ''),
         raw: opt
       }
     }
     return {
       value: opt,
       label: String(opt ?? ''),
+      subLabel: '',
       raw: opt
     }
   })
@@ -74,7 +77,7 @@ const filteredOptions = computed(() => {
   if (!searchQuery.value.trim()) return normalizedOptions.value
   const q = searchQuery.value.toLowerCase().trim()
   return normalizedOptions.value.filter(opt => {
-    return opt.label.toLowerCase().includes(q)
+    return opt.label.toLowerCase().includes(q) || (opt.subLabel && opt.subLabel.toLowerCase().includes(q))
   })
 })
 
@@ -92,7 +95,7 @@ const displayLabel = computed(() => {
   if (selectedOption.value && selectedOption.value.label) {
     return selectedOption.value.label
   }
-  return ''
+  return props.modelValue ? String(props.modelValue) : ''
 })
 
 function toggleDropdown() {
@@ -249,7 +252,10 @@ onBeforeUnmount(() => {
             'text-gray-700 hover:bg-[#F8FAFC] hover:text-[#0067AC]': String(opt.value) !== String(modelValue) && idx !== highlightedIndex
           }"
         >
-          <span class="truncate flex-1">{{ opt.label }}</span>
+          <div class="flex flex-col min-w-0 flex-1">
+            <span class="truncate" :class="{ 'font-bold text-[#0067AC]': String(opt.value) === String(modelValue) }">{{ opt.label }}</span>
+            <span v-if="opt.subLabel" class="text-[10px] text-gray-400 truncate font-normal mt-0.5">{{ opt.subLabel }}</span>
+          </div>
           <Check
             v-if="String(opt.value) === String(modelValue)"
             class="w-3.5 h-3.5 text-[#0067AC] shrink-0"
