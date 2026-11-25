@@ -180,7 +180,7 @@ async function executeDelete() {
     <!-- Subpage Header -->
     <SubpageHeader
       back-label="Kembali ke Program List"
-      title="Master Kategori Regulasi BI / OJK"
+      title="Kategori Regulasi BI / OJK"
       subtitle="Klasifikasi kurikulum kepatuhan Bank Indonesia & OJK yang dirujuk saat penyusunan program kerja diklat"
       badge="Regulasi Bank Indonesia & OJK"
       @back="emit('back')"

@@ -201,8 +201,8 @@ const currentTabTitle = computed(() => {
       if (tnaViewMode.value === 'years') return 'Master Tahun Anggaran & Status TNA'
       return 'Daftar TNA'
     case 'program':
-      if (programViewMode.value === 'facilitator') return 'Master Lembaga & Facilitator'
-      if (programViewMode.value === 'bi_categories') return 'Master Kategori Regulasi BI / OJK'
+      if (programViewMode.value === 'facilitator') return 'Lembaga & Facilitator'
+      if (programViewMode.value === 'bi_categories') return 'Kategori Regulasi BI / OJK'
       return 'Daftar Program'
     case 'class': return 'Daftar Class'
     case 'participants': return 'Peserta & Activity Tracking'
@@ -808,7 +808,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <Users2 class="w-3.5 h-3.5" />
-                            Master Facilitator
+                            Facilitator
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -821,7 +821,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <Scale class="w-3.5 h-3.5" />
-                            Master Category BI
+                            Category BI
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>

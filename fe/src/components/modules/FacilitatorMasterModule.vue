@@ -191,9 +191,9 @@ async function executeDelete() {
     <!-- Subpage Navigation Header -->
     <SubpageHeader
       back-label="Kembali ke Program Pelatihan"
-      title="Master Lembaga & Facilitator Pelatihan"
+      title="Lembaga & Facilitator Pelatihan"
       subtitle="Database vendor pelatihan eksternal, lembaga sertifikasi, dan trainer internal Bank Woori Saudara"
-      badge="Master Data Program"
+      badge="Data Program"
       @back="emit('back')"
     >
       <template #actions>
