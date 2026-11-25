@@ -64,6 +64,11 @@ const typeOptions = [
   'Computer Lab'
 ]
 
+const filterTypeOptions = [
+  { value: 'ALL', label: 'Semua Tipe Ruangan' },
+  ...typeOptions.map(t => ({ value: t, label: t }))
+]
+
 async function fetchData() {
   loading.value = true
   try {
@@ -273,13 +278,15 @@ async function handleDelete() {
       <div class="p-4 border-b border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
         <div class="flex items-center gap-2 w-full sm:w-auto">
           <!-- Type Filter -->
-          <select
-            v-model="selectedType"
-            class="bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 font-medium text-gray-700 focus:outline-none focus:border-[#0067AC]"
-          >
-            <option value="ALL">Semua Tipe Ruangan</option>
-            <option v-for="t in typeOptions" :key="t" :value="t">{{ t }}</option>
-          </select>
+          <div class="min-w-[190px]">
+            <AppSearchableSelect
+              v-model="selectedType"
+              :options="filterTypeOptions"
+              placeholder="Semua Tipe Ruangan..."
+              search-placeholder="Cari tipe..."
+              input-class="bg-[#f8fafc] border-gray-200 rounded-xl px-3 py-2 font-medium text-gray-700"
+            />
+          </div>
         </div>
 
         <!-- Search Input -->
@@ -435,12 +442,13 @@ async function handleDelete() {
             </div>
             <div>
               <label class="block font-bold text-gray-700 mb-1">Tipe Ruangan</label>
-              <select
+              <AppSearchableSelect
                 v-model="form.type"
-                class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800 focus:outline-none focus:border-[#0067AC]"
-              >
-                <option v-for="t in typeOptions" :key="t" :value="t">{{ t }}</option>
-              </select>
+                :options="typeOptions"
+                placeholder="Pilih tipe ruangan..."
+                search-placeholder="Cari tipe..."
+                input-class="bg-[#f8fafc] border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
+              />
             </div>
           </div>
 

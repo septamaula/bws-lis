@@ -69,6 +69,29 @@ const filteredClasses = computed(() => {
   return classes.value.filter(c => c.program_id === parseInt(filterProgramId.value))
 })
 
+const programFilterOptions = computed(() => [
+  { value: '', label: '-- Seluruh Program Pelatihan --' },
+  ...programs.value.map(p => ({
+    value: p.id,
+    label: `[${p.program_code}] ${p.title}`
+  }))
+])
+
+const classFilterOptions = computed(() => [
+  { value: '', label: '-- Seluruh Batch Kelas --' },
+  ...filteredClasses.value.map(c => ({
+    value: c.id,
+    label: `[${c.class_code}] ${c.batch_name}`
+  }))
+])
+
+const statusFilterOptions = [
+  { value: '', label: '-- Seluruh Status Kelulusan --' },
+  { value: 'PASSED', label: 'LULUS (Passed)' },
+  { value: 'FAILED', label: 'TIDAK LULUS (Failed)' },
+  { value: 'IN_PROGRESS', label: 'Dalam Proses / Belum Ujian' }
+]
+
 const evalColumns = [
   { key: 'name', label: 'Peserta & NIK', sortable: true },
   { key: 'program_title', label: 'Program & Batch Kelas', sortable: true },
@@ -201,44 +224,38 @@ onMounted(() => {
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-gray-100 text-xs">
         <div>
           <label class="block text-[11px] font-bold text-gray-500 mb-1">Filter Program Pelatihan</label>
-          <select
+          <AppSearchableSelect
             v-model="filterProgramId"
+            :options="programFilterOptions"
+            placeholder="-- Seluruh Program Pelatihan --"
+            search-placeholder="Cari kode atau judul program..."
+            input-class="bg-[#f8fafc] border-gray-200 text-gray-700"
             @change="filterClassId = ''; fetchEvaluations()"
-            class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#0067AC]"
-          >
-            <option value="">-- Seluruh Program Pelatihan --</option>
-            <option v-for="p in programs" :key="p.id" :value="p.id">
-              [{{ p.program_code }}] {{ p.title }}
-            </option>
-          </select>
+          />
         </div>
 
         <div>
           <label class="block text-[11px] font-bold text-gray-500 mb-1">Filter Batch Kelas</label>
-          <select
+          <AppSearchableSelect
             v-model="filterClassId"
+            :options="classFilterOptions"
+            placeholder="-- Seluruh Batch Kelas --"
+            search-placeholder="Cari kode kelas atau batch..."
+            input-class="bg-[#f8fafc] border-gray-200 text-gray-700"
             @change="fetchEvaluations"
-            class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#0067AC]"
-          >
-            <option value="">-- Seluruh Batch Kelas --</option>
-            <option v-for="c in filteredClasses" :key="c.id" :value="c.id">
-              [{{ c.class_code }}] {{ c.batch_name }}
-            </option>
-          </select>
+          />
         </div>
 
         <div>
           <label class="block text-[11px] font-bold text-gray-500 mb-1">Status Kelulusan</label>
-          <select
+          <AppSearchableSelect
             v-model="filterStatus"
+            :options="statusFilterOptions"
+            placeholder="-- Seluruh Status Kelulusan --"
+            search-placeholder="Cari status kelulusan..."
+            input-class="bg-[#f8fafc] border-gray-200 text-gray-700"
             @change="fetchEvaluations"
-            class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#0067AC]"
-          >
-            <option value="">-- Seluruh Status Kelulusan --</option>
-            <option value="PASSED">LULUS (Passed)</option>
-            <option value="FAILED">TIDAK LULUS (Failed)</option>
-            <option value="IN_PROGRESS">Dalam Proses / Belum Ujian</option>
-          </select>
+          />
         </div>
       </div>
     </div>

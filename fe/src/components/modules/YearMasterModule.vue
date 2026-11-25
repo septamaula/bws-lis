@@ -241,14 +241,17 @@ async function executeDelete() {
               <label class="block font-bold text-gray-700 uppercase tracking-wider text-[11px]">
                 Status Siklus <span class="text-rose-500">*</span>
               </label>
-              <select
+              <AppSearchableSelect
                 v-model="form.status"
-                class="w-full bg-[#F8FAFC] rounded-xl px-4 py-2.5 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none font-bold text-gray-800 cursor-pointer"
-              >
-                <option value="AKTIF">AKTIF (Tahun Berjalan)</option>
-                <option value="PERENCANAAN">PERENCANAAN (TNA Cycle)</option>
-                <option value="TUTUP_BUKU">TUTUP_BUKU (Audit Selesai)</option>
-              </select>
+                :options="[
+                  { value: 'AKTIF', label: 'AKTIF (Tahun Berjalan)', subLabel: 'Tahun Anggaran Berjalan' },
+                  { value: 'PERENCANAAN', label: 'PERENCANAAN (TNA Cycle)', subLabel: 'Siklus Usulan Dibuka' },
+                  { value: 'TUTUP_BUKU', label: 'TUTUP_BUKU (Audit Selesai)', subLabel: 'Arsip / Tutup' }
+                ]"
+                placeholder="Pilih status siklus..."
+                search-placeholder="Cari status..."
+                input-class="rounded-xl px-4 py-2.5 border-gray-200 font-bold text-gray-800 bg-[#F8FAFC]"
+              />
               <p class="text-[10px] text-gray-400">Status menentukan apakah tahun ini dibuka untuk usulan TNA.</p>
             </div>
           </div>

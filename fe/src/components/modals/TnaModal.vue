@@ -98,9 +98,13 @@ async function submit() {
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Divisi / Departemen</label>
-            <select v-model="form.department" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none">
-              <option v-for="dept in departments" :key="dept" :value="dept">{{ dept }}</option>
-            </select>
+            <AppSearchableSelect
+              v-model="form.department"
+              :options="departments"
+              placeholder="Pilih Departemen..."
+              search-placeholder="Cari divisi..."
+              input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-transparent"
+            />
           </div>
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Tahun Anggaran</label>
@@ -108,12 +112,13 @@ async function submit() {
           </div>
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Prioritas</label>
-            <select v-model="form.priority" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none">
-              <option value="Critical">Critical</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-            </select>
+            <AppSearchableSelect
+              v-model="form.priority"
+              :options="['Critical', 'High', 'Medium', 'Low']"
+              placeholder="Pilih Prioritas..."
+              search-placeholder="Cari prioritas..."
+              input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-transparent"
+            />
           </div>
         </div>
 
@@ -176,12 +181,13 @@ async function submit() {
               </div>
               <div>
                 <label class="block text-[10px] text-gray-500 mb-0.5">Urgensi</label>
-                <select v-model="item.urgency" class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none">
-                  <option value="Critical">Critical</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                </select>
+                <AppSearchableSelect
+                  v-model="item.urgency"
+                  :options="['Critical', 'High', 'Medium', 'Low']"
+                  placeholder="Urgensi..."
+                  search-placeholder="Cari..."
+                  input-class="bg-white rounded-xl px-2 py-1.5 border-gray-200"
+                />
               </div>
             </div>
           </div>

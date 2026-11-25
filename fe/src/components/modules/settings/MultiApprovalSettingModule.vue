@@ -381,13 +381,13 @@ onMounted(() => {
 
           <div class="space-y-1">
             <label class="block font-bold text-gray-700">Peran yang Ditunjuk (Role Level) *</label>
-            <select
+            <AppSearchableSelect
               v-model="stepForm.role_name"
-              required
-              class="w-full bg-[#F8FAFC] rounded-xl px-3.5 py-2.5 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none font-semibold text-[#002855]"
-            >
-              <option v-for="r in availableRoles" :key="r" :value="r">{{ r }}</option>
-            </select>
+              :options="availableRoles"
+              placeholder="Pilih peran yang ditunjuk..."
+              search-placeholder="Cari peran..."
+              input-class="bg-[#F8FAFC] rounded-xl px-3.5 py-2 text-xs border-gray-200 font-semibold text-[#002855]"
+            />
           </div>
 
           <div class="grid grid-cols-2 gap-3">

@@ -60,6 +60,22 @@ const colorOptions = [
   { hex: '#0D9488', label: 'Teal Kepatuhan' }
 ]
 
+const colorSelectOptions = computed(() =>
+  colorOptions.map(c => ({
+    value: c.hex,
+    label: `● ${c.label}`,
+    subLabel: c.hex
+  }))
+)
+
+const iconSelectOptions = computed(() =>
+  iconOptions.map(i => ({
+    value: i.name,
+    label: i.label,
+    subLabel: i.name
+  }))
+)
+
 // Data Fetching
 async function fetchData() {
   loading.value = true
@@ -355,15 +371,13 @@ async function executeDelete() {
 
             <div class="space-y-1">
               <label class="block font-bold text-gray-700">Warna Aksen Korporat *</label>
-              <select
+              <AppSearchableSelect
                 v-model="categoryForm.color"
-                class="w-full bg-[#F8FAFC] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none font-bold"
-                :style="{ color: categoryForm.color }"
-              >
-                <option v-for="c in colorOptions" :key="c.hex" :value="c.hex" :style="{ color: c.hex }">
-                  ● {{ c.label }}
-                </option>
-              </select>
+                :options="colorSelectOptions"
+                placeholder="Pilih warna aksen..."
+                search-placeholder="Cari warna..."
+                input-class="bg-[#F8FAFC] rounded-xl px-3 py-2 border-gray-200 font-bold"
+              />
             </div>
           </div>
 
@@ -380,12 +394,13 @@ async function executeDelete() {
 
           <div class="space-y-1">
             <label class="block font-bold text-gray-700">Ikon Kategori *</label>
-            <select
+            <AppSearchableSelect
               v-model="categoryForm.icon"
-              class="w-full bg-[#F8FAFC] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
-            >
-              <option v-for="i in iconOptions" :key="i.name" :value="i.name">{{ i.label }} ({{ i.name }})</option>
-            </select>
+              :options="iconSelectOptions"
+              placeholder="Pilih ikon kategori..."
+              search-placeholder="Cari ikon..."
+              input-class="bg-[#F8FAFC] rounded-xl px-3 py-2 border-gray-200"
+            />
           </div>
 
           <div class="space-y-1">

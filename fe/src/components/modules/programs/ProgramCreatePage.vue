@@ -215,9 +215,65 @@ const displayedTnaList = computed(() => {
   return list
 })
 
-// Master data lists for Facilitator & BI Category
+// Master data lists for Facilitator, Location, & BI Category
 const masterFacilitators = ref([])
+const masterLocations = ref([])
 const masterBiCategories = ref([])
+
+const tnaSelectOptions = computed(() => [
+  { value: null, label: '-- Pilih Dokumen TNA Aktif --' },
+  ...displayedTnaList.value.map(tna => ({
+    value: tna.id,
+    label: `${tna.proposal_code || 'TNA-' + tna.year} (Tahun ${tna.year}) • ${tna.tna_status || 'Aktif'}`
+  }))
+])
+
+const categorySelectOptions = computed(() => [
+  { value: '', label: '-- Pilih Kategori dari TNA Aktif --' },
+  ...availableCategories.value.map(cat => ({ value: cat, label: cat }))
+])
+
+const tnaItemSelectOptions = computed(() => [
+  { value: null, label: '-- Program Baru (Ketik Sendiri) --' },
+  ...tnaItemsForCategory.value.map(item => ({
+    value: item.id,
+    label: item.recommended_program || item.sub_category_name || `Item #${item.id}`,
+    subLabel: `Pagu: ${formatRupiah(item.budget || item.estimated_cost)}`
+  }))
+])
+
+const locationSelectOptions = computed(() => {
+  return masterLocations.value.map(loc => ({
+    value: loc.name,
+    label: loc.name,
+    subLabel: `[${loc.code}] ${loc.building || '-'} (${loc.floor || '-'}) • Kapasitas: ${loc.capacity || '-'} orang`
+  }))
+})
+
+const facilitatorSelectOptions = computed(() => {
+  return masterFacilitators.value.map(fac => ({
+    value: fac.name,
+    label: fac.name,
+    subLabel: `[${fac.code}] ${fac.type}${fac.specialization ? ' • ' + fac.specialization : ''}`
+  }))
+})
+
+const programTypeSelectOptions = computed(() => {
+  return programTypeOptions.map(t => ({ value: t, label: t }))
+})
+
+const activityTypeSelectOptions = computed(() => {
+  return activityTypeOptions.map(a => ({ value: a, label: a }))
+})
+
+const biCategorySelectOptions = computed(() => [
+  { value: '', label: '-- Pilih Kategori Regulasi BI / OJK --' },
+  ...masterBiCategories.value.map(bi => ({
+    value: bi.name,
+    label: bi.name,
+    subLabel: `[${bi.code}] ${bi.regulation_reference || 'Regulasi OJK/BI'}`
+  }))
+])
 
 // Currently selected TNA Proposal
 const selectedTna = computed(() => {
@@ -278,16 +334,18 @@ function onTnaItemSelect() {
 async function loadData() {
   loadingInit.value = true
   try {
-    const [resCats, resTna, resFac, resBi] = await Promise.all([
+    const [resCats, resTna, resFac, resBi, resLoc] = await Promise.all([
       apiClient.get('/categories'),
       apiClient.get('/tna'),
       apiClient.get('/facilitators'),
-      apiClient.get('/bi-categories')
+      apiClient.get('/bi-categories'),
+      apiClient.get('/training-locations')
     ])
     categories.value = resCats.data.categories || []
     tnaProposals.value = resTna.data.proposals || []
     masterFacilitators.value = resFac.data.facilitators || []
     masterBiCategories.value = resBi.data.categories || []
+    masterLocations.value = resLoc.data.locations || []
 
     if (isEditMode.value) {
       const { data } = await apiClient.get(`/programs/${props.editProgramId}`)
@@ -569,25 +627,14 @@ async function submitProgram() {
             </div>
 
             <div class="w-full md:w-88 shrink-0 flex flex-col gap-1">
-              <div class="relative">
-                <select
-                  v-model="form.tna_proposal_id"
-                  @change="onTnaChange"
-                  class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-4 py-2.5 border-2 border-blue-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer appearance-none pr-10"
-                >
-                  <option :value="null" disabled>-- Pilih Dokumen TNA Aktif --</option>
-                  <option
-                    v-for="tna in displayedTnaList"
-                    :key="tna.id"
-                    :value="tna.id"
-                  >
-                    {{ tna.proposal_code }} (Tahun {{ tna.year }}) &bull; {{ tna.tna_status }}
-                  </option>
-                </select>
-                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-[#0067AC]">
-                  <ChevronDown class="w-4 h-4" />
-                </div>
-              </div>
+              <AppSearchableSelect
+                v-model="form.tna_proposal_id"
+                :options="tnaSelectOptions"
+                placeholder="-- Pilih Dokumen TNA Aktif --"
+                search-placeholder="Cari nomor atau tahun TNA..."
+                input-class="bg-white text-xs font-bold text-gray-900 py-2.5 border-2 border-blue-300 shadow-2xs"
+                @change="onTnaChange"
+              />
               <div v-if="selectedTna" class="flex items-center justify-between text-[10px] font-mono text-gray-500 px-1">
                 <span>Pagu TNA: {{ formatRupiah(selectedTna.total_budget_requested) }}</span>
                 <span class="text-emerald-700 font-bold">{{ availableCategories.length }} Kategori Tersedia</span>
@@ -606,21 +653,14 @@ async function submitProgram() {
                   <span>TNA Category</span>
                   <span class="text-[10px] text-[#0067AC] font-bold">Ditarik dari TNA Aktif</span>
                 </label>
-                <div class="relative">
-                  <select
-                    v-model="form.category"
-                    @change="onCategoryChange"
-                    class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer appearance-none pr-9"
-                  >
-                    <option value="" disabled>-- Pilih Kategori dari TNA Aktif --</option>
-                    <option v-for="cat in availableCategories" :key="cat" :value="cat">
-                      {{ cat }}
-                    </option>
-                  </select>
-                  <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
-                    <ChevronDown class="w-4 h-4" />
-                  </div>
-                </div>
+                <AppSearchableSelect
+                  v-model="form.category"
+                  :options="categorySelectOptions"
+                  placeholder="-- Pilih Kategori dari TNA Aktif --"
+                  search-placeholder="Cari kategori diklat..."
+                  input-class="bg-white font-bold text-gray-900 py-2.5 border-gray-300 shadow-2xs"
+                  @change="onCategoryChange"
+                />
                 <p v-if="!selectedTna" class="text-[10px] text-amber-600 mt-1">
                   * Harap pilih dokumen TNA Aktif terlebih dahulu.
                 </p>
@@ -635,21 +675,14 @@ async function submitProgram() {
                   <span>Rujukan Usulan Program TNA</span>
                   <span class="text-[10px] text-gray-400 font-normal">Pilih untuk auto-fill judul</span>
                 </label>
-                <div class="relative">
-                  <select
-                    v-model="form.tna_item_id"
-                    @change="onTnaItemSelect"
-                    class="w-full bg-blue-50/50 text-xs font-semibold text-gray-800 rounded-xl px-3.5 py-2 border border-blue-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer appearance-none pr-9"
-                  >
-                    <option :value="null">-- Program Baru (Ketik Sendiri) --</option>
-                    <option v-for="item in tnaItemsForCategory" :key="item.id" :value="item.id">
-                      {{ item.recommended_program || item.sub_category_name }} (Pagu: {{ formatRupiah(item.budget || item.estimated_cost) }})
-                    </option>
-                  </select>
-                  <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
-                    <ChevronDown class="w-4 h-4" />
-                  </div>
-                </div>
+                <AppSearchableSelect
+                  v-model="form.tna_item_id"
+                  :options="tnaItemSelectOptions"
+                  placeholder="-- Program Baru (Ketik Sendiri) --"
+                  search-placeholder="Cari rujukan usulan..."
+                  input-class="bg-blue-50/50 font-semibold text-gray-800 py-2 border-blue-200 shadow-2xs"
+                  @change="onTnaItemSelect"
+                />
               </div>
 
               <!-- Program Name -->
@@ -666,43 +699,34 @@ async function submitProgram() {
                 />
               </div>
 
-              <!-- Location -->
+              <!-- Location (Master Ruangan) -->
               <div>
-                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Location
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center justify-between">
+                  <span>Location / Ruang</span>
+                  <span class="text-[10px] text-[#0067AC] font-medium font-mono">Master Ruangan</span>
                 </label>
-                <input
+                <AppSearchableSelect
                   v-model="form.location"
-                  type="text"
-                  placeholder="Ruang 1 / Ruang 2 / Virtual / Hotel"
-                  class="w-full bg-white text-xs text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+                  :options="locationSelectOptions"
+                  placeholder="-- Pilih Ruangan / Lokasi --"
+                  search-placeholder="Cari ruang, kode, gedung, atau tipe..."
+                  input-class="bg-white text-xs text-gray-900 py-2.5 border-gray-300 shadow-2xs"
                 />
               </div>
 
-              <!-- Facilitator -->
+              <!-- Facilitator (Master Facilitator) -->
               <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center justify-between">
-                  <span>Facilitator</span>
-                  <span class="text-[10px] text-[#0067AC] font-semibold">Pilih Rekanan / Ketik Manual</span>
+                  <span>Facilitator / Lembaga</span>
+                  <span class="text-[10px] text-[#0067AC] font-medium font-mono">Master Facilitator</span>
                 </label>
-                <div class="relative">
-                  <input
-                    v-model="form.facilitator"
-                    type="text"
-                    list="facilitator-options"
-                    placeholder="Pilih rekanan atau ketik nama lembaga..."
-                    class="w-full bg-white text-xs text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
-                  />
-                  <datalist id="facilitator-options">
-                    <option
-                      v-for="fac in masterFacilitators"
-                      :key="fac.id"
-                      :value="fac.name"
-                    >
-                      {{ fac.code }} • {{ fac.type }}
-                    </option>
-                  </datalist>
-                </div>
+                <AppSearchableSelect
+                  v-model="form.facilitator"
+                  :options="facilitatorSelectOptions"
+                  placeholder="-- Pilih Rekanan / Facilitator --"
+                  search-placeholder="Cari nama, kode, tipe, atau spesialisasi..."
+                  input-class="bg-white text-xs text-gray-900 py-2.5 border-gray-300 shadow-2xs"
+                />
               </div>
 
               <!-- Duration & Tanggal -->
@@ -761,12 +785,13 @@ async function submitProgram() {
                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
                   Program Type
                 </label>
-                <select
+                <AppSearchableSelect
                   v-model="form.program_type"
-                  class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer"
-                >
-                  <option v-for="t in programTypeOptions" :key="t" :value="t">{{ t }}</option>
-                </select>
+                  :options="programTypeSelectOptions"
+                  placeholder="-- Pilih Program Type --"
+                  search-placeholder="Cari tipe program..."
+                  input-class="bg-white text-xs font-semibold text-gray-900 py-2.5 border-gray-300 shadow-2xs"
+                />
               </div>
 
               <!-- Unit Initiator -->
@@ -787,12 +812,13 @@ async function submitProgram() {
                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
                   Activity Type
                 </label>
-                <select
+                <AppSearchableSelect
                   v-model="form.activity_type"
-                  class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer"
-                >
-                  <option v-for="a in activityTypeOptions" :key="a" :value="a">{{ a }}</option>
-                </select>
+                  :options="activityTypeSelectOptions"
+                  placeholder="-- Pilih Activity Type --"
+                  search-placeholder="Cari activity type..."
+                  input-class="bg-white text-xs font-semibold text-gray-900 py-2.5 border-gray-300 shadow-2xs"
+                />
               </div>
 
               <!-- BI Category (Bank Indonesia / OJK Regulatory Category) -->
@@ -801,30 +827,13 @@ async function submitProgram() {
                   <span>BI Category</span>
                   <span class="text-[10px] text-[#0067AC] font-bold">Regulasi BI / OJK</span>
                 </label>
-                <div class="relative">
-                  <select
-                    v-model="form.bi_category"
-                    class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer appearance-none pr-9"
-                  >
-                    <option value="" disabled>-- Pilih Kategori Regulasi BI / OJK --</option>
-                    <option
-                      v-for="bi in masterBiCategories"
-                      :key="bi.id"
-                      :value="bi.name"
-                    >
-                      {{ bi.code }} • {{ bi.name }}
-                    </option>
-                    <option
-                      v-if="form.bi_category && !masterBiCategories.some(b => b.name === form.bi_category)"
-                      :value="form.bi_category"
-                    >
-                      {{ form.bi_category }} (Kustom)
-                    </option>
-                  </select>
-                  <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
-                    <ChevronDown class="w-4 h-4" />
-                  </div>
-                </div>
+                <AppSearchableSelect
+                  v-model="form.bi_category"
+                  :options="biCategorySelectOptions"
+                  placeholder="-- Pilih Kategori Regulasi BI / OJK --"
+                  search-placeholder="Cari kode atau kategori regulasi BI/OJK..."
+                  input-class="bg-white text-xs font-semibold text-gray-900 py-2.5 border-gray-300 shadow-2xs"
+                />
               </div>
 
             </div>

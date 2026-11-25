@@ -409,6 +409,44 @@ const facilitatorOptions = computed(() => {
   }))
 })
 
+const tnaSelectOptions = computed(() => [
+  { value: null, label: '-- Seluruh Dokumen TNA --' },
+  ...displayedTnaList.value.map(tna => ({
+    value: tna.id,
+    label: `${tna.proposal_code || 'TNA-' + tna.year} (Tahun ${tna.year}) • ${tna.tna_status || 'Aktif'}`
+  }))
+])
+
+const programSelectOptions = computed(() => [
+  { value: '', label: '-- Pilih Program Pelatihan --' },
+  ...filteredPrograms.value.map(p => ({
+    value: p.id,
+    label: `[${p.program_code}] ${p.title}`,
+    subLabel: `Pagu: ${formatRupiah(p.total_budget)} • Target: ${p.target_participants_count || 0} Peserta`
+  }))
+])
+
+const methodSelectOptions = [
+  { value: 'In-Classroom', label: 'Tatap Muka (In-Classroom)' },
+  { value: 'Virtual', label: 'Virtual Classroom (Zoom/Teams)' },
+  { value: 'Hybrid', label: 'Hybrid Learning' },
+  { value: 'E-Learning', label: 'ELAPSE E-Learning LMS' }
+]
+
+const quickKaryawanOptions = computed(() => [
+  { value: '', label: '-- Pilih Pegawai dari Master Data Karyawan BWS --' },
+  ...masterPegawai.value.map(k => ({
+    value: k.karyawan_id,
+    label: `[${k.nik}] ${k.nama}`,
+    subLabel: `${k.departemen || '-'} (${k.jabatan || '-'}) ${isPegawaiEnrolled(k) ? '• (Sudah Terdaftar)' : ''}`
+  }))
+])
+
+const deptFilterOptions = computed(() => [
+  { value: '', label: '-- Seluruh Unit Kerja --' },
+  ...uniquePegawaiDepts.value.map(d => ({ value: d, label: d }))
+])
+
 const uniquePegawaiDepts = computed(() => {
   const set = new Set()
   masterPegawai.value.forEach(k => {
@@ -772,25 +810,14 @@ async function submitForm() {
           </div>
 
           <div class="w-full md:w-80 shrink-0">
-            <div class="relative">
-              <select
-                v-model="form.tna_id"
-                @change="onTnaChange"
-                class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-4 py-2.5 border-2 border-blue-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer appearance-none pr-10"
-              >
-                <option :value="null">-- Seluruh Dokumen TNA --</option>
-                <option
-                  v-for="tna in displayedTnaList"
-                  :key="tna.id"
-                  :value="tna.id"
-                >
-                  {{ tna.proposal_code }} (Tahun {{ tna.year }}) &bull; {{ tna.tna_status }}
-                </option>
-              </select>
-              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-[#0067AC]">
-                <ChevronDown class="w-4 h-4" />
-              </div>
-            </div>
+            <AppSearchableSelect
+              v-model="form.tna_id"
+              :options="tnaSelectOptions"
+              placeholder="-- Seluruh Dokumen TNA --"
+              search-placeholder="Cari nomor atau tahun TNA..."
+              input-class="bg-white text-xs font-bold text-gray-900 py-2.5 border-2 border-blue-300 shadow-2xs"
+              @change="onTnaChange"
+            />
           </div>
         </div>
 
@@ -805,25 +832,15 @@ async function submitForm() {
             </span>
           </div>
 
-          <div class="relative">
-            <select
+          <div>
+            <AppSearchableSelect
               v-model="form.program_id"
+              :options="programSelectOptions"
+              placeholder="-- Pilih Program Pelatihan --"
+              search-placeholder="Cari kode atau judul program pelatihan..."
+              input-class="bg-white text-xs font-bold text-gray-900 py-3 border-gray-300 shadow-2xs"
               @change="onProgramSelected"
-              required
-              class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-4 py-3 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer appearance-none pr-10"
-            >
-              <option value="" disabled>-- Pilih Program Pelatihan --</option>
-              <option
-                v-for="p in filteredPrograms"
-                :key="p.id"
-                :value="p.id"
-              >
-                [{{ p.program_code }}] {{ p.title }} &bull; (Pagu: {{ formatRupiah(p.total_budget) }}) &bull; Target: {{ p.target_participants_count || 0 }} Peserta
-              </option>
-            </select>
-            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400">
-              <ChevronDown class="w-4 h-4" />
-            </div>
+            />
           </div>
 
           <!-- Highlight Preview Selected Program -->
@@ -986,15 +1003,13 @@ async function submitForm() {
           <!-- Metode Diklat -->
           <div>
             <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">Metode Diklat</label>
-            <select
+            <AppSearchableSelect
               v-model="form.method"
-              class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer"
-            >
-              <option value="In-Classroom">Tatap Muka (In-Classroom)</option>
-              <option value="Virtual">Virtual Classroom (Zoom/Teams)</option>
-              <option value="Hybrid">Hybrid Learning</option>
-              <option value="E-Learning">ELAPSE E-Learning LMS</option>
-            </select>
+              :options="methodSelectOptions"
+              placeholder="-- Pilih Metode Diklat --"
+              search-placeholder="Cari metode diklat..."
+              input-class="bg-white font-semibold text-gray-900 py-2.5 border-gray-300 shadow-2xs"
+            />
           </div>
 
           <!-- Kuota Peserta -->
@@ -1419,21 +1434,16 @@ async function submitForm() {
             <UserCheck class="w-4 h-4 text-[#0067AC]" />
             <span>Pilih Cepat Pegawai:</span>
           </span>
-          <select
-            v-model="selectedQuickKaryawanId"
-            @change="onQuickKaryawanSelected"
-            class="w-full bg-white rounded-xl px-3 py-2 border border-gray-300 font-medium text-gray-800 focus:border-[#0067AC] focus:outline-none"
-          >
-            <option value="">-- Pilih Pegawai dari Master Data Karyawan BWS --</option>
-            <option
-              v-for="k in masterPegawai"
-              :key="k.karyawan_id"
-              :value="k.karyawan_id"
-              :disabled="isPegawaiEnrolled(k)"
-            >
-              [{{ k.nik }}] {{ k.nama }} — {{ k.departemen }} ({{ k.jabatan }}) {{ isPegawaiEnrolled(k) ? '• (Sudah Terdaftar)' : '' }}
-            </option>
-          </select>
+          <div class="flex-1 w-full">
+            <AppSearchableSelect
+              v-model="selectedQuickKaryawanId"
+              :options="quickKaryawanOptions"
+              placeholder="-- Pilih Pegawai dari Master Data Karyawan BWS --"
+              search-placeholder="Cari NIK, nama, departemen, atau jabatan..."
+              input-class="bg-white border-gray-300 font-medium text-gray-800"
+              @change="onQuickKaryawanSelected"
+            />
+          </div>
           <button
             type="button"
             @click="addQuickKaryawan"
@@ -1554,14 +1564,14 @@ async function submitForm() {
             <Search class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
           </div>
 
-          <div>
-            <select
+          <div class="w-full">
+            <AppSearchableSelect
               v-model="filterPegawaiDept"
-              class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#0067AC]"
-            >
-              <option value="">-- Seluruh Unit Kerja --</option>
-              <option v-for="d in uniquePegawaiDepts" :key="d" :value="d">{{ d }}</option>
-            </select>
+              :options="deptFilterOptions"
+              placeholder="-- Seluruh Unit Kerja --"
+              search-placeholder="Cari unit kerja..."
+              input-class="bg-gray-50 border-gray-200 text-gray-700 py-2"
+            />
           </div>
         </div>
 

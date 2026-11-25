@@ -193,6 +193,61 @@ const uniqueCabangList = computed(() => {
   return Array.from(set)
 })
 
+const roleFilterOptions = computed(() => [
+  { value: 'ALL', label: `Semua Peran (${levels.value.length})` },
+  ...levels.value.map(l => ({
+    value: l.level_id,
+    label: l.level,
+    subLabel: l.keterangan || l.role || ''
+  }))
+])
+
+const stKerjaFilterOptions = [
+  { value: 'ALL', label: 'Semua Status' },
+  { value: 'AKTIF', label: 'Aktif Tetap' },
+  { value: 'KONTRAK', label: 'Kontrak' },
+  { value: 'RESIGN', label: 'Resign / Nonaktif' }
+]
+
+const cabangFilterOptions = computed(() => [
+  { value: 'ALL', label: 'Semua Cabang' },
+  ...uniqueCabangList.value.map(c => ({ value: c, label: c }))
+])
+
+const karyawanSelectOptions = computed(() => [
+  { value: '', label: '-- Pilih dari Karyawan Terdaftar --' },
+  ...karyawans.value.map(k => ({
+    value: k.karyawan_id,
+    label: `${k.nik} — ${k.nama}`,
+    subLabel: `${k.departemen} | ${k.jabatan || ''}`
+  }))
+])
+
+const levelSelectOptions = computed(() => 
+  levels.value.map(l => ({
+    value: l.level_id,
+    label: `Level ${l.level_id}: ${l.level}`,
+    subLabel: l.keterangan || l.role || ''
+  }))
+)
+
+const accountStatusOptions = [
+  { value: true, label: 'Aktif' },
+  { value: false, label: 'Nonaktif' }
+]
+
+const jkOptions = [
+  { value: 'L', label: 'Laki-laki' },
+  { value: 'P', label: 'Perempuan' }
+]
+
+const employeeStKerjaOptions = [
+  { value: 'AKTIF', label: 'Aktif Tetap' },
+  { value: 'KONTRAK', label: 'Pegawai Kontrak' },
+  { value: 'PROBATION', label: 'Masa Percobaan (Probation)' },
+  { value: 'RESIGN', label: 'Nonaktif / Resign' }
+]
+
 // API Loaders
 async function fetchRbacData() {
   loading.value = true
@@ -634,15 +689,15 @@ onMounted(async () => {
           </div>
 
           <!-- Role Filter Dropdown -->
-          <select
-            v-model="selectedRoleFilter"
-            class="bg-[#f4f6f5] text-xs font-semibold text-gray-700 rounded-full px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none transition shrink-0"
-          >
-            <option value="ALL">Semua Peran ({{ levels.length }})</option>
-            <option v-for="l in levels" :key="l.level_id" :value="l.level_id">
-              {{ l.level }}
-            </option>
-          </select>
+          <div class="min-w-[180px]">
+            <AppSearchableSelect
+              v-model="selectedRoleFilter"
+              :options="roleFilterOptions"
+              placeholder="Semua Peran..."
+              search-placeholder="Cari peran..."
+              input-class="rounded-full bg-[#f4f6f5] py-2 px-3 border-transparent"
+            />
+          </div>
         </div>
 
         <AppButton
@@ -791,24 +846,26 @@ onMounted(async () => {
           </div>
 
           <!-- Status Kerja Filter Dropdown -->
-          <select
-            v-model="filterStKerja"
-            class="bg-[#f4f6f5] text-xs font-semibold text-gray-700 rounded-full px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none transition shrink-0"
-          >
-            <option value="ALL">Semua Status</option>
-            <option value="AKTIF">Aktif Tetap</option>
-            <option value="KONTRAK">Kontrak</option>
-            <option value="RESIGN">Resign / Nonaktif</option>
-          </select>
+          <div class="min-w-[150px]">
+            <AppSearchableSelect
+              v-model="filterStKerja"
+              :options="stKerjaFilterOptions"
+              placeholder="Semua Status..."
+              search-placeholder="Cari status..."
+              input-class="rounded-full bg-[#f4f6f5] py-2 px-3 border-transparent"
+            />
+          </div>
 
           <!-- Cabang Filter Dropdown -->
-          <select
-            v-model="filterCabang"
-            class="bg-[#f4f6f5] text-xs font-semibold text-gray-700 rounded-full px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none transition shrink-0"
-          >
-            <option value="ALL">Semua Cabang</option>
-            <option v-for="c in uniqueCabangList" :key="c" :value="c">{{ c }}</option>
-          </select>
+          <div class="min-w-[170px]">
+            <AppSearchableSelect
+              v-model="filterCabang"
+              :options="cabangFilterOptions"
+              placeholder="Semua Cabang..."
+              search-placeholder="Cari cabang..."
+              input-class="rounded-full bg-[#f4f6f5] py-2 px-3 border-transparent"
+            />
+          </div>
         </div>
 
         <AppButton
@@ -1139,16 +1196,14 @@ onMounted(async () => {
           <!-- Hubungkan ke Master Karyawan -->
           <div>
             <label class="font-bold text-gray-700 block mb-1">Hubungkan ke Master Karyawan (Opsional)</label>
-            <select
+            <AppSearchableSelect
               v-model="userForm.karyawan_id"
+              :options="karyawanSelectOptions"
               @change="onKaryawanSelectChange"
-              class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
-            >
-              <option value="">-- Pilih dari Karyawan Terdaftar --</option>
-              <option v-for="k in karyawans" :key="k.karyawan_id" :value="k.karyawan_id">
-                {{ k.nik }} — {{ k.nama }} ({{ k.departemen }})
-              </option>
-            </select>
+              placeholder="Pilih dari Karyawan Terdaftar..."
+              search-placeholder="Cari NIK, nama, departemen..."
+              input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-gray-200"
+            />
           </div>
 
           <!-- Nama Lengkap & Email -->
@@ -1178,15 +1233,13 @@ onMounted(async () => {
           <!-- Tingkat Peran / Level RBAC -->
           <div>
             <label class="font-bold text-gray-700 block mb-1">Peran & Tingkat Otoritas (RBAC Level) *</label>
-            <select
+            <AppSearchableSelect
               v-model="userForm.level_id"
-              required
-              class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none font-bold text-gray-800"
-            >
-              <option v-for="l in levels" :key="l.level_id" :value="l.level_id">
-                Level {{ l.level_id }}: {{ l.level }} ({{ l.keterangan || l.role }})
-              </option>
-            </select>
+              :options="levelSelectOptions"
+              placeholder="Pilih Peran & Tingkat Level..."
+              search-placeholder="Cari level RBAC..."
+              input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-gray-200 font-bold text-gray-800"
+            />
           </div>
 
           <!-- Departemen & Cabang -->
@@ -1227,13 +1280,13 @@ onMounted(async () => {
             </div>
             <div>
               <label class="font-bold text-gray-700 block mb-1">Status Akun</label>
-              <select
+              <AppSearchableSelect
                 v-model="userForm.is_active"
-                class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
-              >
-                <option :value="true">Aktif</option>
-                <option :value="false">Nonaktif</option>
-              </select>
+                :options="accountStatusOptions"
+                placeholder="Pilih status..."
+                search-placeholder="Cari status..."
+                input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-gray-200 font-semibold"
+              />
             </div>
           </div>
 
@@ -1389,13 +1442,13 @@ onMounted(async () => {
             </div>
             <div>
               <label class="font-bold text-gray-700 block mb-1">Jenis Kelamin</label>
-              <select
+              <AppSearchableSelect
                 v-model="karyawanForm.jk"
-                class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
-              >
-                <option value="L">Laki-laki</option>
-                <option value="P">Perempuan</option>
-              </select>
+                :options="jkOptions"
+                placeholder="Pilih jenis kelamin..."
+                search-placeholder="Cari..."
+                input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-gray-200"
+              />
             </div>
           </div>
 
@@ -1473,15 +1526,13 @@ onMounted(async () => {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="font-bold text-gray-700 block mb-1">Status Kepegawaian *</label>
-              <select
+              <AppSearchableSelect
                 v-model="karyawanForm.st_kerja"
-                class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
-              >
-                <option value="AKTIF">Aktif Tetap</option>
-                <option value="KONTRAK">Pegawai Kontrak</option>
-                <option value="PROBATION">Masa Percobaan (Probation)</option>
-                <option value="RESIGN">Nonaktif / Resign</option>
-              </select>
+                :options="employeeStKerjaOptions"
+                placeholder="Pilih status..."
+                search-placeholder="Cari status..."
+                input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-gray-200"
+              />
             </div>
             <div>
               <label class="font-bold text-gray-700 block mb-1">Target Jam Pelatihan (OJK)</label>

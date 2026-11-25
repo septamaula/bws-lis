@@ -1,9 +1,9 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import { X, Receipt, Scale, Paperclip } from 'lucide-vue-next'
 import apiClient from '@/api/client'
 
-defineProps({
+const props = defineProps({
   show: Boolean,
   classes: {
     type: Array,
@@ -14,6 +14,23 @@ defineProps({
 const emit = defineEmits(['close', 'submitted'])
 const loading = ref(false)
 const errorMessage = ref('')
+
+const classOptions = computed(() => [
+  { value: null, label: '-- Biaya Operasional Umum L&D --' },
+  ...props.classes.map(c => ({
+    value: c.id,
+    label: `${c.batch_name} - ${c.program?.title || ''}`,
+    subLabel: c.class_code ? `Kode: ${c.class_code}` : ''
+  }))
+])
+
+const voucherCategoryOptions = [
+  { value: 'Certification Fee', label: 'Ujian Sertifikasi Resmi' },
+  { value: 'Vendor Fee', label: 'Biaya Lembaga / Vendor' },
+  { value: 'Facilitator Honorarium', label: 'Honorarium Instruktur' },
+  { value: 'Venue & Catering', label: 'Akomodasi & Konsumsi' },
+  { value: 'Learning Materials', label: 'Materi & Modul Ajar' }
+]
 
 const form = reactive({
   training_class_id: null,
@@ -65,22 +82,25 @@ async function submit() {
       <form @submit.prevent="submit" class="space-y-4 text-xs">
         <div>
           <label class="block font-semibold text-gray-700 mb-1">Pilih Kelas Terkait</label>
-          <select v-model="form.training_class_id" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none">
-            <option :value="null">-- Biaya Operasional Umum L&D --</option>
-            <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.batch_name }} - {{ c.program?.title }}</option>
-          </select>
+          <AppSearchableSelect
+            v-model="form.training_class_id"
+            :options="classOptions"
+            placeholder="Pilih Kelas Terkait..."
+            search-placeholder="Cari batch / program..."
+            input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-transparent"
+          />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Kategori Biaya</label>
-            <select v-model="form.category" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required>
-              <option value="Certification Fee">Ujian Sertifikasi Resmi</option>
-              <option value="Vendor Fee">Biaya Lembaga / Vendor</option>
-              <option value="Facilitator Honorarium">Honorarium Instruktur</option>
-              <option value="Venue & Catering">Akomodasi & Konsumsi</option>
-              <option value="Learning Materials">Materi & Modul Ajar</option>
-            </select>
+            <AppSearchableSelect
+              v-model="form.category"
+              :options="voucherCategoryOptions"
+              placeholder="Pilih Kategori Biaya..."
+              search-placeholder="Cari kategori..."
+              input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-transparent"
+            />
           </div>
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Nominal Biaya (IDR)</label>

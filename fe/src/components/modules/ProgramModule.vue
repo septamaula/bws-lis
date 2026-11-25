@@ -133,6 +133,18 @@ const availableYears = computed(() => {
   return Array.from(years).sort((a, b) => b - a)
 })
 
+const yearOptions = computed(() => [
+  { value: 'ALL', label: 'Semua Tahun' },
+  ...availableYears.value.map(yr => ({ value: yr, label: `Tahun ${yr}` }))
+])
+
+const processOptions = [
+  { value: 'ALL', label: 'Semua Status' },
+  { value: 'APPROVED', label: 'Disetujui Final' },
+  { value: 'SUBMITTED', label: 'Menunggu Review' },
+  { value: 'DRAFT', label: 'Draft' }
+]
+
 const programColumns = [
   { key: 'program_code', label: 'Program ID', sortable: true, align: 'center', width: '120px' },
   { key: 'title', label: 'Program Pelatihan & Kategori', sortable: true },
@@ -276,33 +288,27 @@ defineExpose({
         <!-- Custom Filters: Year & Process -->
         <template #filters>
           <!-- 1. Year Filter (20XX) -->
-          <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-gray-200 text-xs shadow-2xs">
-            <Calendar class="w-3.5 h-3.5 text-[#0067AC]" />
-            <select
+          <div class="w-36">
+            <AppSearchableSelect
               v-model="selectedYear"
+              :options="yearOptions"
+              placeholder="Semua Tahun"
+              search-placeholder="Cari tahun..."
+              input-class="bg-white rounded-full py-1.5 px-3 border-gray-200 text-xs shadow-2xs"
               @change="fetchPrograms"
-              class="bg-transparent text-[11px] font-bold text-gray-800 focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">Semua Tahun</option>
-              <option v-for="yr in availableYears" :key="yr" :value="yr">
-                Tahun {{ yr }}
-              </option>
-            </select>
+            />
           </div>
 
           <!-- 2. Process / Status Filter -->
-          <div class="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-gray-200 text-xs shadow-2xs">
-            <span class="text-[10px] font-bold text-gray-400">Status:</span>
-            <select
+          <div class="w-44">
+            <AppSearchableSelect
               v-model="selectedProcess"
+              :options="processOptions"
+              placeholder="Semua Status"
+              search-placeholder="Cari status..."
+              input-class="bg-white rounded-full py-1.5 px-3 border-gray-200 text-xs shadow-2xs"
               @change="fetchPrograms"
-              class="bg-transparent text-[11px] font-bold text-gray-800 focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">Semua Status</option>
-              <option value="APPROVED">Disetujui Final</option>
-              <option value="SUBMITTED">Menunggu Review</option>
-              <option value="DRAFT">Draft</option>
-            </select>
+            />
           </div>
         </template>
 

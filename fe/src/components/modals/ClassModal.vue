@@ -1,9 +1,9 @@
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import { X, Calendar, Scale } from 'lucide-vue-next'
 import apiClient from '@/api/client'
 
-defineProps({
+const props = defineProps({
   show: Boolean,
   programs: {
     type: Array,
@@ -24,6 +24,20 @@ const form = reactive({
   location_or_url: 'BWS Learning Center - R. Diklat 101',
   max_quota: 25,
   facilitator_id: null
+})
+
+const methodOptions = [
+  { value: 'Hybrid', label: 'Hybrid' },
+  { value: 'In-Classroom', label: 'In-Classroom' },
+  { value: 'Virtual Classroom', label: 'Virtual Classroom' },
+  { value: 'LIS E-Learning', label: 'LIS E-Learning' }
+]
+
+const programOptions = computed(() => {
+  return props.programs.map(prog => ({
+    value: prog.id,
+    label: `${prog.program_code} - ${prog.title}`
+  }))
 })
 
 async function submit() {
@@ -68,10 +82,13 @@ async function submit() {
       <form @submit.prevent="submit" class="space-y-4 text-xs">
         <div>
           <label class="block font-semibold text-gray-700 mb-1">Pilih Program Pelatihan</label>
-          <select v-model="form.program_id" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required>
-            <option value="" disabled>-- Pilih Program Pelatihan --</option>
-            <option v-for="prog in programs" :key="prog.id" :value="prog.id">{{ prog.program_code }} - {{ prog.title }}</option>
-          </select>
+          <AppSearchableSelect
+            v-model="form.program_id"
+            :options="programOptions"
+            placeholder="-- Pilih Program Pelatihan --"
+            search-placeholder="Cari kode atau judul program..."
+            input-class="bg-[#f4f6f5] border-transparent"
+          />
         </div>
 
         <div class="grid grid-cols-3 gap-3">
@@ -88,12 +105,13 @@ async function submit() {
         <div class="grid grid-cols-3 gap-3">
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Metode</label>
-            <select v-model="form.method" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none">
-              <option value="Hybrid">Hybrid</option>
-              <option value="In-Classroom">In-Classroom</option>
-              <option value="Virtual Classroom">Virtual Classroom</option>
-              <option value="LIS E-Learning">LIS E-Learning</option>
-            </select>
+            <AppSearchableSelect
+              v-model="form.method"
+              :options="methodOptions"
+              placeholder="Pilih Metode"
+              search-placeholder="Cari metode..."
+              input-class="bg-[#f4f6f5] border-transparent"
+            />
           </div>
           <div>
             <label class="block font-semibold text-gray-700 mb-1">Tgl Mulai</label>

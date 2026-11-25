@@ -259,16 +259,19 @@ async function executeDelete() {
             <Search class="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
           </div>
 
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Mandatori:</span>
-            <select
+          <div class="flex items-center gap-2 min-w-[210px]">
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0">Mandatori:</span>
+            <AppSearchableSelect
               v-model="selectedMandatory"
-              class="bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 rounded-2xl px-3 py-2.5 focus:outline-none focus:border-[#0067AC] cursor-pointer"
-            >
-              <option value="ALL">Semua Sifat</option>
-              <option value="MANDATORY">Wajib Regulasi</option>
-              <option value="OPTIONAL">Non-Mandatori / Pendukung</option>
-            </select>
+              :options="[
+                { value: 'ALL', label: 'Semua Sifat' },
+                { value: 'MANDATORY', label: 'Wajib Regulasi' },
+                { value: 'OPTIONAL', label: 'Non-Mandatori / Pendukung' }
+              ]"
+              placeholder="Semua Sifat"
+              search-placeholder="Cari sifat..."
+              input-class="bg-gray-50 rounded-2xl py-2 px-3 border-gray-200 font-bold text-gray-700"
+            />
           </div>
 
         </div>

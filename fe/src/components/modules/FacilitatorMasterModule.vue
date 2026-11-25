@@ -446,12 +446,13 @@ async function executeDelete() {
             </div>
             <div>
               <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">Tipe Rekanan</label>
-              <select
+              <AppSearchableSelect
                 v-model="form.type"
-                class="w-full bg-white rounded-xl px-3.5 py-2 border border-gray-300 font-semibold text-gray-800 focus:border-[#0067AC] focus:outline-none cursor-pointer"
-              >
-                <option v-for="t in typeOptions" :key="t" :value="t">{{ t }}</option>
-              </select>
+                :options="typeOptions"
+                placeholder="Pilih tipe rekanan..."
+                search-placeholder="Cari tipe..."
+                input-class="rounded-xl px-3.5 py-2 border-gray-300 font-semibold text-gray-800 bg-white"
+              />
             </div>
           </div>
 

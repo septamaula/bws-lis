@@ -94,6 +94,11 @@ const uniquePegawaiDepts = computed(() => {
   return Array.from(set).sort()
 })
 
+const deptFilterOptions = computed(() => [
+  { value: '', label: '-- Seluruh Unit Kerja --' },
+  ...uniquePegawaiDepts.value.map(d => ({ value: d, label: d }))
+])
+
 const filteredMasterPegawai = computed(() => {
   let list = masterPegawai.value
   if (filterPegawaiDept.value) {
@@ -1342,14 +1347,14 @@ onMounted(() => {
               <Search class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
             </div>
 
-            <div>
-              <select
+            <div class="w-full">
+              <AppSearchableSelect
                 v-model="filterPegawaiDept"
-                class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-700 focus:outline-none focus:border-[#0067AC]"
-              >
-                <option value="">-- Seluruh Unit Kerja --</option>
-                <option v-for="d in uniquePegawaiDepts" :key="d" :value="d">{{ d }}</option>
-              </select>
+                :options="deptFilterOptions"
+                placeholder="-- Seluruh Unit Kerja --"
+                search-placeholder="Cari unit kerja..."
+                input-class="bg-gray-50 border-gray-200 text-gray-700 py-2"
+              />
             </div>
           </div>
 

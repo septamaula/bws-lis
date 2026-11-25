@@ -456,6 +456,27 @@ async function loadMasterData() {
   }
 }
 
+const fiscalYearSelectOptions = computed(() => {
+  return fiscalYears.value.map(fy => ({
+    value: fy.year,
+    label: `${fy.year} — ${fy.status === 'AKTIF' ? 'Aktif' : 'Tutup'}`,
+    subLabel: fy.status === 'AKTIF' ? 'Tahun Fiskal Berjalan' : `Status: ${fy.status}`
+  }))
+})
+
+const tnaStatusOptions = [
+  { value: 'Aktif', label: 'Aktif (Dapat Dirujuk Program)' },
+  { value: 'Closed', label: 'Closed (Siklus Selesai / Arsip)' }
+]
+
+const categorySelectOptions = computed(() => {
+  return categories.value.map(c => ({
+    value: c.name,
+    label: c.name,
+    subLabel: c.code ? `Kode: ${c.code}` : ''
+  }))
+})
+
 onMounted(() => {
   loadMasterData()
 })
@@ -583,25 +604,14 @@ async function submitForm() {
                 <span>Year (Tahun)</span>
                 <span class="text-[10px] text-[#0067AC] font-semibold">Wajib</span>
               </label>
-              <div class="relative">
-                <select
-                  v-model.number="form.year"
-                  :disabled="isEditMode || loadingMasters"
-                  class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-3 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs appearance-none pr-8 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option v-if="loadingMasters" :value="form.year" disabled>Memuat...</option>
-                  <option
-                    v-for="fy in fiscalYears"
-                    :key="fy.id"
-                    :value="fy.year"
-                  >
-                    {{ fy.year }} &mdash; {{ fy.status === 'AKTIF' ? 'Aktif' : 'Tutup' }}
-                  </option>
-                </select>
-                <div class="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-gray-400">
-                  <ChevronDown class="w-4 h-4" />
-                </div>
-              </div>
+              <AppSearchableSelect
+                v-model="form.year"
+                :options="fiscalYearSelectOptions"
+                :disabled="isEditMode || loadingMasters"
+                placeholder="Pilih Tahun Fiskal..."
+                search-placeholder="Cari tahun fiskal..."
+                input-class="bg-white rounded-xl px-3 py-2.5 border-gray-300 font-bold text-gray-900"
+              />
             </div>
 
             <div>
@@ -611,13 +621,13 @@ async function submitForm() {
                   {{ form.tna_status }}
                 </span>
               </label>
-              <select
+              <AppSearchableSelect
                 v-model="form.tna_status"
-                class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-3 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer"
-              >
-                <option value="Aktif">Aktif (Dapat Dirujuk Program)</option>
-                <option value="Closed">Closed (Siklus Selesai / Arsip)</option>
-              </select>
+                :options="tnaStatusOptions"
+                placeholder="Pilih Status Siklus..."
+                search-placeholder="Cari status siklus..."
+                input-class="bg-white rounded-xl px-3 py-2.5 border-gray-300 font-bold text-gray-900"
+              />
             </div>
           </div>
 
@@ -741,31 +751,15 @@ async function submitForm() {
                 </td>
 
                 <!-- Category (Master Data Select) -->
-                <td class="py-2.5 px-3">
-                  <div class="relative">
-                    <select
-                      v-model="item.category_name"
-                      @change="onCategoryChange(item)"
-                      class="w-full bg-white text-xs font-semibold text-gray-800 rounded-lg pl-3 pr-8 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs cursor-pointer appearance-none truncate"
-                    >
-                      <option value="" disabled>-- Pilih Kategori Diklat --</option>
-                      <option
-                        v-for="cat in categories"
-                        :key="cat.id"
-                        :value="cat.name"
-                      >
-                        {{ cat.name }}
-                      </option>
-                      <!-- Fallback jika ada kategori legacy/kustom di luar master data -->
-                      <option
-                        v-if="item.category_name && !categories.some(c => c.name === item.category_name)"
-                        :value="item.category_name"
-                      >
-                        {{ item.category_name }}
-                      </option>
-                    </select>
-                    <ChevronDown class="w-3.5 h-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  </div>
+                <td class="py-2.5 px-3 min-w-[220px]">
+                  <AppSearchableSelect
+                    v-model="item.category_name"
+                    :options="categorySelectOptions"
+                    @change="onCategoryChange(item)"
+                    placeholder="Pilih Kategori Diklat..."
+                    search-placeholder="Cari kategori..."
+                    input-class="bg-white rounded-lg px-2.5 py-1.5 border-gray-200 font-semibold text-gray-800"
+                  />
                 </td>
 
                 <!-- Training Program -->
