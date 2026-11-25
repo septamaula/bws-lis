@@ -118,6 +118,25 @@ const form = ref({
   enrolled_participants: []
 })
 
+const evalCategoryOptions = ['Materi', 'Pengajar', 'Kepanitiaan']
+
+function addEvaluationItem() {
+  const nextId = form.value.evaluation_config.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1
+  form.value.evaluation_config.push({
+    id: nextId,
+    category: 'Materi',
+    question: '',
+    rating: 4,
+    is_custom: true
+  })
+}
+
+function removeEvaluationItem(idx) {
+  if (form.value.evaluation_config.length > 1) {
+    form.value.evaluation_config.splice(idx, 1)
+  }
+}
+
 // Active TNA proposals
 const activeTnaList = computed(() => {
   return tnaProposals.value.filter(t => t.tna_status === 'Aktif')
@@ -1332,7 +1351,7 @@ async function submitForm() {
       <!-- SECTION 6: EVALUATION (SS2 9 QUESTIONNAIRE)-->
       <!-- ========================================== -->
       <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs flex flex-col gap-4">
-        <div class="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-gray-100">
+        <div class="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-gray-100">
           <div class="flex items-center gap-2.5">
             <div class="w-9 h-9 rounded-2xl bg-rose-50 text-rose-700 flex items-center justify-center font-bold">
               <Award class="w-5 h-5" />
@@ -1342,18 +1361,47 @@ async function submitForm() {
               <p class="text-[11px] text-gray-500">Standar kuesioner evaluasi Level 1 Kirkpatrick (skala kepuasan 1 s/d 4)</p>
             </div>
           </div>
-          <span class="text-[11px] font-bold text-gray-500">Skala Penilaian: 1 (Kurang) &bull; 2 (Cukup) &bull; 3 (Baik) &bull; 4 (Sangat Baik)</span>
+
+          <div class="flex items-center gap-3 flex-wrap">
+            <span class="text-[11px] font-bold text-gray-500">Skala Penilaian: 1 (Kurang) &bull; 2 (Cukup) &bull; 3 (Baik) &bull; 4 (Sangat Baik)</span>
+            <button
+              type="button"
+              @click="addEvaluationItem"
+              class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0067AC] hover:bg-[#00558F] text-white text-xs font-bold shadow-xs transition cursor-pointer"
+            >
+              <Plus class="w-3.5 h-3.5" />
+              <span>Tambah Evaluasi</span>
+            </button>
+          </div>
         </div>
 
         <div class="space-y-3 divide-y divide-gray-100 text-xs">
           <div
-            v-for="item in form.evaluation_config"
+            v-for="(item, idx) in form.evaluation_config"
             :key="item.id"
             class="pt-3 first:pt-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
           >
-            <div class="flex items-center gap-2.5">
+            <div v-if="item.is_custom" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 w-full">
+              <div class="w-full sm:w-40 shrink-0">
+                <AppSearchableSelect
+                  v-model="item.category"
+                  :options="evalCategoryOptions"
+                  placeholder="Kategori..."
+                  search-placeholder="Cari kategori..."
+                  input-class="bg-[#f8fafc] border-gray-200 rounded-xl px-2.5 py-1.5 font-bold text-gray-800"
+                />
+              </div>
+              <input
+                v-model="item.question"
+                type="text"
+                placeholder="Tulis pertanyaan evaluasi..."
+                class="flex-1 bg-[#f8fafc] focus:bg-white border border-gray-200 rounded-xl px-3 py-1.5 font-semibold text-gray-800 focus:border-[#0067AC] focus:outline-none"
+              />
+            </div>
+
+            <div v-else class="flex items-center gap-2.5 flex-1">
               <span
-                class="px-2 py-0.5 rounded-md font-bold text-[10px] uppercase border"
+                class="px-2 py-0.5 rounded-md font-bold text-[10px] uppercase border shrink-0"
                 :class="item.category === 'Materi' ? 'bg-blue-50 text-[#0067AC] border-blue-200' : item.category === 'Pengajar' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-purple-50 text-purple-700 border-purple-200'"
               >
                 {{ item.category }}
@@ -1361,23 +1409,34 @@ async function submitForm() {
               <span class="font-bold text-gray-800">{{ item.question }}</span>
             </div>
 
-            <!-- Radio 1 - 2 - 3 - 4 matching SS2 -->
-            <div class="flex items-center gap-4 bg-gray-50 px-3.5 py-1.5 rounded-xl border border-gray-200 shrink-0">
-              <label
-                v-for="val in [1, 2, 3, 4]"
-                :key="val"
-                class="flex items-center gap-1.5 font-bold text-xs cursor-pointer"
-                :class="item.rating === val ? 'text-[#0067AC]' : 'text-gray-500'"
+            <!-- Radio 1 - 2 - 3 - 4 matching SS2 + Delete -->
+            <div class="flex items-center gap-2 shrink-0">
+              <div class="flex items-center gap-4 bg-gray-50 px-3.5 py-1.5 rounded-xl border border-gray-200">
+                <label
+                  v-for="val in [1, 2, 3, 4]"
+                  :key="val"
+                  class="flex items-center gap-1.5 font-bold text-xs cursor-pointer"
+                  :class="item.rating === val ? 'text-[#0067AC]' : 'text-gray-500'"
+                >
+                  <input
+                    type="radio"
+                    :name="`eval-${item.id}`"
+                    :value="val"
+                    v-model="item.rating"
+                    class="w-3.5 h-3.5 text-[#0067AC] focus:ring-[#0067AC] cursor-pointer"
+                  />
+                  <span>{{ val }}</span>
+                </label>
+              </div>
+              <button
+                v-if="form.evaluation_config.length > 1"
+                type="button"
+                @click="removeEvaluationItem(idx)"
+                class="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                title="Hapus pertanyaan evaluasi"
               >
-                <input
-                  type="radio"
-                  :name="`eval-${item.id}`"
-                  :value="val"
-                  v-model="item.rating"
-                  class="w-3.5 h-3.5 text-[#0067AC] focus:ring-[#0067AC] cursor-pointer"
-                />
-                <span>{{ val }}</span>
-              </label>
+                <Trash2 class="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </div>
