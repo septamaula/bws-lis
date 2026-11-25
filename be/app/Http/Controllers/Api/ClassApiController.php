@@ -812,6 +812,8 @@ class ClassApiController extends Controller
             'scores.*.post_test_score' => 'nullable|numeric|min:0|max:100',
             'scores.*.task_score' => 'nullable|numeric|min:0|max:100',
             'scores.*.eval_instructor_rating' => 'nullable|integer|min:1|max:5',
+            'scores.*.eval_material_rating' => 'nullable|integer|min:1|max:5',
+            'scores.*.eval_facility_rating' => 'nullable|integer|min:1|max:5',
             'scores.*.eval_notes' => 'nullable|string',
         ]);
 
@@ -864,6 +866,12 @@ class ClassApiController extends Controller
 
             if (isset($s['eval_instructor_rating'])) {
                 $updateData['eval_instructor_rating'] = $s['eval_instructor_rating'];
+            }
+            if (isset($s['eval_material_rating'])) {
+                $updateData['eval_material_rating'] = $s['eval_material_rating'];
+            }
+            if (isset($s['eval_facility_rating'])) {
+                $updateData['eval_facility_rating'] = $s['eval_facility_rating'];
             }
             if (isset($s['eval_notes'])) {
                 $updateData['eval_notes'] = $s['eval_notes'];
