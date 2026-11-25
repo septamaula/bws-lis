@@ -92,6 +92,38 @@ const availableFilteredPrograms = computed(() => {
   return programs.value.filter(p => Number(p.tna_proposal_id) === Number(filterTnaId.value))
 })
 
+const tnaOptions = computed(() => [
+  { value: '', label: '-- Seluruh Usulan TNA --' },
+  ...tnaList.value.map(t => ({
+    value: t.id,
+    label: `[${t.document_number || 'TNA-' + t.year}] ${t.title || 'TNA ' + t.year} (${t.tna_status || 'Aktif'})`
+  }))
+])
+
+const programOptions = computed(() => [
+  { value: '', label: '-- Seluruh Program Pelatihan --' },
+  ...availableFilteredPrograms.value.map(p => ({
+    value: p.id,
+    label: `[${p.program_code}] ${p.title}`
+  }))
+])
+
+const statusOptions = [
+  { value: '', label: '-- Seluruh Status Otorisasi --' },
+  { value: 'APPROVED', label: 'Disetujui Checker (APPROVED)' },
+  { value: 'PENDING_CHECKER', label: 'Menunggu Checker' },
+  { value: 'ONGOING', label: 'Sedang Berjalan (ONGOING)' },
+  { value: 'COMPLETED', label: 'Selesai (COMPLETED)' }
+]
+
+const methodOptions = [
+  { value: '', label: '-- Seluruh Metode --' },
+  { value: 'In-Classroom', label: 'In-Classroom' },
+  { value: 'Virtual', label: 'Virtual Classroom' },
+  { value: 'Hybrid', label: 'Hybrid' },
+  { value: 'E-Learning', label: 'ELAPSE E-Learning' }
+]
+
 // Formatted data list for DataTable searching and sorting
 const formattedClasses = computed(() => {
   return classes.value.map(c => ({
@@ -345,64 +377,47 @@ defineExpose({
           <!-- Filter TNA -->
           <div>
             <label class="block text-[11px] font-bold text-gray-600 mb-1">Filter TNA Usulan</label>
-            <select
+            <AppSearchableSelect
               v-model="filterTnaId"
+              :options="tnaOptions"
+              placeholder="-- Seluruh Usulan TNA --"
               @change="onFilterTnaChange"
-              class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#0067AC]"
-            >
-              <option value="">-- Seluruh Usulan TNA --</option>
-              <option v-for="t in tnaList" :key="t.id" :value="t.id">
-                [{{ t.document_number || 'TNA-' + t.year }}] {{ t.title || 'TNA ' + t.year }} ({{ t.tna_status || 'Aktif' }})
-              </option>
-            </select>
+            />
           </div>
 
           <!-- Filter Program -->
           <div>
             <label class="block text-[11px] font-bold text-gray-600 mb-1">Filter Program Kerja</label>
-            <select
+            <AppSearchableSelect
               v-model="filterProgramId"
+              :options="programOptions"
+              placeholder="-- Seluruh Program Pelatihan --"
               @change="fetchClasses"
-              class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#0067AC]"
-            >
-              <option value="">-- Seluruh Program Pelatihan --</option>
-              <option v-for="p in availableFilteredPrograms" :key="p.id" :value="p.id">
-                [{{ p.program_code }}] {{ p.title }}
-              </option>
-            </select>
+            />
           </div>
 
           <!-- Filter Dual-Control Status -->
           <div>
             <label class="block text-[11px] font-bold text-gray-600 mb-1">Filter Status Otorisasi</label>
-            <select
+            <AppSearchableSelect
               v-model="filterStatus"
+              :options="statusOptions"
+              placeholder="-- Seluruh Status Otorisasi --"
               @change="fetchClasses"
-              class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#0067AC]"
-            >
-              <option value="">-- Seluruh Status Otorisasi --</option>
-              <option value="APPROVED">Disetujui Checker (APPROVED)</option>
-              <option value="PENDING_CHECKER">Menunggu Checker</option>
-              <option value="ONGOING">Sedang Berjalan (ONGOING)</option>
-              <option value="COMPLETED">Selesai (COMPLETED)</option>
-            </select>
+            />
           </div>
 
           <!-- Filter Metode & Reset -->
           <div>
             <label class="block text-[11px] font-bold text-gray-600 mb-1">Metode Diklat</label>
             <div class="flex items-center gap-2">
-              <select
+              <AppSearchableSelect
                 v-model="filterMethod"
+                :options="methodOptions"
+                placeholder="-- Seluruh Metode --"
+                class="flex-1"
                 @change="fetchClasses"
-                class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#0067AC]"
-              >
-                <option value="">-- Seluruh Metode --</option>
-                <option value="In-Classroom">In-Classroom</option>
-                <option value="Virtual">Virtual Classroom</option>
-                <option value="Hybrid">Hybrid</option>
-                <option value="E-Learning">ELAPSE E-Learning</option>
-              </select>
+              />
               <button
                 v-if="filterTnaId || filterProgramId || filterStatus || filterMethod"
                 @click="resetFilters"

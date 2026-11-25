@@ -8,6 +8,7 @@ import DetailTable from '@/components/DetailTable.vue';
 import SubpageHeader from '@/components/SubpageHeader.vue';
 import AppButton from '@/components/AppButton.vue';
 import AppNumberInput from '@/components/AppNumberInput.vue';
+import AppSearchableSelect from '@/components/AppSearchableSelect.vue';
 
 const app = createApp(App);
 
@@ -20,6 +21,8 @@ app.component('AppButton', AppButton);
 app.component('BaseButton', AppButton);
 app.component('AppNumberInput', AppNumberInput);
 app.component('NumberInput', AppNumberInput);
+app.component('AppSearchableSelect', AppSearchableSelect);
+app.component('SearchableSelect', AppSearchableSelect);
 
 app.mount('#app');
 
