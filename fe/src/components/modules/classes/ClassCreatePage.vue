@@ -832,7 +832,7 @@ async function submitForm() {
             <Presentation class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="text-sm font-extrabold text-gray-900">Informasi Pokok Kelas (Create/Edit Class)</h3>
+            <h3 class="text-sm font-extrabold text-gray-900">Informasi Pokok Kelas</h3>
             <p class="text-[11px] text-gray-500">Parameter batch, penanggung jawab PIC, jadwal, lokasi, dan instruktur</p>
           </div>
         </div>
