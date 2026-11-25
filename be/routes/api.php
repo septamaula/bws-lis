@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\MemoApiController;
 use App\Http\Controllers\Api\OperationApiController;
 use App\Http\Controllers\Api\ProgramApiController;
 use App\Http\Controllers\Api\TnaApiController;
+use App\Http\Controllers\Api\TrainingLocationApiController;
 use App\Http\Controllers\Api\UserRbacApiController;
 use Illuminate\Support\Facades\Route;
 
@@ -104,6 +105,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/bi-categories/{id}', [BiCategoryApiController::class, 'show']);
     Route::put('/bi-categories/{id}', [BiCategoryApiController::class, 'update']);
     Route::delete('/bi-categories/{id}', [BiCategoryApiController::class, 'destroy']);
+
+    // Master Training Locations & Rooms (Master Ruang & Lokasi Diklat)
+    Route::get('/training-locations', [TrainingLocationApiController::class, 'index']);
+    Route::post('/training-locations', [TrainingLocationApiController::class, 'store']);
+    Route::get('/training-locations/{id}', [TrainingLocationApiController::class, 'show']);
+    Route::put('/training-locations/{id}', [TrainingLocationApiController::class, 'update']);
+    Route::delete('/training-locations/{id}', [TrainingLocationApiController::class, 'destroy']);
 
     // Class Batch Operations (1 Program to Many Classes), Attendance & Evaluation
     Route::get('/classes', [ClassApiController::class, 'index']);

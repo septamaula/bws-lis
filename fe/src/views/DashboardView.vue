@@ -73,6 +73,7 @@ import CategoryMasterModule from '@/components/modules/CategoryMasterModule.vue'
 import YearMasterModule from '@/components/modules/YearMasterModule.vue'
 import FacilitatorMasterModule from '@/components/modules/FacilitatorMasterModule.vue'
 import BiCategoryMasterModule from '@/components/modules/BiCategoryMasterModule.vue'
+import LocationMasterModule from '@/components/modules/LocationMasterModule.vue'
 import BusinessProcessFlowchartModule from '@/components/modules/BusinessProcessFlowchartModule.vue'
 
 // Import Modals
@@ -204,7 +205,9 @@ const currentTabTitle = computed(() => {
       if (programViewMode.value === 'facilitator') return 'Lembaga & Facilitator'
       if (programViewMode.value === 'bi_categories') return 'Kategori Regulasi BI / OJK'
       return 'Daftar Program'
-    case 'class': return 'Daftar Class'
+    case 'class':
+      if (classViewMode.value === 'locations') return 'Ruangan & Lokasi Diklat'
+      return 'Daftar Class'
     case 'participants': return 'Peserta & Activity Tracking'
     case 'eval': return 'Evaluasi & Nilai Peserta'
     case 'task': return 'Penugasan & Task Management'
@@ -858,6 +861,25 @@ const totalPendingApprovalsForUser = computed(() => {
                           <span class="flex items-center gap-2">
                             <Plus class="w-3.5 h-3.5" />
                             Buat Kelas Baru
+                          </span>
+                          <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
+                        </button>
+                      </li>
+
+                      <!-- Section Header: Master Data -->
+                      <li class="pt-2 pb-1 px-3 border-t border-gray-100 mt-1 flex items-center justify-between">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Master Data</span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                      </li>
+                      <li>
+                        <button
+                          @click="activeTab = 'class'; classViewMode = 'locations'"
+                          class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
+                          :class="activeTab === 'class' && classViewMode === 'locations' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
+                        >
+                          <span class="flex items-center gap-2">
+                            <MapPin class="w-3.5 h-3.5" />
+                            Ruangan / Lokasi
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -1527,16 +1549,22 @@ const totalPendingApprovalsForUser = computed(() => {
               />
             </template>
 
-            <ClassModule
-              v-else-if="activeTab === 'class'"
-              ref="classModuleRef"
-              v-model:view-mode="classViewMode"
-              :training-classes="trainingClasses"
-              :is-checker-role="isCheckerRole"
-              :can-create-class="canCreateClass"
-              @open-class-modal="showClassModal = true"
-              @approve-class="handleApproveClass"
-            />
+            <template v-else-if="activeTab === 'class'">
+              <LocationMasterModule
+                v-if="classViewMode === 'locations'"
+                @back="classViewMode = 'list'"
+              />
+              <ClassModule
+                v-else
+                ref="classModuleRef"
+                v-model:view-mode="classViewMode"
+                :training-classes="trainingClasses"
+                :is-checker-role="isCheckerRole"
+                :can-create-class="canCreateClass"
+                @open-class-modal="showClassModal = true"
+                @approve-class="handleApproveClass"
+              />
+            </template>
 
             <ParticipantsModule
               v-else-if="activeTab === 'participants'"

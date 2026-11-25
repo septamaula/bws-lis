@@ -59,6 +59,7 @@ const tnaProposals = ref([])
 const allPrograms = ref([])
 const masterFacilitators = ref([])
 const masterPegawai = ref([])
+const masterLocations = ref([])
 
 // Master Pegawai Modal & Selection State
 const showPegawaiModal = ref(false)
@@ -390,6 +391,24 @@ const picOptions = computed(() => {
   }))
 })
 
+// Location Options from Master Ruang / Lokasi Diklat
+const locationOptions = computed(() => {
+  return masterLocations.value.map(loc => ({
+    value: loc.name,
+    label: loc.name,
+    subLabel: `[${loc.code}] ${loc.building || '-'} (${loc.floor || '-'}) • Kapasitas: ${loc.capacity || '-'} orang`
+  }))
+})
+
+// Facilitator Options from Master Facilitator
+const facilitatorOptions = computed(() => {
+  return masterFacilitators.value.map(fac => ({
+    value: fac.name,
+    label: fac.name,
+    subLabel: `[${fac.code}] ${fac.type}${fac.specialization ? ' • ' + fac.specialization : ''}`
+  }))
+})
+
 const uniquePegawaiDepts = computed(() => {
   const set = new Set()
   masterPegawai.value.forEach(k => {
@@ -494,16 +513,18 @@ function addQuickKaryawan() {
 async function loadData() {
   loadingInit.value = true
   try {
-    const [resTna, resProg, resFac, resKaryawan] = await Promise.all([
+    const [resTna, resProg, resFac, resKaryawan, resLoc] = await Promise.all([
       apiClient.get('/tna'),
       apiClient.get('/programs'),
       apiClient.get('/facilitators'),
-      apiClient.get('/karyawan')
+      apiClient.get('/karyawan'),
+      apiClient.get('/training-locations')
     ])
     tnaProposals.value = resTna.data.proposals || []
     allPrograms.value = resProg.data.programs || []
     masterFacilitators.value = resFac.data.facilitators || []
     masterPegawai.value = resKaryawan.data?.karyawans || []
+    masterLocations.value = resLoc.data?.locations || []
 
     if (isEditMode.value) {
       const { data } = await apiClient.get(`/classes/${props.editClassId}`)
@@ -630,6 +651,16 @@ async function submitForm() {
   }
   if (!form.value.start_date || !form.value.end_date) {
     feedback.value = { type: 'error', message: 'Tanggal mulai dan selesai kelas wajib diisi.' }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    return
+  }
+  if (!form.value.location_or_url) {
+    feedback.value = { type: 'error', message: 'Location / Ruang kelas wajib dipilih dari Master Ruangan.' }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    return
+  }
+  if (!form.value.trainer_name) {
+    feedback.value = { type: 'error', message: 'Facilitator / Lembaga pelatihan wajib dipilih dari Master Facilitator.' }
     window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
@@ -922,40 +953,34 @@ async function submitForm() {
             />
           </div>
 
-          <!-- Location (e.g. Ruang 1, Ruang 2, Virtual) -->
+          <!-- Location / Ruang (Master Ruangan) -->
           <div>
-            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              Location / Ruang <span class="text-rose-500">*</span>
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+              <span>Location / Ruang <span class="text-rose-500">*</span></span>
+              <span class="text-[10px] text-[#0067AC] font-medium font-mono">Master Ruangan</span>
             </label>
-            <input
+            <AppSearchableSelect
               v-model="form.location_or_url"
-              type="text"
-              required
-              placeholder="e.g. Ruang 1 / Ruang 2 / Virtual Zoom"
-              class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
+              :options="locationOptions"
+              placeholder="-- Pilih Ruangan / Lokasi dari Master Data --"
+              search-placeholder="Cari nama ruang, kode, gedung, atau tipe..."
+              input-class="bg-white font-bold text-gray-900 py-2.5 border-gray-300 shadow-2xs"
             />
           </div>
 
-          <!-- Facilitator (e.g. PT A, PT B) with Autocomplete from Master -->
+          <!-- Facilitator / Lembaga (Master Facilitator) -->
           <div>
             <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>Facilitator / Lembaga</span>
-              <span class="text-[10px] text-gray-400 font-normal">Pilih / Ketik</span>
+              <span>Facilitator / Lembaga <span class="text-rose-500">*</span></span>
+              <span class="text-[10px] text-[#0067AC] font-medium font-mono">Master Facilitator</span>
             </label>
-            <div class="relative">
-              <input
-                v-model="form.trainer_name"
-                type="text"
-                list="class-facilitator-options"
-                placeholder="e.g. PT Mitra Konsultan Perbankan"
-                class="w-full bg-white text-xs font-semibold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
-              />
-              <datalist id="class-facilitator-options">
-                <option v-for="fac in masterFacilitators" :key="fac.id" :value="fac.name">
-                  {{ fac.code }} • {{ fac.type }}
-                </option>
-              </datalist>
-            </div>
+            <AppSearchableSelect
+              v-model="form.trainer_name"
+              :options="facilitatorOptions"
+              placeholder="-- Pilih Facilitator dari Master Data --"
+              search-placeholder="Cari nama, kode, tipe, atau spesialisasi..."
+              input-class="bg-white font-bold text-gray-900 py-2.5 border-gray-300 shadow-2xs"
+            />
           </div>
 
           <!-- Metode Diklat -->
