@@ -214,7 +214,7 @@ onBeforeUnmount(() => {
     <!-- Dropdown Panel -->
     <div
       v-if="isOpen"
-      class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden flex flex-col py-1 max-h-72"
+      class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden flex flex-col py-1 max-h-72 min-w-[240px]"
     >
       <!-- Search Input Header -->
       <div class="p-2 border-b border-gray-100 bg-[#f8fafc] sticky top-0 z-10">

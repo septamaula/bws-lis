@@ -1038,14 +1038,14 @@ async function submitForm() {
         </div>
 
         <!-- Table Agenda -->
-        <div class="overflow-x-auto rounded-2xl border border-gray-100">
+        <div class="overflow-x-auto md:overflow-visible rounded-2xl border border-gray-100">
           <table class="w-full text-left border-collapse text-xs">
             <thead>
               <tr class="bg-gray-50 text-[11px] font-extrabold text-gray-600 uppercase tracking-wider border-b border-gray-200">
                 <th class="py-3 px-3 w-14 text-center">No</th>
                 <th class="py-3 px-4">Material (Topik Materi)</th>
                 <th class="py-3 px-4 w-32 text-center">Duration (Jam)</th>
-                <th class="py-3 px-4 w-52">Facilitator</th>
+                <th class="py-3 px-4 w-60 min-w-[240px]">Facilitator</th>
                 <th class="py-3 px-4 w-64">Upload Materi</th>
                 <th class="py-3 px-3 w-16 text-center">Aksi</th>
               </tr>
@@ -1090,13 +1090,14 @@ async function submitForm() {
                   </div>
                 </td>
 
-                <!-- Facilitator -->
-                <td class="py-3 px-4">
-                  <input
+                <!-- Facilitator (Master Facilitator) -->
+                <td class="py-3 px-4 min-w-[240px]">
+                  <AppSearchableSelect
                     v-model="session.trainer_name"
-                    type="text"
-                    placeholder="Nama Instruktur"
-                    class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-300 font-semibold text-gray-800 focus:border-[#0067AC] focus:outline-none"
+                    :options="facilitatorOptions"
+                    placeholder="-- Pilih Facilitator --"
+                    search-placeholder="Cari facilitator..."
+                    input-class="bg-white rounded-xl px-3 py-1.5 border-gray-300 font-semibold text-gray-800"
                   />
                 </td>
 
