@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import apiClient from '@/api/client'
 import {
@@ -83,6 +83,7 @@ import VoucherModal from '@/components/modals/VoucherModal.vue'
 import CertificateModal from '@/components/modals/CertificateModal.vue'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 
 // Data State fetched from Backend REST API
@@ -123,7 +124,75 @@ const isSubViewActive = computed(() => {
   return false
 })
 
+let isSyncingFromRoute = false
+
+function syncStateFromRoute() {
+  isSyncingFromRoute = true
+  const tab = route.meta?.tab || 'dashboard'
+  activeTab.value = tab
+
+  if (tab === 'tna') {
+    const view = route.meta?.view || 'list'
+    tnaViewMode.value = view
+    if ((view === 'detail' || view === 'edit') && route.params.id) {
+      selectedTnaProposalId.value = Number(route.params.id)
+    } else if (view === 'list' || view === 'create') {
+      selectedTnaProposalId.value = null
+    }
+  } else if (tab === 'program') {
+    const viewParam = route.params.view
+    programViewMode.value = viewParam === 'bi-categories' ? 'bi_categories' : (viewParam || 'list')
+  } else if (tab === 'class') {
+    classViewMode.value = route.params.view || 'list'
+  } else if (tab === 'rbac') {
+    const sub = route.params.subTab || 'users'
+    rbacSubTab.value = sub === 'approval-settings' ? 'approval_settings' : sub
+  }
+
+  nextTick(() => {
+    isSyncingFromRoute = false
+  })
+}
+
+function buildUrlFromState() {
+  const tab = activeTab.value
+  if (tab === 'dashboard') return '/dashboard'
+  if (tab === 'tna') {
+    if (tnaViewMode.value === 'create') return '/tna/create'
+    if (tnaViewMode.value === 'categories') return '/tna/categories'
+    if (tnaViewMode.value === 'years') return '/tna/years'
+    if (tnaViewMode.value === 'detail' && selectedTnaProposalId.value) return `/tna/${selectedTnaProposalId.value}`
+    if (tnaViewMode.value === 'edit' && selectedTnaProposalId.value) return `/tna/${selectedTnaProposalId.value}/edit`
+    return '/tna'
+  }
+  if (tab === 'program') {
+    if (programViewMode.value === 'create') return '/program/create'
+    if (programViewMode.value === 'facilitator') return '/program/facilitator'
+    if (programViewMode.value === 'bi_categories') return '/program/bi-categories'
+    if (programViewMode.value === 'detail') return '/program/detail'
+    if (programViewMode.value === 'edit') return '/program/edit'
+    return '/program'
+  }
+  if (tab === 'class') {
+    if (classViewMode.value === 'create') return '/class/create'
+    if (classViewMode.value === 'locations') return '/class/locations'
+    if (classViewMode.value === 'detail') return '/class/detail'
+    if (classViewMode.value === 'edit') return '/class/edit'
+    return '/class'
+  }
+  if (tab === 'rbac') {
+    const sub = rbacSubTab.value === 'approval_settings' ? 'approval-settings' : rbacSubTab.value
+    return sub && sub !== 'users' ? `/rbac/${sub}` : '/rbac'
+  }
+  return `/${tab}`
+}
+
+watch(() => route.fullPath, () => {
+  syncStateFromRoute()
+}, { immediate: true })
+
 watch(activeTab, (newTab, oldTab) => {
+  if (isSyncingFromRoute) return
   if (oldTab === 'tna' && newTab !== 'tna') {
     tnaViewMode.value = 'list'
   }
@@ -141,6 +210,14 @@ watch(activeTab, (newTab, oldTab) => {
 watch(rbacSubTab, (val) => {
   if (['categories', 'years'].includes(val)) {
     rbacSubTab.value = 'users'
+  }
+})
+
+watch([activeTab, tnaViewMode, programViewMode, classViewMode, rbacSubTab, selectedTnaProposalId], () => {
+  if (isSyncingFromRoute) return
+  const targetPath = buildUrlFromState()
+  if (route.path !== targetPath) {
+    router.push(targetPath)
   }
 })
 
