@@ -216,6 +216,15 @@ function formatScheduleRange(start, end) {
   }
 }
 
+function parseTrainer(str) {
+  if (!str) return { name: 'Tim Trainer BWS', role: '' }
+  const match = str.match(/^(.*?)\s*\((.*?)\)$/)
+  if (match) {
+    return { name: match[1].trim(), role: match[2].trim() }
+  }
+  return { name: str, role: '' }
+}
+
 function handlePrint() {
   window.print()
 }
@@ -649,26 +658,29 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- SECTION: BATCH KELAS PELATIHAN (1 PROGRAM BISA BANYAK KELAS) -->
+      <!-- SECTION: BATCH KELAS PELATIHAN -->
       <div class="bg-white rounded-3xl p-6 sm:p-7 border border-gray-100 shadow-2xs space-y-4">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
           <div class="flex items-center gap-2.5">
             <Calendar class="w-4 h-4 text-[#0067AC]" />
             <div>
-              <h2 class="text-sm font-bold text-gray-900">Batch Kelas Pelatihan (Work Plan Execution)</h2>
-              <p class="text-[11px] text-gray-500">1 Program Pelatihan dapat menurunkan beberapa batch kelas (contoh: Batch 1, Batch 2, dst).</p>
+              <h2 class="text-sm font-bold text-gray-900">Batch Kelas Pelatihan</h2>
+              <p class="text-[11px] text-gray-500">Jadwal pelaksanaan batch kelas dari program pelatihan ini</p>
             </div>
           </div>
 
-          <AppButton
-            type="button"
-            variant="primary"
-            pill
-            icon="plus"
-            @click="emit('open-class-create', program.id)"
-          >
-            Buka Batch Kelas untuk Program Ini
-          </AppButton>
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-semibold text-gray-500 font-mono">{{ program.classes?.length || 0 }} Batch Terjadwal</span>
+            <AppButton
+              type="button"
+              variant="primary"
+              pill
+              icon="plus"
+              @click="emit('open-class-create', program.id)"
+            >
+              Buka Batch Kelas
+            </AppButton>
+          </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -676,48 +688,53 @@ onMounted(() => {
             <thead class="bg-[#F8FAFC] text-gray-700 font-bold border-b border-gray-200">
               <tr>
                 <th class="py-3 px-3 w-12 text-center">No</th>
-                <th class="py-3 px-3 min-w-[200px]">Kode &amp; Nama Batch</th>
-                <th class="py-3 px-3 min-w-[170px] whitespace-nowrap">Jadwal Pelaksanaan</th>
-                <th class="py-3 px-3 min-w-[180px]">Metode &amp; Lokasi</th>
-                <th class="py-3 px-3 min-w-[180px]">Instruktur / Trainer</th>
-                <th class="py-3 px-3 w-24 text-center whitespace-nowrap">Peserta</th>
-                <th class="py-3 px-3 w-36 text-center whitespace-nowrap">Status</th>
+                <th class="py-3 px-4 min-w-[240px]">Kode &amp; Nama Batch</th>
+                <th class="py-3 px-4 min-w-[170px] whitespace-nowrap">Jadwal Pelaksanaan</th>
+                <th class="py-3 px-4 min-w-[200px]">Metode &amp; Lokasi</th>
+                <th class="py-3 px-4 min-w-[200px]">Instruktur / Trainer</th>
+                <th class="py-3 px-4 w-28 text-center whitespace-nowrap">Peserta</th>
+                <th class="py-3 px-4 w-36 text-center whitespace-nowrap">Status</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
               <tr v-for="(cls, idx) in program.classes" :key="cls.id" class="hover:bg-gray-50/60 transition">
-                <td class="py-3.5 px-3 text-center font-bold text-gray-400 font-mono">{{ idx + 1 }}</td>
-                <td class="py-3.5 px-3 min-w-[200px]">
-                  <p class="font-extrabold text-gray-900 text-xs leading-snug">{{ cls.batch_name }}</p>
-                  <p class="font-mono text-[11px] font-bold text-[#0067AC] mt-0.5">{{ cls.class_code }}</p>
+                <td class="py-3.5 px-3 text-center font-bold text-gray-400 font-mono text-xs align-middle">{{ idx + 1 }}</td>
+                <td class="py-3.5 px-4 min-w-[240px] align-middle">
+                  <p class="font-bold text-gray-900 text-xs leading-snug">{{ cls.batch_name }}</p>
+                  <p class="font-mono text-[11px] font-semibold text-[#0067AC] mt-0.5">{{ cls.class_code }}</p>
                 </td>
-                <td class="py-3.5 px-3 text-gray-700 whitespace-nowrap">
-                  <p class="font-semibold text-gray-900 whitespace-nowrap">{{ formatScheduleRange(cls.start_date, cls.end_date) }}</p>
-                  <p class="text-[11px] text-gray-400 font-mono flex items-center gap-1 mt-0.5 whitespace-nowrap">
+                <td class="py-3.5 px-4 text-gray-700 whitespace-nowrap align-middle">
+                  <p class="font-bold text-gray-900 text-xs">{{ formatScheduleRange(cls.start_date, cls.end_date) }}</p>
+                  <p class="text-[11px] text-gray-500 font-mono flex items-center gap-1 mt-0.5 whitespace-nowrap">
                     <Clock class="w-3 h-3 text-gray-400 shrink-0" />
                     <span>{{ cls.daily_schedule || '08:30 - 16:30 WIB' }}</span>
                   </p>
                 </td>
-                <td class="py-3.5 px-3 text-gray-600 min-w-[180px]">
-                  <span
-                    class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
-                    :class="cls.method === 'In-Classroom' ? 'bg-blue-50 text-[#0067AC] border border-blue-100' : cls.method === 'Virtual' ? 'bg-purple-50 text-purple-700 border border-purple-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'"
-                  >
-                    {{ cls.method || 'In-Classroom' }}
-                  </span>
-                  <p class="text-[11px] text-gray-500 mt-1 leading-snug" :title="cls.location_or_url">
+                <td class="py-3.5 px-4 min-w-[200px] align-middle">
+                  <div class="flex items-center gap-1.5 mb-1">
+                    <span
+                      class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
+                      :class="cls.method === 'In-Classroom' ? 'bg-blue-50 text-[#0067AC] border border-blue-100' : cls.method === 'Virtual' ? 'bg-purple-50 text-purple-700 border border-purple-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'"
+                    >
+                      {{ cls.method || 'In-Classroom' }}
+                    </span>
+                  </div>
+                  <p class="text-[11px] text-gray-600 leading-snug" :title="cls.location_or_url">
                     {{ cls.location_or_url || 'BWS Corporate Learning Center' }}
                   </p>
                 </td>
-                <td class="py-3.5 px-3 text-gray-700 min-w-[180px]">
-                  <p class="font-medium text-xs text-gray-900 leading-snug">{{ cls.trainer_name || 'Tim Trainer BWS' }}</p>
+                <td class="py-3.5 px-4 min-w-[200px] align-middle">
+                  <p class="font-bold text-xs text-gray-900 leading-snug">{{ parseTrainer(cls.trainer_name).name }}</p>
+                  <p v-if="parseTrainer(cls.trainer_name).role" class="text-[11px] text-gray-500 mt-0.5 leading-tight">
+                    {{ parseTrainer(cls.trainer_name).role }}
+                  </p>
                 </td>
-                <td class="py-3.5 px-3 text-center whitespace-nowrap">
-                  <span class="font-extrabold font-mono text-xs text-[#0067AC]">{{ cls.enrollments_count || 0 }}</span>
+                <td class="py-3.5 px-4 text-center whitespace-nowrap align-middle">
+                  <span class="font-bold font-mono text-xs text-[#0067AC]">{{ cls.enrollments_count || 0 }}</span>
                   <span class="text-gray-400 font-mono text-xs"> / {{ cls.max_quota || 25 }}</span>
-                  <span class="block text-[10px] text-gray-400">Kursi</span>
+                  <span class="text-[11px] text-gray-500 ml-1 font-medium">Peserta</span>
                 </td>
-                <td class="py-3.5 px-3 text-center whitespace-nowrap">
+                <td class="py-3.5 px-4 text-center whitespace-nowrap align-middle">
                   <span
                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border"
                     :class="cls.dual_control_status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : cls.dual_control_status === 'PENDING_CHECKER' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-50 text-gray-700 border-gray-200'"
@@ -732,7 +749,7 @@ onMounted(() => {
               </tr>
               <tr v-if="!program.classes || program.classes.length === 0">
                 <td colspan="7" class="py-8 text-center text-gray-400">
-                  Belum ada batch kelas yang dibuka untuk program ini. Klik "Buka Batch Kelas untuk Program Ini" untuk membuka batch pertama.
+                  Belum ada batch kelas yang dibuka untuk program ini. Klik "Buka Batch Kelas" untuk membuka batch pertama.
                 </td>
               </tr>
             </tbody>
