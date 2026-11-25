@@ -713,19 +713,6 @@ const totalPendingApprovalsForUser = computed(() => {
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
                       </li>
-                      <li>
-                        <button
-                          @click="activeTab = 'tna'; tnaViewMode = 'create'"
-                          class="w-full text-left flex items-center justify-between px-3 py-2 rounded-xl transition"
-                          :class="activeTab === 'tna' && tnaViewMode === 'create' ? 'bg-[#EBF4FC] text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
-                        >
-                          <span class="flex items-center gap-2">
-                            <Plus class="w-3.5 h-3.5" />
-                            Buat Usulan TNA Baru
-                          </span>
-                          <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
-                        </button>
-                      </li>
 
                       <!-- Section Header: Master Data -->
                       <li class="pt-2 pb-1 px-3 border-t border-gray-100 mt-1 flex items-center justify-between">
