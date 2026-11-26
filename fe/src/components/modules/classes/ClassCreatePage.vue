@@ -207,7 +207,9 @@ const selectedTna = computed(() => {
 // Programs filtered by chosen TNA (or all programs if TNA has no filter)
 const filteredPrograms = computed(() => {
   if (!form.value.tna_id) return allPrograms.value
-  return allPrograms.value.filter(p => Number(p.tna_proposal_id) === Number(form.value.tna_id))
+  return allPrograms.value.filter(
+    p => Number(p.tna_proposal_id) === Number(form.value.tna_id) || Number(p.id) === Number(form.value.program_id)
+  )
 })
 
 // Selected Program
@@ -706,17 +708,19 @@ async function loadData() {
       const randNum = String(Math.floor(100 + Math.random() * 900))
       form.value.class_code = `C26_${randNum}`
 
-      // Default active TNA
-      const activeTna = activeTnaList.value[0] || tnaProposals.value[0]
-      if (activeTna) {
-        form.value.tna_id = activeTna.id
-      }
-
-      // If initialProgramId given
+      // If initialProgramId given, sync TNA filter with that program's TNA (or clear if standalone)
       if (props.initialProgramId) {
         form.value.program_id = props.initialProgramId
-      } else if (filteredPrograms.value.length > 0) {
-        form.value.program_id = filteredPrograms.value[0].id
+        const initProg = allPrograms.value.find(p => Number(p.id) === Number(props.initialProgramId))
+        form.value.tna_id = initProg?.tna_proposal_id || ''
+      } else {
+        const activeTna = activeTnaList.value[0] || tnaProposals.value[0]
+        if (activeTna) {
+          form.value.tna_id = activeTna.id
+        }
+        if (filteredPrograms.value.length > 0) {
+          form.value.program_id = filteredPrograms.value[0].id
+        }
       }
 
       onProgramSelected()
