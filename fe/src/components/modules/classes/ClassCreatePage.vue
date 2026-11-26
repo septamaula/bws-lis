@@ -1461,14 +1461,6 @@ async function submitForm() {
 
           <div class="flex items-center gap-2 flex-wrap">
             <button
-              type="button"
-              @click="showPegawaiModal = true"
-              class="px-4 py-2 bg-[#0067AC] hover:bg-[#00528c] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
-            >
-              <Users class="w-3.5 h-3.5" />
-              <span>+ Pilih dari Master Pegawai</span>
-            </button>
-            <button
               v-if="availableNominations.length > 0"
               type="button"
               @click="selectAllNominations"
