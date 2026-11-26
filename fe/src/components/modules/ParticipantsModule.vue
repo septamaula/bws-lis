@@ -9,6 +9,9 @@ import {
   UserCheck
 } from 'lucide-vue-next'
 import DataTable from '@/components/DataTable.vue'
+import { useI18n } from '@/i18n'
+
+const { l } = useI18n()
 
 const props = defineProps({
   enrollments: {
@@ -28,27 +31,27 @@ const passRate = computed(() => {
   return Math.round((passedCount.value / props.enrollments.length) * 100)
 })
 
-const participantColumns = [
-  { key: 'user.nik', label: 'NIK Pegawai', sortable: true },
-  { key: 'user.name', label: 'Nama Pegawai', sortable: true },
-  { key: 'user.department', label: 'Divisi / Unit Kerja', sortable: true },
-  { key: 'user.branch', label: 'Kantor Cabang', sortable: true },
-  { key: 'training_class.program.title', label: 'Kelas Pelatihan Terdaftar', sortable: true },
+const participantColumns = computed(() => [
+  { key: 'user.nik', label: l('Employee NIK', 'NIK Pegawai'), sortable: true },
+  { key: 'user.name', label: l('Employee Name', 'Nama Pegawai'), sortable: true },
+  { key: 'user.department', label: l('Division / Work Unit', 'Divisi / Unit Kerja'), sortable: true },
+  { key: 'user.branch', label: l('Branch Office', 'Kantor Cabang'), sortable: true },
+  { key: 'training_class.program.title', label: l('Enrolled Training Class', 'Kelas Pelatihan Terdaftar'), sortable: true },
   {
     key: 'elapse_progress_pct',
-    label: 'Progress Belajar LIS',
+    label: l('LIS Learning Progress', 'Progres Belajar LIS'),
     sortable: true,
     align: 'center',
     format: (val) => `${val ?? 100}%`
   },
-  { key: 'completion_status', label: 'Status Kelulusan', sortable: true, align: 'center' },
+  { key: 'completion_status', label: l('Completion Status', 'Status Kelulusan'), sortable: true, align: 'center' },
   {
     key: 'created_at',
-    label: 'Tgl Pendaftaran',
+    label: l('Enrollment Date', 'Tgl Pendaftaran'),
     sortable: true,
     format: (val) => val ? val.substring(0, 10) : '-'
   }
-]
+])
 </script>
 
 <template>
@@ -61,8 +64,8 @@ const participantColumns = [
           <Users class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Total Terdaftar</p>
-          <p class="text-xl font-extrabold text-gray-900">{{ enrollments.length }} Pegawai</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Total Registered', 'Total Terdaftar') }}</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ enrollments.length }} {{ $l('Employees', 'Pegawai') }}</p>
         </div>
       </div>
 
@@ -71,8 +74,8 @@ const participantColumns = [
           <CheckCircle class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Peserta Lulus</p>
-          <p class="text-xl font-extrabold text-[#0067AC]">{{ passedCount }} Pegawai</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Passed Participants', 'Peserta Lulus') }}</p>
+          <p class="text-xl font-extrabold text-[#0067AC]">{{ passedCount }} {{ $l('Employees', 'Pegawai') }}</p>
         </div>
       </div>
 
@@ -81,7 +84,7 @@ const participantColumns = [
           <Award class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Pass Rate</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Pass Rate', 'Tingkat Kelulusan') }}</p>
           <p class="text-xl font-extrabold text-gray-900">{{ passRate }}%</p>
         </div>
       </div>
@@ -91,7 +94,7 @@ const participantColumns = [
           <UserCheck class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Rata-rata Presensi</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Average Attendance', 'Rata-rata Presensi') }}</p>
           <p class="text-xl font-extrabold text-gray-900">96.8%</p>
         </div>
       </div>
@@ -102,7 +105,7 @@ const participantColumns = [
       :data="enrollments"
       :columns="participantColumns"
       date-key="created_at"
-      export-filename="daftar_peserta_diklat_bws"
+      export-filename="bws_training_participants"
       :default-per-page="10"
     >
       <!-- Custom Cell: NIK -->
@@ -118,8 +121,8 @@ const participantColumns = [
 
       <!-- Custom Cell: Class -->
       <template #cell-training_class-program-title="{ row }">
-        <p class="font-semibold text-xs text-gray-800 line-clamp-1">{{ row.training_class?.program?.title || 'Batch Pelatihan' }}</p>
-        <p class="text-[10px] text-gray-400">{{ row.training_class?.batch_name || 'Batch I' }}</p>
+        <p class="font-semibold text-xs text-gray-800 line-clamp-1">{{ row.training_class?.program?.title || $l('Training Batch', 'Angkatan Pelatihan') }}</p>
+        <p class="text-[10px] text-gray-400">{{ row.training_class?.batch_name || $l('Batch I', 'Angkatan I') }}</p>
       </template>
 
       <!-- Custom Cell: Completion Status -->
@@ -132,7 +135,7 @@ const participantColumns = [
             class="w-1.5 h-1.5 rounded-full shrink-0"
             :class="row.completion_status === 'PASSED' ? 'bg-[#0067AC]' : row.completion_status === 'FAILED' ? 'bg-rose-500' : 'bg-blue-600'"
           ></span>
-          {{ row.completion_status === 'PASSED' ? 'Lulus (Passed)' : row.completion_status === 'FAILED' ? 'Tidak Lulus' : 'Sedang Berjalan' }}
+          {{ row.completion_status === 'PASSED' ? $l('Passed', 'Lulus') : row.completion_status === 'FAILED' ? $l('Failed', 'Tidak Lulus') : $l('In Progress', 'Sedang Berjalan') }}
         </span>
       </template>
 
@@ -142,12 +145,12 @@ const participantColumns = [
           v-if="row.completion_status === 'PASSED'"
           @click="emit('view-certificate', row)"
           class="px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-[#0067AC] text-xs font-semibold transition"
-          title="Lihat E-Sertifikat Kelulusan"
+          :title="$l('View Completion E-Certificate', 'Lihat E-Sertifikat Kelulusan')"
         >
-          Sertifikat
+          {{ $l('Certificate', 'Sertifikat') }}
         </button>
         <span v-else class="text-[11px] text-gray-400">
-          In Training
+          {{ $l('In Training', 'Dalam Pelatihan') }}
         </span>
       </template>
     </DataTable>

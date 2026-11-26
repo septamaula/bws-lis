@@ -19,6 +19,9 @@ import {
   Loader2
 } from 'lucide-vue-next'
 import apiClient from '@/api/client'
+import { useI18n } from '@/i18n'
+
+const { l } = useI18n()
 
 const props = defineProps({
   proposalId: {
@@ -48,7 +51,7 @@ async function toggleStatus() {
     emit('refresh-list')
   } catch (err) {
     console.error('Failed to update status:', err)
-    alert(err.response?.data?.message || 'Gagal mengubah status TNA.')
+    alert(err.response?.data?.message || l('Failed to change TNA status.', 'Gagal mengubah status TNA.'))
   } finally {
     updatingStatus.value = false
   }
@@ -87,7 +90,7 @@ const groupedItems = computed(() => {
   if (!proposal.value || !proposal.value.items) return {}
   const groups = {}
   proposal.value.items.forEach(item => {
-    const cat = item.category_name || item.category?.name || 'General Training'
+    const cat = item.category_name || item.category?.name || l('General Training', 'Pelatihan Umum')
     if (!groups[cat]) groups[cat] = []
     groups[cat].push(item)
   })
@@ -122,13 +125,13 @@ const realizationPercentage = computed(() => {
   return Math.round((annualRealization.value / annualInvestment.value) * 100)
 })
 
-const detailColumns = [
-  { key: 'category', label: 'Category', width: '25%' },
-  { key: 'recommended_program', label: 'Training Program' },
-  { key: 'budget', label: 'Investment (Projection)', align: 'right', width: '180px' },
-  { key: 'realization_amount', label: 'Realization', align: 'right', width: '160px' },
-  { key: 'remaining_budget', label: 'Remaining Budget', align: 'right', width: '160px' }
-]
+const detailColumns = computed(() => [
+  { key: 'category', label: l('Category', 'Kategori'), width: '25%' },
+  { key: 'recommended_program', label: l('Training Program', 'Program Pelatihan') },
+  { key: 'budget', label: l('Investment (Projection)', 'Proyeksi Investasi'), align: 'right', width: '180px' },
+  { key: 'realization_amount', label: l('Realization', 'Realisasi'), align: 'right', width: '160px' },
+  { key: 'remaining_budget', label: l('Remaining Budget', 'Sisa Anggaran'), align: 'right', width: '160px' }
+])
 
 const downloadingDoc = ref(false)
 
@@ -143,7 +146,7 @@ async function downloadDocument() {
     if (response.data.type === 'application/json') {
       const text = await response.data.text()
       const json = JSON.parse(text)
-      alert(json.message || 'Dokumen belum tersedia secara fisik.')
+      alert(json.message || l('Physical document is not yet available.', 'Dokumen fisik belum tersedia.'))
       return
     }
 
@@ -165,9 +168,9 @@ async function downloadDocument() {
 
     <!-- Standard Subpage Header (Navigation & Actions) -->
     <SubpageHeader
-      back-label="Kembali ke List TNA"
-      title="Rincian Usulan TNA"
-      :subtitle="proposal ? `Tahun Anggaran ${proposal.year} • Perencanaan & Realisasi Investasi Diklat Bank Woori Saudara` : ''"
+      :back-label="$l('Back to TNA List', 'Kembali ke Daftar TNA')"
+      :title="$l('TNA Proposal Details', 'Rincian Usulan TNA')"
+      :subtitle="proposal ? $l(`Fiscal Year ${proposal.year} • Bank Woori Saudara Training Investment Planning & Realization`, `Tahun Anggaran ${proposal.year} • Perencanaan & Realisasi Investasi Diklat Bank Woori Saudara`) : ''"
       :status-badge="proposal?.proposal_code"
       @back="emit('back')"
     >
@@ -178,7 +181,7 @@ async function downloadDocument() {
           size="sm"
           @click="emit('edit', proposal?.id)"
         >
-          Edit Dokumen TNA
+          {{ $l('Edit TNA Document', 'Ubah Dokumen TNA') }}
         </AppButton>
       </template>
     </SubpageHeader>
@@ -192,7 +195,7 @@ async function downloadDocument() {
           <Calendar class="w-5 h-5" />
         </div>
         <div>
-          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Tahun Anggaran</span>
+          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">{{ $l('Fiscal Year', 'Tahun Anggaran') }}</span>
           <span class="text-xl font-extrabold text-gray-900 font-mono">{{ proposal.year }}</span>
         </div>
       </div>
@@ -206,7 +209,7 @@ async function downloadDocument() {
           <ShieldCheck class="w-5 h-5" />
         </div>
         <div class="flex flex-col gap-1">
-          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Status Siklus TNA</span>
+          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">{{ $l('TNA Cycle Status', 'Status Siklus TNA') }}</span>
           <div class="flex items-center gap-2">
             <span
               class="inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-0.5 rounded-full"
@@ -216,15 +219,15 @@ async function downloadDocument() {
                 class="w-2 h-2 rounded-full"
                 :class="proposal.tna_status === 'Aktif' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'"
               ></span>
-              <span>{{ proposal.tna_status || 'Aktif' }}</span>
+              <span>{{ proposal.tna_status === 'Closed' ? $l('Closed', 'Ditutup') : $l('Active', 'Aktif') }}</span>
             </span>
             <button
               @click="toggleStatus"
               :disabled="updatingStatus"
               class="text-[11px] font-bold px-2.5 py-1 rounded-lg border border-gray-200 hover:bg-gray-100 text-gray-700 transition cursor-pointer disabled:opacity-50"
-              :title="`Ubah status siklus TNA menjadi ${proposal.tna_status === 'Aktif' ? 'Closed' : 'Aktif'}`"
+              :title="$l(`Change TNA cycle status to ${proposal.tna_status === 'Aktif' ? 'Closed' : 'Active'}`, `Ubah status siklus TNA menjadi ${proposal.tna_status === 'Aktif' ? 'Ditutup' : 'Aktif'}`)"
             >
-              {{ updatingStatus ? 'Menyimpan...' : (proposal.tna_status === 'Aktif' ? 'Tutup TNA' : 'Set Aktif') }}
+              {{ updatingStatus ? $l('Saving...', 'Menyimpan...') : (proposal.tna_status === 'Aktif' ? $l('Close TNA', 'Tutup TNA') : $l('Set Active', 'Aktifkan')) }}
             </button>
           </div>
         </div>
@@ -236,14 +239,14 @@ async function downloadDocument() {
           <FileText class="w-5 h-5" />
         </div>
         <div class="min-w-0 flex-1">
-          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Dokumen Lampiran</span>
+          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">{{ $l('Attached Document', 'Dokumen Lampiran') }}</span>
           <div v-if="proposal.attachment_name" class="mt-1 flex items-center gap-1.5 min-w-0">
             <button
               type="button"
               :disabled="downloadingDoc"
               @click="downloadDocument"
               class="group flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50/70 hover:bg-[#0067AC] text-gray-800 hover:text-white border border-blue-200/80 hover:border-[#0067AC] transition cursor-pointer min-w-0 flex-1 max-w-[200px]"
-              :title="`Klik untuk melihat file: ${proposal.attachment_name}`"
+              :title="$l(`Click to view file: ${proposal.attachment_name}`, `Klik untuk melihat berkas: ${proposal.attachment_name}`)"
             >
               <div class="w-4 h-4 rounded bg-rose-50 text-rose-600 group-hover:bg-white group-hover:text-rose-600 flex items-center justify-center shrink-0 border border-rose-100 group-hover:border-transparent transition">
                 <FileText class="w-2.5 h-2.5" />
@@ -259,12 +262,12 @@ async function downloadDocument() {
               :href="`${apiClient.defaults.baseURL || '/api'}/tna/${proposal.id}/attachment?download=1`"
               target="_blank"
               class="w-7 h-7 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-[#0067AC] border border-gray-200 transition shadow-2xs cursor-pointer flex items-center justify-center shrink-0"
-              title="Unduh file dokumen"
+              :title="$l('Download document file', 'Unduh berkas dokumen')"
             >
               <Download class="w-3.5 h-3.5" />
             </a>
           </div>
-          <span v-else class="text-xs text-gray-400 italic block mt-1">Tidak ada dokumen dilampirkan</span>
+          <span v-else class="text-xs text-gray-400 italic block mt-1">{{ $l('No document attached', 'Tidak ada dokumen dilampirkan') }}</span>
         </div>
       </div>
 
@@ -274,7 +277,7 @@ async function downloadDocument() {
           <Wallet class="w-5 h-5" />
         </div>
         <div>
-          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Regulator Target (Min)</span>
+          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">{{ $l('Regulator Target (Min)', 'Target Minimum Regulator') }}</span>
           <span class="text-base font-extrabold text-[#0067AC] font-mono">
             {{ formatRupiah(proposal.minimum_regulator_investment || 1000000000) }}
           </span>
@@ -286,9 +289,9 @@ async function downloadDocument() {
     <!-- 2. Standard Detail Table: Breakdown Anggaran & Program -->
     <DetailTable
       v-if="proposal"
-      title="Rincian Alokasi Program & Realisasi Anggaran"
-      subtitle="Breakdown usulan pagu investasi dan realisasi per kategori kompetensi"
-      badge="Breakdown Tahunan"
+      :title="$l('Program Allocation & Budget Realization Breakdown', 'Rincian Alokasi Program & Realisasi Anggaran')"
+      :subtitle="$l('Proposed investment ceiling and realization breakdown by competency category', 'Rincian usulan pagu investasi dan realisasi per kategori kompetensi')"
+      :badge="$l('Annual Breakdown', 'Rincian Tahunan')"
       :columns="detailColumns"
     >
       <template #tbody>
@@ -309,13 +312,13 @@ async function downloadDocument() {
                 <span>{{ categoryName }}</span>
               </div>
               <span class="text-[10px] text-gray-400 font-normal block ml-4 mt-0.5">
-                {{ items.length }} Program Pelatihan
+                {{ items.length }} {{ $l(items.length === 1 ? 'Training Program' : 'Training Programs', 'Program Pelatihan') }}
               </span>
             </td>
 
             <!-- Training Program -->
             <td class="py-3 px-4 font-semibold text-gray-800">
-              {{ row.recommended_program || row.sub_category_name || 'Program Pelatihan' }}
+              {{ row.recommended_program || row.sub_category_name || $l('Training Program', 'Program Pelatihan') }}
             </td>
 
             <!-- Investment (Projection) -->
@@ -362,10 +365,10 @@ async function downloadDocument() {
               <TrendingUp class="w-5 h-5" />
             </div>
             <div>
-              <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">Tingkat Capaian Realisasi Anggaran</p>
+              <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider">{{ $l('Budget Realization Rate', 'Tingkat Capaian Realisasi Anggaran') }}</p>
               <div class="flex items-center gap-2 mt-0.5">
                 <span class="text-lg font-extrabold text-emerald-700 font-mono">{{ realizationPercentage }}%</span>
-                <span class="text-xs text-gray-500 font-medium">dari total proyeksi {{ formatRupiah(annualInvestment) }}</span>
+                <span class="text-xs text-gray-500 font-medium">{{ $l('of total projection', 'dari total proyeksi') }} {{ formatRupiah(annualInvestment) }}</span>
               </div>
             </div>
           </div>

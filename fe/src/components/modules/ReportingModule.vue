@@ -11,6 +11,9 @@ import {
 } from 'lucide-vue-next'
 import DataTable from '@/components/DataTable.vue'
 import apiClient from '@/api/client'
+import { useI18n } from '@/i18n'
+
+const { l } = useI18n()
 
 const props = defineProps({
   auditLogs: {
@@ -35,15 +38,15 @@ async function downloadOfficialCsv() {
   }
 }
 
-const auditColumns = [
-  { key: 'id', label: 'Log ID', sortable: true, align: 'center' },
-  { key: 'created_at', label: 'Waktu Transaksi (UTC+7)', sortable: true },
-  { key: 'user.name', label: 'Eksekutor (Pegawai)', sortable: true },
-  { key: 'action', label: 'Aktivitas Perbankan', sortable: true },
-  { key: 'entity_type', label: 'Tipe Modul / Entitas', sortable: true },
-  { key: 'ip_address', label: 'Alamat IP Terminal', sortable: true, align: 'center' },
-  { key: 'chain_hash', label: 'Kode Integritas Data', sortable: true }
-]
+const auditColumns = computed(() => [
+  { key: 'id', label: l('Log ID', 'ID Log'), sortable: true, align: 'center' },
+  { key: 'created_at', label: l('Timestamp (UTC+7)', 'Waktu Transaksi (UTC+7)'), sortable: true },
+  { key: 'user.name', label: l('Executor (Employee)', 'Eksekutor (Pegawai)'), sortable: true },
+  { key: 'action', label: l('Banking Activity', 'Aktivitas Perbankan'), sortable: true },
+  { key: 'entity_type', label: l('Module / Entity Type', 'Tipe Modul / Entitas'), sortable: true },
+  { key: 'ip_address', label: l('Terminal IP Address', 'Alamat IP Terminal'), sortable: true, align: 'center' },
+  { key: 'chain_hash', label: l('Data Integrity Hash', 'Kode Integritas Data'), sortable: true }
+])
 </script>
 
 <template>
@@ -56,8 +59,8 @@ const auditColumns = [
           <ShieldCheck class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Integritas Audit</p>
-          <p class="text-xl font-extrabold text-[#0067AC]">100% Valid</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Audit Integrity', 'Integritas Audit') }}</p>
+          <p class="text-xl font-extrabold text-[#0067AC]">{{ $l('100% Valid', '100% Sah') }}</p>
         </div>
       </div>
 
@@ -67,7 +70,7 @@ const auditColumns = [
         </div>
         <div>
           <p class="text-[11px] text-gray-400 font-medium">POJK No. 11/2022</p>
-          <p class="text-xl font-extrabold text-gray-900">Compliant</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ $l('Compliant', 'Patuh Regulasi') }}</p>
         </div>
       </div>
 
@@ -76,8 +79,8 @@ const auditColumns = [
           <ShieldCheck class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Validasi Keamanan</p>
-          <p class="text-xl font-extrabold text-purple-700">Tervalidasi</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Security Validation', 'Validasi Keamanan') }}</p>
+          <p class="text-xl font-extrabold text-purple-700">{{ $l('Verified', 'Tervalidasi') }}</p>
         </div>
       </div>
 
@@ -86,8 +89,8 @@ const auditColumns = [
           <FileText class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Mutasi Audit Log</p>
-          <p class="text-xl font-extrabold text-gray-900">{{ auditLogs.length }} Entri</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Audit Log Entries', 'Mutasi Catatan Audit') }}</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ auditLogs.length }} {{ $l(auditLogs.length === 1 ? 'Entry' : 'Entries', 'Entri') }}</p>
         </div>
       </div>
     </div>
@@ -108,7 +111,7 @@ const auditColumns = [
 
       <!-- Custom Cell: User -->
       <template #cell-user-name="{ row }">
-        <p class="font-bold text-xs text-gray-900">{{ row.user?.name || 'System Daemon' }}</p>
+        <p class="font-bold text-xs text-gray-900">{{ row.user?.name || $l('System Service', 'Layanan Sistem') }}</p>
         <p class="font-mono text-[10px] text-gray-400">{{ row.user?.nik || 'SYS-KERNEL' }} • {{ row.user?.role_name }}</p>
       </template>
 

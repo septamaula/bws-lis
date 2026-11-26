@@ -24,7 +24,11 @@ import {
   Info,
   X
 } from 'lucide-vue-next'
+import { computed as vueComputed } from 'vue'
+import { useI18n } from '@/i18n'
 import apiClient from '@/api/client'
+
+const { l, t } = useI18n()
 
 const props = defineProps({
   tnaProposals: {
@@ -57,7 +61,10 @@ async function toggleTnaStatus(row) {
     row.tna_status = newStatus
     flashMessage.value = {
       type: 'success',
-      text: data.message || `Status TNA Tahun ${row.year} berhasil diubah menjadi ${newStatus}.`
+      text: l(
+        `TNA ${row.year} status has been changed to ${newStatus === 'Aktif' ? 'Active' : 'Closed'}.`,
+        `Status TNA Tahun ${row.year} berhasil diubah menjadi ${newStatus === 'Aktif' ? 'Aktif' : 'Ditutup'}.`
+      )
     }
     setTimeout(() => {
       flashMessage.value = { type: '', text: '' }
@@ -65,7 +72,7 @@ async function toggleTnaStatus(row) {
   } catch (err) {
     flashMessage.value = {
       type: 'error',
-      text: err.response?.data?.message || 'Gagal mengubah status TNA.'
+      text: err.response?.data?.message || l('Failed to update TNA status.', 'Gagal mengubah status TNA.')
     }
   } finally {
     updatingStatusId.value = null
@@ -104,33 +111,33 @@ const annualTnaList = computed(() => {
   return [...list].sort((a, b) => Number(b.year) - Number(a.year))
 })
 
-const tnaColumns = [
-  { key: 'year', label: 'Tahun', sortable: true, align: 'center', width: '100px' },
+const tnaColumns = vueComputed(() => [
+  { key: 'year', label: l('Year', 'Tahun'), sortable: true, align: 'center', width: '100px' },
   {
     key: 'total_budget_requested',
-    label: 'Investment (Projection)',
+    label: l('Investment (Projection)', 'Proyeksi Investasi'),
     sortable: true,
     align: 'right',
     format: val => formatRupiah(val)
   },
   {
     key: 'realization_amount',
-    label: 'Realization',
+    label: l('Realization', 'Realisasi'),
     sortable: true,
     align: 'right',
     format: val => formatRupiah(val)
   },
-  { key: 'realization_percentage', label: '% Percentage', sortable: true, align: 'center', width: '160px' },
+  { key: 'realization_percentage', label: l('Realization (%)', 'Persentase (%)'), sortable: true, align: 'center', width: '160px' },
   {
     key: 'minimum_regulator_investment',
-    label: 'Regulator Target (Min)',
+    label: l('Regulator Target (Min)', 'Target Minimum Regulator'),
     sortable: true,
     align: 'right',
     format: val => (val ? formatRupiah(val) : '-')
   },
-  { key: 'tna_status', label: 'Status TNA', sortable: true, align: 'center', width: '130px' },
-  { key: 'status', label: 'Status Approval', sortable: true, align: 'center', width: '160px' }
-]
+  { key: 'tna_status', label: l('TNA Status', 'Status TNA'), sortable: true, align: 'center', width: '130px' },
+  { key: 'status', label: l('Approval Status', 'Status Persetujuan'), sortable: true, align: 'center', width: '160px' }
+])
 
 // KPI Metrics
 const totalInvestment = computed(() => {
@@ -162,7 +169,10 @@ async function executeDelete() {
     const { data } = await apiClient.delete(`/tna/${targetDeleteProposal.value.id}`)
     flashMessage.value = {
       type: 'success',
-      text: data.message || `Dokumen TNA Tahun ${targetDeleteProposal.value.year} berhasil dihapus.`
+      text: l(
+        `TNA Document for Year ${targetDeleteProposal.value.year} has been deleted.`,
+        `Dokumen TNA Tahun ${targetDeleteProposal.value.year} berhasil dihapus.`
+      )
     }
     deleteModalOpen.value = false
     targetDeleteProposal.value = null
@@ -174,7 +184,7 @@ async function executeDelete() {
   } catch (err) {
     flashMessage.value = {
       type: 'error',
-      text: err.response?.data?.message || 'Gagal menghapus dokumen TNA.'
+      text: err.response?.data?.message || l('Failed to delete TNA document.', 'Gagal menghapus dokumen TNA.')
     }
   } finally {
     deletingId.value = null
@@ -208,8 +218,8 @@ async function executeDelete() {
           <Calendar class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Tahun Terdata</p>
-          <p class="text-lg font-extrabold text-gray-900">{{ annualTnaList.length }} Tahun Anggaran</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Recorded Years', 'Tahun Terdata') }}</p>
+          <p class="text-lg font-extrabold text-gray-900">{{ annualTnaList.length }} {{ $l(annualTnaList.length === 1 ? 'Fiscal Year' : 'Fiscal Years', 'Tahun Anggaran') }}</p>
         </div>
       </div>
 
@@ -218,7 +228,7 @@ async function executeDelete() {
           <Wallet class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Total Proyeksi Investasi</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Total Investment Projection', 'Total Proyeksi Investasi') }}</p>
           <p class="text-lg font-extrabold text-gray-900 font-mono">{{ formatRupiah(totalInvestment) }}</p>
         </div>
       </div>
@@ -228,7 +238,7 @@ async function executeDelete() {
           <CheckCircle class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Total Realisasi Kumulatif</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Total Cumulative Realization', 'Total Realisasi Kumulatif') }}</p>
           <p class="text-lg font-extrabold text-emerald-700 font-mono">{{ formatRupiah(totalRealization) }}</p>
         </div>
       </div>
@@ -238,10 +248,10 @@ async function executeDelete() {
           <TrendingUp class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Rata-rata Capaian Realisasi</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Average Realization Rate', 'Rata-rata Capaian Realisasi') }}</p>
           <div class="flex items-center gap-2">
             <p class="text-lg font-extrabold text-gray-900 font-mono">{{ overallPercentage }}%</p>
-            <span class="text-[10px] text-gray-400">Sisa {{ formatRupiah(totalRemaining) }}</span>
+            <span class="text-[10px] text-gray-400">{{ $l('Remaining', 'Sisa') }} {{ formatRupiah(totalRemaining) }}</span>
           </div>
         </div>
       </div>
@@ -254,7 +264,7 @@ async function executeDelete() {
       export-filename="rencana_tna_tahunan_bws"
       :show-date-range="false"
       :default-per-page="10"
-      footer-note="Catatan: Setiap tahun anggaran hanya memiliki 1 usulan TNA Induk bank-wide sesuai regulasi OJK &amp; standar BWS."
+      :footer-note="$l('Note: Each fiscal year has only 1 bank-wide Master TNA proposal under OJK regulations and BWS standards.', 'Catatan: Setiap tahun anggaran hanya memiliki 1 usulan TNA Induk bank-wide sesuai regulasi OJK dan standar BWS.')"
     >
       <!-- Custom Cell: Tahun -->
       <template #cell-year="{ row }">
@@ -316,13 +326,13 @@ async function executeDelete() {
           :disabled="updatingStatusId === row.id"
           class="inline-flex items-center gap-1.5 text-xs font-extrabold px-3 py-1 rounded-full cursor-pointer transition hover:opacity-85 shadow-2xs"
           :class="row.tna_status === 'Aktif' ? 'bg-emerald-50 text-emerald-700 border border-emerald-300' : 'bg-gray-100 text-gray-600 border border-gray-300'"
-          :title="`Klik untuk mengubah status menjadi ${row.tna_status === 'Aktif' ? 'Closed' : 'Aktif'}`"
+          :title="$l(`Click to change status to ${row.tna_status === 'Aktif' ? 'Closed' : 'Active'}`, `Klik untuk mengubah status menjadi ${row.tna_status === 'Aktif' ? 'Ditutup' : 'Aktif'}`)"
         >
           <span
             class="w-2 h-2 rounded-full shrink-0"
             :class="row.tna_status === 'Aktif' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'"
           ></span>
-          <span>{{ row.tna_status || 'Aktif' }}</span>
+          <span>{{ row.tna_status === 'Closed' ? $l('Closed', 'Ditutup') : $l('Active', 'Aktif') }}</span>
         </button>
         <span
           v-else
@@ -333,7 +343,7 @@ async function executeDelete() {
             class="w-2 h-2 rounded-full shrink-0"
             :class="row.tna_status === 'Aktif' ? 'bg-emerald-500' : 'bg-gray-400'"
           ></span>
-          <span>{{ row.tna_status || 'Aktif' }}</span>
+          <span>{{ row.tna_status === 'Closed' ? $l('Closed', 'Ditutup') : $l('Active', 'Aktif') }}</span>
         </span>
       </template>
 
@@ -352,7 +362,7 @@ async function executeDelete() {
             class="w-1.5 h-1.5 rounded-full shrink-0"
             :class="row.status === 'APPROVED' ? 'bg-emerald-500' : 'bg-[#0067AC] animate-pulse'"
           ></span>
-          {{ row.approval_status_badge || (row.status === 'APPROVED' ? 'Disetujui Final' : 'Menunggu Review') }}
+          {{ row.status === 'APPROVED' ? $l('Final Approved', 'Disetujui Final') : row.status === 'REJECTED' ? $l('Rejected', 'Ditolak') : row.status === 'REVISED' ? $l('Needs Revision', 'Perlu Revisi') : $l('Pending Review', 'Menunggu Peninjauan') }}
         </span>
       </template>
 
@@ -362,30 +372,30 @@ async function executeDelete() {
           <button
             @click="emit('view-tna-detail', row.id)"
             class="px-2.5 py-1 rounded-lg text-xs font-bold text-[#0067AC] hover:bg-[#0067AC] hover:text-white transition flex items-center gap-1 cursor-pointer"
-            title="View TNA (Lihat Rincian Program & Sisa Anggaran)"
+            :title="$l('View TNA (Program Breakdown & Remaining Budget)', 'Lihat TNA (Rincian Program & Sisa Anggaran)')"
           >
             <Eye class="w-3.5 h-3.5" />
-            <span>View</span>
+            <span>{{ $t('common.view') }}</span>
           </button>
           <span class="text-gray-300">|</span>
           <button
             v-if="canManageTna"
             @click="emit('edit-tna', row.id)"
             class="px-2.5 py-1 rounded-lg text-xs font-bold text-amber-700 hover:bg-amber-600 hover:text-white transition flex items-center gap-1 cursor-pointer"
-            title="Edit TNA (Ubah Pagu & Program)"
+            :title="$l('Edit TNA (Update Budget Ceiling & Programs)', 'Ubah TNA (Sesuaikan Pagu & Program)')"
           >
             <Edit3 class="w-3.5 h-3.5" />
-            <span>Edit</span>
+            <span>{{ $t('common.edit') }}</span>
           </button>
           <span v-if="canManageTna" class="text-gray-300">|</span>
           <button
             v-if="canManageTna"
             @click="confirmDelete(row)"
             class="px-2.5 py-1 rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-600 hover:text-white transition flex items-center gap-1 cursor-pointer"
-            title="Delete TNA (Hapus Rencana Tahunan)"
+            :title="$l('Delete TNA (Remove Annual Plan)', 'Hapus TNA (Hapus Rencana Tahunan)')"
           >
             <Trash2 class="w-3.5 h-3.5" />
-            <span>Delete</span>
+            <span>{{ $t('common.delete') }}</span>
           </button>
         </div>
       </template>
@@ -402,15 +412,22 @@ async function executeDelete() {
             <Trash2 class="w-6 h-6" />
           </div>
           <div>
-            <h3 class="text-base font-extrabold text-gray-900">Hapus Dokumen TNA</h3>
-            <p class="text-xs text-gray-500">Konfirmasi Penghapusan Rencana Tahunan</p>
+            <h3 class="text-base font-extrabold text-gray-900">{{ $l('Delete TNA Document', 'Hapus Dokumen TNA') }}</h3>
+            <p class="text-xs text-gray-500">{{ $l('Annual Plan Deletion Confirmation', 'Konfirmasi Penghapusan Rencana Tahunan') }}</p>
           </div>
         </div>
 
         <div class="bg-rose-50/70 p-3.5 rounded-2xl border border-rose-100 text-xs text-rose-800 leading-relaxed">
-          Apakah Anda yakin ingin menghapus dokumen TNA <strong>Tahun {{ targetDeleteProposal?.year }}</strong> ({{ targetDeleteProposal?.proposal_code }})?
-          <br><br>
-          <span class="font-bold">Peringatan:</span> Seluruh rincian program kerja pelatihan dan pagu anggaran untuk tahun ini akan dihapus dari sistem.
+          <template v-if="$locale === 'en'">
+            Are you sure you want to delete TNA document <strong>Year {{ targetDeleteProposal?.year }}</strong> ({{ targetDeleteProposal?.proposal_code }})?
+            <br><br>
+            <span class="font-bold">Warning:</span> All training work program items and budget ceilings for this year will be removed from the system.
+          </template>
+          <template v-else>
+            Apakah Anda yakin ingin menghapus dokumen TNA <strong>Tahun {{ targetDeleteProposal?.year }}</strong> ({{ targetDeleteProposal?.proposal_code }})?
+            <br><br>
+            <span class="font-bold">Peringatan:</span> Seluruh rincian program kerja pelatihan dan pagu anggaran untuk tahun ini akan dihapus dari sistem.
+          </template>
         </div>
 
         <div class="flex items-center justify-end gap-2.5 pt-2">
@@ -418,7 +435,7 @@ async function executeDelete() {
             @click="deleteModalOpen = false; targetDeleteProposal = null"
             class="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
           >
-            Batal
+            {{ $t('common.cancel') }}
           </button>
           <button
             @click="executeDelete"
@@ -426,7 +443,7 @@ async function executeDelete() {
             class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             <Trash2 class="w-3.5 h-3.5" />
-            <span>{{ deletingId ? 'Menghapus...' : 'Ya, Hapus Sekarang' }}</span>
+            <span>{{ deletingId ? $l('Deleting...', 'Menghapus...') : $l('Yes, Delete Now', 'Ya, Hapus Sekarang') }}</span>
           </button>
         </div>
       </div>

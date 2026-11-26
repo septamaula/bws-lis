@@ -19,6 +19,9 @@ import {
   Filter
 } from 'lucide-vue-next'
 import { exportToCsv, exportToExcel, getNestedValue } from '@/utils/exportUtils'
+import { useI18n } from '@/i18n'
+
+const { l, t } = useI18n()
 
 const props = defineProps({
   // The raw dataset
@@ -305,7 +308,11 @@ function handleExportCsv() {
   if (!target.length) return
   const isSelected = selectedRows.value.size > 0
   exportToCsv(target, props.columns, `${props.exportFilename}_${Date.now()}`)
-  showExportNotice(`Berhasil mengekspor ${target.length} baris ${isSelected ? '(data terpilih)' : '(seluruh filter)'} ke CSV`)
+  showExportNotice(l(
+    'Successfully exported {count} rows ({scope}) to CSV.',
+    'Berhasil mengekspor {count} baris ({scope}) ke CSV.',
+    { count: target.length, scope: isSelected ? l('selected records', 'data terpilih') : l('all filtered', 'seluruh filter') }
+  ))
 }
 
 function handleExportExcel() {
@@ -313,7 +320,11 @@ function handleExportExcel() {
   if (!target.length) return
   const isSelected = selectedRows.value.size > 0
   exportToExcel(target, props.columns, `${props.exportFilename}_${Date.now()}`)
-  showExportNotice(`Berhasil mengekspor ${target.length} baris ${isSelected ? '(data terpilih)' : '(seluruh filter)'} ke Excel`)
+  showExportNotice(l(
+    'Successfully exported {count} rows ({scope}) to Excel.',
+    'Berhasil mengekspor {count} baris ({scope}) ke Excel.',
+    { count: target.length, scope: isSelected ? l('selected records', 'data terpilih') : l('all filtered', 'seluruh filter') }
+  ))
 }
 
 function showExportNotice(msg) {
@@ -338,7 +349,7 @@ function clearDateRange() {
         <h3 v-if="title" class="font-bold text-base text-gray-900 flex items-center gap-2">
           <span>{{ title }}</span>
           <span v-if="totalItems !== undefined" class="text-xs bg-[#f4f6f5] text-gray-600 font-semibold px-2.5 py-0.5 rounded-full">
-            {{ totalItems }} Data
+            {{ totalItems }} {{ $l('Records', 'Data') }}
           </span>
         </h3>
         <p v-if="subtitle" class="text-xs text-gray-400 mt-0.5">{{ subtitle }}</p>
@@ -361,14 +372,14 @@ function clearDateRange() {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Cari kata kunci..."
+            :placeholder="$l('Search keywords...', 'Cari kata kunci...')"
             class="w-full bg-white text-xs text-gray-800 rounded-full pl-9 pr-8 py-2 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
           />
           <button
             v-if="searchQuery"
             @click="searchQuery = ''"
             class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            title="Hapus pencarian"
+            :title="$l('Clear search', 'Hapus pencarian')"
           >
             <X class="w-3.5 h-3.5" />
           </button>
@@ -381,20 +392,20 @@ function clearDateRange() {
             v-model="startDate"
             type="date"
             class="text-[11px] text-gray-700 bg-transparent focus:outline-none cursor-pointer"
-            title="Tanggal Mulai"
+            :title="$l('Start Date', 'Tanggal Mulai')"
           />
-          <span class="text-gray-400 text-[10px]">s/d</span>
+          <span class="text-gray-400 text-[10px]">{{ $t('common.to') }}</span>
           <input
             v-model="endDate"
             type="date"
             class="text-[11px] text-gray-700 bg-transparent focus:outline-none cursor-pointer"
-            title="Tanggal Akhir"
+            :title="$l('End Date', 'Tanggal Akhir')"
           />
           <button
             v-if="startDate || endDate"
             @click="clearDateRange"
             class="ml-1 text-gray-400 hover:text-rose-600 transition"
-            title="Hapus filter tanggal"
+            :title="$l('Clear date filter', 'Hapus filter tanggal')"
           >
             <X class="w-3.5 h-3.5" />
           </button>
@@ -409,10 +420,10 @@ function clearDateRange() {
         
         <!-- Selected Items Indicator -->
         <div v-if="showSelection && selectedRows.size > 0" class="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200/80 text-[#0067AC] px-3 py-1.5 rounded-full text-xs font-semibold animate-fadeIn">
-          <span>{{ selectedRows.size }} dipilih</span>
+          <span>{{ $l('{count} selected', '{count} dipilih', { count: selectedRows.size }) }}</span>
           <span class="text-emerald-300">|</span>
-          <button @click="selectAllFiltered" class="text-[11px] hover:underline" title="Pilih seluruh data yang cocok">Semua</button>
-          <button @click="clearSelection" class="hover:text-rose-600" title="Batalkan pilihan">&times;</button>
+          <button @click="selectAllFiltered" class="text-[11px] hover:underline" :title="$l('Select all matching records', 'Pilih seluruh data yang cocok')">{{ $t('common.all') }}</button>
+          <button @click="clearSelection" class="hover:text-rose-600" :title="$t('common.clearSelection')">&times;</button>
         </div>
 
         <!-- Export CSV Button -->
@@ -421,7 +432,7 @@ function clearDateRange() {
           @click="handleExportCsv"
           :disabled="totalItems === 0"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold shadow-2xs hover:border-[#0067AC] hover:text-[#0067AC] transition disabled:opacity-40 disabled:cursor-not-allowed"
-          :title="selectedRows.size > 0 ? `Export ${selectedRows.size} baris terpilih ke CSV` : `Export semua (${totalItems}) data ke CSV`"
+          :title="selectedRows.size > 0 ? $l('Export {count} selected rows to CSV', 'Ekspor {count} baris terpilih ke CSV', { count: selectedRows.size }) : $l('Export all ({count}) records to CSV', 'Ekspor seluruh ({count}) data ke CSV', { count: totalItems })"
         >
           <FileText class="w-3.5 h-3.5 text-blue-600" />
           <span>CSV</span>
@@ -434,7 +445,7 @@ function clearDateRange() {
           @click="handleExportExcel"
           :disabled="totalItems === 0"
           class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-semibold shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
-          :title="selectedRows.size > 0 ? `Export ${selectedRows.size} baris terpilih ke Excel` : `Export semua (${totalItems}) data ke Excel`"
+          :title="selectedRows.size > 0 ? $l('Export {count} selected rows to Excel', 'Ekspor {count} baris terpilih ke Excel', { count: selectedRows.size }) : $l('Export all ({count}) records to Excel', 'Ekspor seluruh ({count}) data ke Excel', { count: totalItems })"
         >
           <FileSpreadsheet class="w-3.5 h-3.5 text-emerald-200" />
           <span>Excel</span>
@@ -464,7 +475,7 @@ function clearDateRange() {
                   type="button"
                   @click="toggleSelectAll"
                   class="text-gray-400 hover:text-[#0067AC] transition flex items-center justify-center mx-auto"
-                  :title="isAllSelected ? 'Batalkan pilihan halaman ini' : 'Pilih semua di halaman ini'"
+                  :title="isAllSelected ? $l('Unselect current page', 'Batalkan pilihan halaman ini') : $l('Select all on this page', 'Pilih semua di halaman ini')"
                 >
                   <CheckSquare v-if="isAllSelected" class="w-4 h-4 text-[#0067AC]" />
                   <MinusSquare v-else-if="isIndeterminate" class="w-4 h-4 text-emerald-600" />
@@ -506,7 +517,7 @@ function clearDateRange() {
 
               <!-- Action Column Header Slot -->
               <th v-if="$slots.action" class="py-3.5 px-4 text-right font-semibold text-gray-700 whitespace-nowrap w-28">
-                Aksi
+                {{ $t('common.actions') }}
               </th>
             </tr>
           </thead>
@@ -524,16 +535,16 @@ function clearDateRange() {
                   <div class="w-12 h-12 rounded-full bg-[#f4f6f5] flex items-center justify-center text-gray-400">
                     <Filter class="w-5 h-5" />
                   </div>
-                  <p class="font-medium text-gray-600 text-sm">Tidak ada data yang cocok</p>
+                  <p class="font-medium text-gray-600 text-sm">{{ $l('No matching records found', 'Tidak ada data yang cocok') }}</p>
                   <p class="text-xs text-gray-400 max-w-sm">
-                    Coba sesuaikan kata kunci pencarian atau rentang tanggal filter Anda.
+                    {{ $l('Try adjusting your search keywords or date range filter.', 'Coba sesuaikan kata kunci pencarian atau rentang tanggal filter Anda.') }}
                   </p>
                   <button
                     v-if="searchQuery || startDate || endDate"
                     @click="searchQuery = ''; clearDateRange()"
                     class="mt-1 text-xs text-[#0067AC] font-semibold hover:underline"
                   >
-                    Reset Semua Filter
+                    {{ $l('Reset All Filters', 'Atur Ulang Semua Filter') }}
                   </button>
                 </div>
               </td>
@@ -553,7 +564,7 @@ function clearDateRange() {
                   type="button"
                   @click="toggleRow(row, idx)"
                   class="text-gray-400 hover:text-[#0067AC] transition flex items-center justify-center mx-auto"
-                  :title="isRowSelected(row, idx) ? 'Hilangkan ceklis baris ini' : 'Ceklis baris ini untuk export'"
+                  :title="isRowSelected(row, idx) ? $l('Uncheck this row', 'Hilangkan ceklis baris ini') : $l('Check this row for export', 'Ceklis baris ini untuk ekspor')"
                 >
                   <CheckSquare v-if="isRowSelected(row, idx)" class="w-4 h-4 text-[#0067AC]" />
                   <Square v-else class="w-4 h-4 group-hover:text-gray-500" />

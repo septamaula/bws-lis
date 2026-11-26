@@ -1,5 +1,7 @@
 <script setup>
-import { computed } from 'vue'
+import { useI18n } from '@/i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   // Optional table title & subtitle
@@ -43,7 +45,7 @@ const props = defineProps({
   // Empty state message
   emptyText: {
     type: String,
-    default: 'Tidak ada data untuk ditampilkan'
+    default: ''
   },
   // When embedded inside an already padded card or container
   embedded: {
@@ -148,7 +150,7 @@ defineEmits(['row-click'])
             <tr v-else>
               <td :colspan="columns.length + (showNumbering ? 1 : 0)" class="py-10 text-center text-gray-400">
                 <slot name="empty">
-                  <p class="text-xs text-gray-500 font-medium">{{ emptyText }}</p>
+                  <p class="text-xs text-gray-500 font-medium">{{ emptyText || t('common.emptyData') }}</p>
                 </slot>
               </td>
             </tr>

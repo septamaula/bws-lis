@@ -30,6 +30,9 @@ import {
 } from 'lucide-vue-next'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from '@/i18n'
+
+const { l, locale } = useI18n()
 
 const props = defineProps({
   programId: {
@@ -74,7 +77,7 @@ function formatDateDisplay(d) {
   try {
     const date = new Date(d)
     if (isNaN(date.getTime())) return d
-    return new Intl.DateTimeFormat('id-ID', {
+    return new Intl.DateTimeFormat(locale.value === 'en' ? 'en-US' : 'id-ID', {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
@@ -93,7 +96,7 @@ async function fetchProgramDetail() {
   } catch (err) {
     actionFeedback.value = {
       type: 'error',
-      message: 'Gagal memuat rincian data program kerja pelatihan.'
+      message: l('Failed to load training program details.', 'Gagal memuat rincian data program kerja pelatihan.')
     }
   } finally {
     loading.value = false
@@ -131,7 +134,7 @@ const canEditProgram = computed(() => {
 
 async function handleWorkflowSubmit() {
   if (!approvalNotes.value.trim()) {
-    actionFeedback.value = { type: 'error', message: 'Catatan otorisasi wajib diisi.' }
+    actionFeedback.value = { type: 'error', message: l('Authorization notes are required.', 'Catatan otorisasi wajib diisi.') }
     return
   }
 
@@ -143,15 +146,15 @@ async function handleWorkflowSubmit() {
       decision: approvalAction.value,
       notes: approvalNotes.value.trim()
     }
-    const { data } = await apiClient.post(`/programs/${props.programId}/workflow-action`, payload)
-    actionFeedback.value = { type: 'success', message: data.message }
+    await apiClient.post(`/programs/${props.programId}/workflow-action`, payload)
+    actionFeedback.value = { type: 'success', message: l('Program authorization decision has been recorded.', 'Keputusan otorisasi program berhasil diproses.') }
     approvalNotes.value = ''
     await fetchProgramDetail()
     emit('refresh-list')
   } catch (err) {
     actionFeedback.value = {
       type: 'error',
-      message: err.response?.data?.message || 'Gagal mengeksekusi otorisasi program.'
+      message: err.response?.data?.message || l('Failed to execute program authorization.', 'Gagal mengeksekusi otorisasi program.')
     }
   } finally {
     submittingApproval.value = false
@@ -168,7 +171,7 @@ async function downloadDocument() {
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', program.value?.approval_doc_name || 'Dokumen_Pengesahan_Program.pdf')
+    link.setAttribute('download', program.value?.approval_doc_name || l('Program_Approval_Document.pdf', 'Dokumen_Pengesahan_Program.pdf'))
     document.body.appendChild(link)
     link.click()
     link.parentNode.removeChild(link)
@@ -176,7 +179,7 @@ async function downloadDocument() {
   } catch (err) {
     actionFeedback.value = {
       type: 'error',
-      message: 'Gagal mengunduh berkas dokumen pengesahan.'
+      message: l('Failed to download authorization document file.', 'Gagal mengunduh berkas dokumen pengesahan.')
     }
   } finally {
     downloadingDoc.value = false
@@ -188,7 +191,9 @@ function formatScheduleRange(start, end) {
   try {
     const s = new Date(start)
     if (isNaN(s.getTime())) return start.substring(0, 10)
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+    const months = locale.value === 'en'
+      ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
     
     if (!end || start.substring(0, 10) === end.substring(0, 10)) {
       const d = String(s.getDate()).padStart(2, '0')
@@ -217,7 +222,7 @@ function formatScheduleRange(start, end) {
 }
 
 function parseTrainer(str) {
-  if (!str) return { name: 'Tim Trainer BWS', role: '' }
+  if (!str) return { name: l('BWS Trainer Team', 'Tim Pengajar BWS'), role: '' }
   const match = str.match(/^(.*?)\s*\((.*?)\)$/)
   if (match) {
     return { name: match[1].trim(), role: match[2].trim() }
@@ -259,17 +264,17 @@ const standardBudgetSum = computed(() => {
   )
 })
 
-const budgetItemTypeBadge = {
-  SPEAKER: { label: 'Pembicara / Trainer', class: 'bg-blue-100 text-[#0067AC]' },
-  TRANSPORT: { label: 'Transportasi', class: 'bg-indigo-100 text-indigo-800' },
-  ACCOMMODATION: { label: 'Penginapan / Hotel', class: 'bg-purple-100 text-purple-800' },
-  LUNCH: { label: 'Makan Siang', class: 'bg-emerald-100 text-emerald-800' },
-  SNACK: { label: 'Coffee Break & Snack', class: 'bg-amber-100 text-amber-800' },
-  MATERIALS: { label: 'Modul & ATK', class: 'bg-fuchsia-100 text-fuchsia-800' },
-  VENUE: { label: 'Sewa Ruangan (Venue)', class: 'bg-sky-100 text-sky-800' },
-  CERTIFICATION: { label: 'Ujian Sertifikasi', class: 'bg-rose-100 text-rose-800' },
-  OTHER: { label: 'Kontinjensi / Lainnya', class: 'bg-gray-100 text-gray-700' },
-}
+const budgetItemTypeBadge = computed(() => ({
+  SPEAKER: { label: l('Speaker / Trainer', 'Pembicara / Pengajar'), class: 'bg-blue-100 text-[#0067AC]' },
+  TRANSPORT: { label: l('Transportation', 'Transportasi'), class: 'bg-indigo-100 text-indigo-800' },
+  ACCOMMODATION: { label: l('Accommodation / Hotel', 'Penginapan / Hotel'), class: 'bg-purple-100 text-purple-800' },
+  LUNCH: { label: l('Lunch', 'Makan Siang'), class: 'bg-emerald-100 text-emerald-800' },
+  SNACK: { label: l('Coffee Break & Snack', 'Kudapan & Rehat Kopi'), class: 'bg-amber-100 text-amber-800' },
+  MATERIALS: { label: l('Modules & Stationery', 'Modul & ATK'), class: 'bg-fuchsia-100 text-fuchsia-800' },
+  VENUE: { label: l('Room / Venue Rental', 'Sewa Ruangan / Tempat'), class: 'bg-sky-100 text-sky-800' },
+  CERTIFICATION: { label: l('Certification Exam', 'Ujian Sertifikasi'), class: 'bg-rose-100 text-rose-800' },
+  OTHER: { label: l('Contingency / Others', 'Kontinjensi / Lainnya'), class: 'bg-gray-100 text-gray-700' },
+}))
 
 onMounted(() => {
   fetchProgramDetail()
@@ -281,11 +286,11 @@ onMounted(() => {
 
     <!-- Standard Subpage Header (Navigation & Actions) -->
     <SubpageHeader
-      back-label="Kembali ke Program List"
-      :title="program?.title || 'Rincian Program Pelatihan'"
-      :badge="program?.program_code || 'Program Kerja'"
-      :subtitle="program ? `${program.category || ''} • Inisiator: ${program.unit_initiator || program.department || 'HC'} • Tahun ${program.year || 2026}` : ''"
-      :status-badge="program?.approval_status_badge || program?.status"
+      :back-label="$l('Back to Program List', 'Kembali ke Daftar Program')"
+      :title="program?.title || $l('Training Program Details', 'Rincian Program Pelatihan')"
+      :badge="program?.program_code || $l('Work Program', 'Program Kerja')"
+      :subtitle="program ? $l(`${program.category || ''} • Initiator: ${program.unit_initiator || program.department || 'HC'} • Year ${program.year || 2026}`, `${program.category || ''} • Inisiator: ${program.unit_initiator || program.department || 'HC'} • Tahun ${program.year || 2026}`) : ''"
+      :status-badge="program?.status === 'APPROVED' ? $l('Final Approved', 'Disetujui Final') : program?.status === 'REJECTED' ? $l('Rejected', 'Ditolak') : program?.status === 'REVISED' ? $l('Needs Revision', 'Perlu Revisi') : $l('Pending Review', 'Menunggu Peninjauan')"
       :status-class="statusBadgeClass"
       @back="emit('back')"
     >
@@ -294,10 +299,10 @@ onMounted(() => {
           v-if="canEditProgram"
           @click="emit('edit', program.id)"
           class="bg-[#0067AC] hover:bg-[#00528c] text-white px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
-          title="Perbaiki atau edit spesifikasi dan RAB program ini"
+          :title="$l('Revise or edit program specifications and budget plan (RAB)', 'Perbaiki atau ubah spesifikasi dan RAB program ini')"
         >
           <Edit2 class="w-3.5 h-3.5" />
-          <span>{{ program.status === 'REVISED' ? 'Perbaiki Program' : 'Edit Program' }}</span>
+          <span>{{ program.status === 'REVISED' ? $l('Revise Program', 'Perbaiki Program') : $l('Edit Program', 'Ubah Program') }}</span>
         </button>
 
         <button
@@ -305,7 +310,7 @@ onMounted(() => {
           class="bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
         >
           <Printer class="w-3.5 h-3.5 text-gray-500" />
-          <span>Cetak Dokumen</span>
+          <span>{{ $l('Print Document', 'Cetak Dokumen') }}</span>
         </button>
       </template>
     </SubpageHeader>
@@ -313,7 +318,7 @@ onMounted(() => {
     <!-- Loading Skeleton -->
     <div v-if="loading" class="bg-white rounded-3xl p-12 text-center border border-gray-100 space-y-3">
       <div class="w-10 h-10 border-4 border-[#0067AC] border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p class="text-xs text-gray-500 font-medium">Memuat data rincian program kerja, RAB, dan otorisasi...</p>
+      <p class="text-xs text-gray-500 font-medium">{{ $l('Loading work program details, budget plan (RAB), and authorization...', 'Memuat data rincian program kerja, RAB, dan otorisasi...') }}</p>
     </div>
 
     <div v-else-if="program" class="space-y-6">
@@ -342,10 +347,10 @@ onMounted(() => {
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <span class="text-xs font-extrabold uppercase tracking-wider text-amber-900">Program Memerlukan Perbaikan / Revisi</span>
+                <span class="text-xs font-extrabold uppercase tracking-wider text-amber-900">{{ $l('Program Requires Revision', 'Program Memerlukan Perbaikan / Revisi') }}</span>
               </div>
               <p class="text-xs text-amber-950 font-semibold mt-1">
-                Catatan Otorisator: <span class="italic font-bold text-amber-900">"${program.rejection_notes || 'Silakan sesuaikan alokasi biaya RAB atau kuota peserta.'}"</span>
+                {{ $l('Authorizer Notes:', 'Catatan Otorisator:') }} <span class="italic font-bold text-amber-900">"{{ program.rejection_notes || $l('Please adjust the budget allocation (RAB) or participant quota.', 'Silakan sesuaikan alokasi biaya RAB atau kuota peserta.') }}"</span>
               </p>
             </div>
           </div>
@@ -355,7 +360,7 @@ onMounted(() => {
             class="px-5 py-2.5 rounded-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md transition flex items-center gap-2 shrink-0 self-end md:self-auto cursor-pointer"
           >
             <Edit2 class="w-4 h-4" />
-            <span>Perbaiki Spesifikasi &amp; RAB</span>
+            <span>{{ $l('Revise Specifications & Budget', 'Perbaiki Spesifikasi & RAB') }}</span>
           </button>
         </div>
       </div>
@@ -367,7 +372,7 @@ onMounted(() => {
             <Wallet class="w-5 h-5" />
           </div>
           <div>
-            <p class="text-[11px] text-gray-400 font-medium">Total Anggaran (RAB)</p>
+            <p class="text-[11px] text-gray-400 font-medium">{{ $l('Total Budget (RAB)', 'Total Anggaran (RAB)') }}</p>
             <p class="text-base sm:text-lg font-extrabold text-gray-900 font-mono">{{ formatRupiah(program.total_budget) }}</p>
           </div>
         </div>
@@ -377,8 +382,8 @@ onMounted(() => {
             <Users class="w-5 h-5" />
           </div>
           <div>
-            <p class="text-[11px] text-gray-400 font-medium">Target Peserta</p>
-            <p class="text-base sm:text-lg font-extrabold text-gray-900">{{ program.target_participants_count }} Pegawai</p>
+            <p class="text-[11px] text-gray-400 font-medium">{{ $l('Target Participants', 'Target Peserta') }}</p>
+            <p class="text-base sm:text-lg font-extrabold text-gray-900">{{ program.target_participants_count }} {{ $l('Employees', 'Pegawai') }}</p>
           </div>
         </div>
 
@@ -387,8 +392,8 @@ onMounted(() => {
             <Clock class="w-5 h-5" />
           </div>
           <div>
-            <p class="text-[11px] text-gray-400 font-medium">Durasi Pelatihan</p>
-            <p class="text-base sm:text-lg font-extrabold text-[#0067AC]">{{ program.duration_hours }} Jam Pelajaran</p>
+            <p class="text-[11px] text-gray-400 font-medium">{{ $l('Training Duration', 'Durasi Pelatihan') }}</p>
+            <p class="text-base sm:text-lg font-extrabold text-[#0067AC]">{{ program.duration_hours }} {{ $l('Lesson Hours', 'Jam Pelajaran') }}</p>
           </div>
         </div>
 
@@ -397,8 +402,8 @@ onMounted(() => {
             <GraduationCap class="w-5 h-5" />
           </div>
           <div>
-            <p class="text-[11px] text-gray-400 font-medium">Jumlah Kelas</p>
-            <p class="text-base sm:text-lg font-extrabold text-gray-900 font-mono">{{ program.classes?.length || 0 }} Kelas</p>
+            <p class="text-[11px] text-gray-400 font-medium">{{ $l('Number of Classes', 'Jumlah Kelas') }}</p>
+            <p class="text-base sm:text-lg font-extrabold text-gray-900 font-mono">{{ program.classes?.length || 0 }} {{ $l('Classes', 'Kelas') }}</p>
           </div>
         </div>
       </div>
@@ -408,37 +413,37 @@ onMounted(() => {
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <div class="flex items-center gap-2">
             <Compass class="w-4 h-4 text-[#0067AC]" />
-            <h2 class="text-sm font-bold text-gray-900">Kaitan Dokumen TNA (Training Needs Analysis) Terhubung</h2>
+            <h2 class="text-sm font-bold text-gray-900">{{ $l('Linked TNA Document (Training Needs Analysis)', 'Kaitan Dokumen Analisis Kebutuhan Pelatihan (TNA)') }}</h2>
           </div>
           <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#EBF4FC] text-[#0067AC]">
-            1 TNA &rarr; Banyak Program Kerja
+            {{ $l('1 TNA → Many Work Programs', '1 TNA → Banyak Program Kerja') }}
           </span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-gray-100 space-y-1">
-            <span class="text-gray-400 font-medium block">Nomor Kode Dokumen TNA</span>
+            <span class="text-gray-400 font-medium block">{{ $l('TNA Document Code', 'Nomor Kode Dokumen TNA') }}</span>
             <span class="font-extrabold text-[#002855] text-sm block">{{ program.tna_proposal.proposal_code }}</span>
-            <span class="text-gray-500 block">Unit Pemohon: {{ program.tna_proposal.department }}</span>
+            <span class="text-gray-500 block">{{ $l('Requesting Unit:', 'Unit Pemohon:') }} {{ program.tna_proposal.department }}</span>
           </div>
 
           <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-gray-100 space-y-1">
-            <span class="text-gray-400 font-medium block">Status &amp; Tahun Buku TNA</span>
-            <span class="font-bold text-gray-900 text-sm block">Tahun Anggaran {{ program.tna_proposal.year }}</span>
-            <span class="text-emerald-700 font-semibold block">Status TNA: {{ program.tna_proposal.status }}</span>
+            <span class="text-gray-400 font-medium block">{{ $l('TNA Status & Fiscal Year', 'Status & Tahun Buku TNA') }}</span>
+            <span class="font-bold text-gray-900 text-sm block">{{ $l(`Fiscal Year ${program.tna_proposal.year}`, `Tahun Anggaran ${program.tna_proposal.year}`) }}</span>
+            <span class="text-emerald-700 font-semibold block">{{ $l('TNA Status:', 'Status TNA:') }} {{ program.tna_proposal.status }}</span>
           </div>
 
           <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-gray-100 space-y-1">
-            <span class="text-gray-400 font-medium block">Pagu TNA Divisi Disetujui</span>
+            <span class="text-gray-400 font-medium block">{{ $l('Approved Division TNA Ceiling', 'Pagu TNA Divisi Disetujui') }}</span>
             <span class="font-mono font-extrabold text-[#0067AC] text-sm block">
               {{ formatRupiah(program.tna_proposal.total_budget_requested) }}
             </span>
-            <span class="text-gray-500 block">Alokasi Biaya Program: {{ formatRupiah(program.total_budget) }}</span>
+            <span class="text-gray-500 block">{{ $l('Program Budget Allocation:', 'Alokasi Biaya Program:') }} {{ formatRupiah(program.total_budget) }}</span>
           </div>
         </div>
 
         <div class="p-4 rounded-2xl bg-[#EBF4FC]/40 border border-blue-100/60 text-xs space-y-1">
-          <span class="font-bold text-[#002855] uppercase tracking-wider text-[10px] block">Latar Belakang &amp; Sasaran Strategis TNA:</span>
+          <span class="font-bold text-[#002855] uppercase tracking-wider text-[10px] block">{{ $l('TNA Background & Strategic Objectives:', 'Latar Belakang & Sasaran Strategis TNA:') }}</span>
           <p class="text-gray-700 leading-relaxed">{{ program.tna_proposal.strategic_objective }}</p>
         </div>
       </div>
@@ -448,51 +453,51 @@ onMounted(() => {
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <div class="flex items-center gap-2">
             <BookOpen class="w-4 h-4 text-[#0067AC]" />
-            <h2 class="text-sm font-bold text-gray-900">Spesifikasi Penyelenggaraan &amp; Kurikulum Diklat</h2>
+            <h2 class="text-sm font-bold text-gray-900">{{ $l('Training Delivery & Curriculum Specifications', 'Spesifikasi Penyelenggaraan & Kurikulum Diklat') }}</h2>
           </div>
           <span
             class="text-[11px] font-bold px-2.5 py-0.5 rounded-full"
             :class="program.is_mandatory ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-[#0067AC]'"
           >
-            {{ program.is_mandatory ? 'Wajib Regulasi OJK / BI' : 'Pilihan / Pengembangan' }}
+            {{ program.is_mandatory ? $l('Mandatory (OJK / BI Regulation)', 'Wajib Regulasi OJK / BI') : $l('Elective / Development', 'Pilihan / Pengembangan') }}
           </span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
           <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-gray-100 space-y-1">
-            <span class="text-gray-400 font-medium block">Kategori &amp; Unit Pemohon</span>
+            <span class="text-gray-400 font-medium block">{{ $l('Category & Requesting Unit', 'Kategori & Unit Pemohon') }}</span>
             <span class="font-bold text-gray-900 block">{{ program.category }}</span>
-            <span class="text-gray-500 block">Unit: {{ program.unit_initiator || program.department }}</span>
+            <span class="text-gray-500 block">{{ $l('Unit:', 'Unit:') }} {{ program.unit_initiator || program.department }}</span>
           </div>
 
           <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-gray-100 space-y-1">
-            <span class="text-gray-400 font-medium block">Periode &amp; Durasi</span>
+            <span class="text-gray-400 font-medium block">{{ $l('Period & Duration', 'Periode & Durasi') }}</span>
             <span class="font-bold text-[#002855] block">
-              {{ program.start_date ? formatDateDisplay(program.start_date) : '-' }} s/d {{ program.end_date ? formatDateDisplay(program.end_date) : '-' }}
+              {{ program.start_date ? formatDateDisplay(program.start_date) : '-' }} {{ $l('to', 's/d') }} {{ program.end_date ? formatDateDisplay(program.end_date) : '-' }}
             </span>
-            <span class="text-gray-500 block">Durasi: {{ program.duration_text || (program.duration_hours + ' Jam') }}</span>
+            <span class="text-gray-500 block">{{ $l('Duration:', 'Durasi:') }} {{ program.duration_text || (program.duration_hours + ' ' + $l('Hours', 'Jam')) }}</span>
           </div>
 
           <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-gray-100 space-y-1">
-            <span class="text-gray-400 font-medium block">Lokasi &amp; Fasilitator</span>
+            <span class="text-gray-400 font-medium block">{{ $l('Location & Facilitator', 'Lokasi & Fasilitator') }}</span>
             <span class="font-bold text-gray-900 block">{{ program.location || 'BWS Learning Center' }}</span>
-            <span class="text-gray-500 block">Fasilitator: {{ program.facilitator || '-' }}</span>
+            <span class="text-gray-500 block">{{ $l('Facilitator:', 'Fasilitator:') }} {{ program.facilitator || '-' }}</span>
           </div>
 
           <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-gray-100 space-y-1">
-            <span class="text-gray-400 font-medium block">Kategori BI &amp; Tipe</span>
-            <span class="font-bold text-[#0067AC] block">{{ program.bi_category || 'Regulasi Perbankan' }}</span>
-            <span class="text-gray-500 block">Tipe: {{ program.activity_type || program.program_type || 'Pelatihan' }}</span>
+            <span class="text-gray-400 font-medium block">{{ $l('BI Category & Type', 'Kategori BI & Tipe') }}</span>
+            <span class="font-bold text-[#0067AC] block">{{ program.bi_category || $l('Banking Regulation', 'Regulasi Perbankan') }}</span>
+            <span class="text-gray-500 block">{{ $l('Type:', 'Tipe:') }} {{ program.activity_type || program.program_type || $l('Training', 'Pelatihan') }}</span>
           </div>
         </div>
 
         <div v-if="program.notes" class="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 text-xs space-y-1">
-          <span class="font-bold text-[#0067AC] uppercase tracking-wider text-[10px] block">Catatan / Disposisi:</span>
+          <span class="font-bold text-[#0067AC] uppercase tracking-wider text-[10px] block">{{ $l('Notes / Disposition:', 'Catatan / Disposisi:') }}</span>
           <p class="text-gray-700 leading-relaxed">{{ program.notes }}</p>
         </div>
 
         <div v-if="program.description" class="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-xs space-y-1">
-          <span class="font-bold text-gray-700 uppercase tracking-wider text-[10px] block">Deskripsi &amp; Silabus Materi:</span>
+          <span class="font-bold text-gray-700 uppercase tracking-wider text-[10px] block">{{ $l('Description & Material Syllabus:', 'Deskripsi & Silabus Materi:') }}</span>
           <p class="text-gray-700 leading-relaxed">{{ program.description }}</p>
         </div>
       </div>
@@ -502,56 +507,56 @@ onMounted(() => {
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <div class="flex items-center gap-2">
             <Wallet class="w-4 h-4 text-[#0067AC]" />
-            <h2 class="text-sm font-bold text-gray-900">Rencana Anggaran Biaya (RAB)</h2>
+            <h2 class="text-sm font-bold text-gray-900">{{ $l('Budget Plan Breakdown (RAB)', 'Rencana Anggaran Biaya (RAB)') }}</h2>
           </div>
           <span class="text-xs font-mono font-bold text-[#0067AC]">
-            {{ (program.budget_items && program.budget_items.length > 0) ? 'Subtotal Standar: ' : 'Total: ' }}{{ formatRupiah(standardBudgetSum) }}
+            {{ (program.budget_items && program.budget_items.length > 0) ? $l('Standard Subtotal: ', 'Subtotal Standar: ') : $l('Total: ', 'Total: ') }}{{ formatRupiah(standardBudgetSum) }}
           </span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           <div class="space-y-2 bg-[#F8FAFC] p-4 rounded-2xl border border-gray-100">
             <div class="flex justify-between py-1 border-b border-gray-200/60">
-              <span class="text-gray-600 font-medium">Fee Facilitator:</span>
+              <span class="text-gray-600 font-medium">{{ $l('Facilitator Fee:', 'Honorarium Fasilitator:') }}</span>
               <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_fee_facilitator) }}</span>
             </div>
             <div class="flex justify-between py-1 border-b border-gray-200/60">
-              <span class="text-gray-600 font-medium">Meals:</span>
+              <span class="text-gray-600 font-medium">{{ $l('Meals & Refreshments:', 'Konsumsi & Hidangan:') }}</span>
               <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_meals) }}</span>
             </div>
             <div class="flex justify-between py-1 border-b border-gray-200/60">
-              <span class="text-gray-600 font-medium">Hotel:</span>
+              <span class="text-gray-600 font-medium">{{ $l('Hotel / Accommodation:', 'Penginapan / Hotel:') }}</span>
               <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_hotel) }}</span>
             </div>
             <div class="flex justify-between py-1 border-b border-gray-200/60">
-              <span class="text-gray-600 font-medium">Meeting Package:</span>
+              <span class="text-gray-600 font-medium">{{ $l('Meeting Package:', 'Paket Ruang Pertemuan:') }}</span>
               <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_meeting_package) }}</span>
             </div>
             <div class="flex justify-between py-1">
-              <span class="text-gray-600 font-medium">Transportation:</span>
+              <span class="text-gray-600 font-medium">{{ $l('Transportation:', 'Transportasi:') }}</span>
               <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_transportation) }}</span>
             </div>
           </div>
 
           <div class="space-y-2 bg-[#F8FAFC] p-4 rounded-2xl border border-gray-100">
             <div class="flex justify-between py-1 border-b border-gray-200/60">
-              <span class="text-gray-600 font-medium">Business Trip Allowance:</span>
+              <span class="text-gray-600 font-medium">{{ $l('Business Trip Allowance:', 'Uang Harian Perjalanan Dinas:') }}</span>
               <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_business_trip) }}</span>
             </div>
             <div class="flex justify-between py-1 border-b border-gray-200/60">
-              <span class="text-gray-600 font-medium">Reward:</span>
+              <span class="text-gray-600 font-medium">{{ $l('Participant Rewards:', 'Apresiasi & Penghargaan:') }}</span>
               <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_reward) }}</span>
             </div>
             <div class="flex justify-between py-1 border-b border-gray-200/60">
-              <span class="text-gray-600 font-medium">Material:</span>
+              <span class="text-gray-600 font-medium">{{ $l('Training Materials:', 'Modul & Perlengkapan Materi:') }}</span>
               <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_material) }}</span>
             </div>
             <div class="flex justify-between py-1 border-b border-gray-200/60">
-              <span class="text-gray-600 font-medium">Internet:</span>
+              <span class="text-gray-600 font-medium">{{ $l('Internet & Connectivity:', 'Koneksi Internet:') }}</span>
               <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_internet) }}</span>
             </div>
             <div class="flex justify-between py-1">
-              <span class="text-gray-600 font-medium">Miscellaneous:</span>
+              <span class="text-gray-600 font-medium">{{ $l('Miscellaneous:', 'Biaya Lain-Lain:') }}</span>
               <span class="font-mono font-bold text-gray-900">{{ formatRupiah(program.budget_miscellaneous) }}</span>
             </div>
           </div>
@@ -563,7 +568,7 @@ onMounted(() => {
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <div class="flex items-center gap-2">
             <Wallet class="w-4 h-4 text-[#0067AC]" />
-            <h2 class="text-sm font-bold text-gray-900">Rincian Komponen Biaya Tambahan</h2>
+            <h2 class="text-sm font-bold text-gray-900">{{ $l('Additional Cost Components', 'Rincian Komponen Biaya Tambahan') }}</h2>
           </div>
           <div class="flex items-center gap-2">
             <button
@@ -572,9 +577,9 @@ onMounted(() => {
               class="px-3 py-1 rounded-full bg-[#EBF4FC] hover:bg-[#d5e9f8] text-[#0067AC] font-bold text-xs flex items-center gap-1.5 transition border border-blue-200 cursor-pointer"
             >
               <Edit2 class="w-3 h-3" />
-              <span>Edit RAB</span>
+              <span>{{ $l('Edit Budget', 'Ubah RAB') }}</span>
             </button>
-            <span class="text-xs font-semibold text-gray-500 font-mono">{{ program.budget_items.length }} Komponen</span>
+            <span class="text-xs font-semibold text-gray-500 font-mono">{{ program.budget_items.length }} {{ $l('Components', 'Komponen') }}</span>
           </div>
         </div>
 
@@ -583,8 +588,8 @@ onMounted(() => {
             <thead class="bg-[#F8FAFC] text-gray-700 font-bold border-b border-gray-200">
               <tr>
                 <th class="py-3 px-4 text-center w-14">No</th>
-                <th class="py-3 px-4">Uraian Biaya Tambahan</th>
-                <th class="py-3 px-4 text-right w-56">Nominal (Rp)</th>
+                <th class="py-3 px-4">{{ $l('Additional Cost Description', 'Uraian Biaya Tambahan') }}</th>
+                <th class="py-3 px-4 text-right w-56">{{ $l('Amount (IDR)', 'Nominal (Rp)') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -602,7 +607,7 @@ onMounted(() => {
             <tfoot class="bg-[#F8FAFC] border-t-2 border-gray-200 font-bold text-xs">
               <tr>
                 <td colspan="2" class="py-3.5 px-4 text-gray-800 font-extrabold text-right">
-                  Subtotal Biaya Tambahan
+                  {{ $l('Additional Cost Subtotal', 'Subtotal Biaya Tambahan') }}
                 </td>
                 <td class="py-3.5 px-4 text-right font-mono text-sm text-[#0067AC] font-black">
                   {{ formatRupiah(program.budget_items.reduce((s, i) => s + Number(i.subtotal || i.unit_price || 0), 0)) }}
@@ -618,9 +623,9 @@ onMounted(() => {
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <div class="flex items-center gap-2">
             <Users class="w-4 h-4 text-[#0067AC]" />
-            <h2 class="text-sm font-bold text-gray-900">Daftar Nominasi Pegawai BWS Terdaftar</h2>
+            <h2 class="text-sm font-bold text-gray-900">{{ $l('Registered BWS Employee Nominations', 'Daftar Nominasi Pegawai BWS Terdaftar') }}</h2>
           </div>
-          <span class="text-xs font-semibold text-gray-500 font-mono">{{ program.participants?.length || 0 }} Pegawai Terdaftar</span>
+          <span class="text-xs font-semibold text-gray-500 font-mono">{{ program.participants?.length || 0 }} {{ $l('Registered Employees', 'Pegawai Terdaftar') }}</span>
         </div>
 
         <div class="overflow-x-auto">
@@ -628,11 +633,11 @@ onMounted(() => {
             <thead class="bg-[#F8FAFC] text-gray-700 font-bold border-b border-gray-200">
               <tr>
                 <th class="py-2.5 px-3 text-center w-12">No</th>
-                <th class="py-2.5 px-3 w-36">NIK Pegawai</th>
-                <th class="py-2.5 px-4">Nama Lengkap</th>
-                <th class="py-2.5 px-3">Unit / Kantor Cabang</th>
-                <th class="py-2.5 px-3">Jabatan</th>
-                <th class="py-2.5 px-3 text-center w-28">Status</th>
+                <th class="py-2.5 px-3 w-36">{{ $l('Employee NIK', 'NIK Pegawai') }}</th>
+                <th class="py-2.5 px-4">{{ $l('Full Name', 'Nama Lengkap') }}</th>
+                <th class="py-2.5 px-3">{{ $l('Unit / Branch Office', 'Unit / Kantor Cabang') }}</th>
+                <th class="py-2.5 px-3">{{ $l('Position', 'Jabatan') }}</th>
+                <th class="py-2.5 px-3 text-center w-28">{{ $l('Status', 'Status') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -650,7 +655,7 @@ onMounted(() => {
               </tr>
               <tr v-if="!program.participants || program.participants.length === 0">
                 <td colspan="6" class="py-6 text-center text-gray-400">
-                  Daftar nominasi peserta belum diisi pada program ini.
+                  {{ $l('Participant nominations have not been added to this program yet.', 'Daftar nominasi peserta belum diisi pada program ini.') }}
                 </td>
               </tr>
             </tbody>
@@ -664,13 +669,13 @@ onMounted(() => {
           <div class="flex items-center gap-2.5">
             <Calendar class="w-4 h-4 text-[#0067AC]" />
             <div>
-              <h2 class="text-sm font-bold text-gray-900">Batch Kelas Pelatihan</h2>
-              <p class="text-[11px] text-gray-500">Jadwal pelaksanaan batch kelas dari program pelatihan ini</p>
+              <h2 class="text-sm font-bold text-gray-900">{{ $l('Training Class Batches', 'Angkatan Kelas Pelatihan') }}</h2>
+              <p class="text-[11px] text-gray-500">{{ $l('Execution schedule of class batches for this training program', 'Jadwal pelaksanaan angkatan kelas dari program pelatihan ini') }}</p>
             </div>
           </div>
 
           <div class="flex items-center gap-3">
-            <span class="text-xs font-semibold text-gray-500 font-mono">{{ program.classes?.length || 0 }} Batch Terjadwal</span>
+            <span class="text-xs font-semibold text-gray-500 font-mono">{{ program.classes?.length || 0 }} {{ $l('Scheduled Batches', 'Angkatan Terjadwal') }}</span>
             <AppButton
               type="button"
               variant="primary"
@@ -678,7 +683,7 @@ onMounted(() => {
               icon="plus"
               @click="emit('open-class-create', program.id)"
             >
-              Buka Batch Kelas
+              {{ $l('Open Class Batch', 'Buka Angkatan Kelas') }}
             </AppButton>
           </div>
         </div>
@@ -688,12 +693,12 @@ onMounted(() => {
             <thead class="bg-[#F8FAFC] text-gray-700 font-bold border-b border-gray-200">
               <tr>
                 <th class="py-3 px-3 w-12 text-center">No</th>
-                <th class="py-3 px-4 min-w-[240px]">Kode &amp; Nama Batch</th>
-                <th class="py-3 px-4 min-w-[170px] whitespace-nowrap">Jadwal Pelaksanaan</th>
-                <th class="py-3 px-4 min-w-[200px]">Metode &amp; Lokasi</th>
-                <th class="py-3 px-4 min-w-[200px]">Instruktur / Trainer</th>
-                <th class="py-3 px-4 w-28 text-center whitespace-nowrap">Peserta</th>
-                <th class="py-3 px-4 w-36 text-center whitespace-nowrap">Status</th>
+                <th class="py-3 px-4 min-w-[240px]">{{ $l('Batch Code & Name', 'Kode & Nama Angkatan') }}</th>
+                <th class="py-3 px-4 min-w-[170px] whitespace-nowrap">{{ $l('Execution Schedule', 'Jadwal Pelaksanaan') }}</th>
+                <th class="py-3 px-4 min-w-[200px]">{{ $l('Method & Location', 'Metode & Lokasi') }}</th>
+                <th class="py-3 px-4 min-w-[200px]">{{ $l('Instructor / Trainer', 'Pengajar / Instruktur') }}</th>
+                <th class="py-3 px-4 w-28 text-center whitespace-nowrap">{{ $l('Participants', 'Peserta') }}</th>
+                <th class="py-3 px-4 w-36 text-center whitespace-nowrap">{{ $l('Status', 'Status') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -732,7 +737,7 @@ onMounted(() => {
                 <td class="py-3.5 px-4 text-center whitespace-nowrap align-middle">
                   <span class="font-bold font-mono text-xs text-[#0067AC]">{{ cls.enrollments_count || 0 }}</span>
                   <span class="text-gray-400 font-mono text-xs"> / {{ cls.max_quota || 25 }}</span>
-                  <span class="text-[11px] text-gray-500 ml-1 font-medium">Peserta</span>
+                  <span class="text-[11px] text-gray-500 ml-1 font-medium">{{ $l('Participants', 'Peserta') }}</span>
                 </td>
                 <td class="py-3.5 px-4 text-center whitespace-nowrap align-middle">
                   <span
@@ -743,13 +748,13 @@ onMounted(() => {
                       class="w-1.5 h-1.5 rounded-full shrink-0"
                       :class="cls.dual_control_status === 'APPROVED' ? 'bg-emerald-500' : cls.dual_control_status === 'PENDING_CHECKER' ? 'bg-amber-500' : 'bg-gray-400'"
                     ></span>
-                    <span>{{ cls.dual_control_status === 'APPROVED' ? 'Terotorisasi' : cls.dual_control_status === 'PENDING_CHECKER' ? 'Menunggu Checker' : cls.dual_control_status }}</span>
+                    <span>{{ cls.dual_control_status === 'APPROVED' ? $l('Authorized', 'Terotorisasi') : cls.dual_control_status === 'PENDING_CHECKER' ? $l('Pending Checker', 'Menunggu Verifikator') : cls.dual_control_status }}</span>
                   </span>
                 </td>
               </tr>
               <tr v-if="!program.classes || program.classes.length === 0">
                 <td colspan="7" class="py-8 text-center text-gray-400">
-                  Belum ada batch kelas yang dibuka untuk program ini. Klik "Buka Batch Kelas" untuk membuka batch pertama.
+                  {{ $l('No class batches have been opened for this program yet. Click "Open Class Batch" to add the first batch.', 'Belum ada angkatan kelas yang dibuka untuk program ini. Klik "Buka Angkatan Kelas" untuk membuka angkatan pertama.') }}
                 </td>
               </tr>
             </tbody>
@@ -764,30 +769,30 @@ onMounted(() => {
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <div class="flex items-center gap-2">
             <FileCheck2 class="w-4 h-4 text-[#0067AC]" />
-            <h2 class="text-sm font-bold text-gray-900">Dokumen Persetujuan Resmi (Approval by Document)</h2>
+            <h2 class="text-sm font-bold text-gray-900">{{ $l('Official Approval Document (Approval by Document)', 'Dokumen Persetujuan Resmi (Persetujuan via Dokumen)') }}</h2>
           </div>
           <span class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">
-            Disahkan via Dokumen (Memo/SK)
+            {{ $l('Approved via Document (Memo/Decree)', 'Disahkan via Dokumen (Memo/SK)') }}
           </span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-gray-100 space-y-1">
-            <span class="text-gray-400 font-medium block">Nomor Dokumen / Memo</span>
+            <span class="text-gray-400 font-medium block">{{ $l('Document / Memo Number', 'Nomor Dokumen / Memo') }}</span>
             <span class="font-extrabold text-[#002855] text-sm block font-mono">{{ program.approval_doc_number || 'MEMO/BWS/2026' }}</span>
-            <span class="text-gray-500 block">Tgl Pengesahan: {{ program.approval_doc_date ? program.approval_doc_date.substring(0, 10) : '-' }}</span>
+            <span class="text-gray-500 block">{{ $l('Approval Date:', 'Tgl Pengesahan:') }} {{ program.approval_doc_date ? program.approval_doc_date.substring(0, 10) : '-' }}</span>
           </div>
 
           <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-gray-100 space-y-1">
-            <span class="text-gray-400 font-medium block">Pejabat Penandatangan / Pengesah</span>
-            <span class="font-bold text-gray-900 text-sm block">{{ program.approval_doc_signer || 'Direksi / Kadiv' }}</span>
-            <span class="text-emerald-700 font-semibold block">Otoritas Dokumen Sah</span>
+            <span class="text-gray-400 font-medium block">{{ $l('Signing / Authorizing Official', 'Pejabat Penandatangan / Pengesah') }}</span>
+            <span class="font-bold text-gray-900 text-sm block">{{ program.approval_doc_signer || $l('Board / Division Head', 'Direksi / Kepala Divisi') }}</span>
+            <span class="text-emerald-700 font-semibold block">{{ $l('Valid Document Authority', 'Otoritas Dokumen Sah') }}</span>
           </div>
 
           <div class="p-3.5 rounded-2xl bg-[#F8FAFC] border border-gray-100 space-y-1">
-            <span class="text-gray-400 font-medium block">Berkas Dokumen Lampiran</span>
-            <span class="font-bold text-gray-900 block truncate">{{ program.approval_doc_name || 'Dokumen_Pengesahan.pdf' }}</span>
-            <span class="text-gray-400 font-mono block">{{ program.approval_doc_size ? formatFileSize(program.approval_doc_size) : 'File PDF' }}</span>
+            <span class="text-gray-400 font-medium block">{{ $l('Attached Document File', 'Berkas Dokumen Lampiran') }}</span>
+            <span class="font-bold text-gray-900 block truncate">{{ program.approval_doc_name || $l('Approval_Document.pdf', 'Dokumen_Pengesahan.pdf') }}</span>
+            <span class="text-gray-400 font-mono block">{{ program.approval_doc_size ? formatFileSize(program.approval_doc_size) : $l('PDF File', 'Berkas PDF') }}</span>
           </div>
         </div>
 
@@ -798,7 +803,7 @@ onMounted(() => {
             class="px-5 py-2.5 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white font-bold text-xs shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <Download class="w-4 h-4" :class="{ 'animate-bounce': downloadingDoc }" />
-            <span>{{ downloadingDoc ? 'Mengunduh Dokumen...' : 'Unduh Berkas Dokumen Pengesahan' }}</span>
+            <span>{{ downloadingDoc ? $l('Downloading Document...', 'Mengunduh Dokumen...') : $l('Download Authorization Document', 'Unduh Berkas Dokumen Pengesahan') }}</span>
           </button>
         </div>
       </div>
@@ -808,9 +813,9 @@ onMounted(() => {
         <div class="flex items-center justify-between border-b border-gray-100 pb-3">
           <div class="flex items-center gap-2">
             <ShieldCheck class="w-4 h-4 text-[#0067AC]" />
-            <h2 class="text-sm font-bold text-gray-900">Alur Multi-Approval Berjenjang (Standar OJK &amp; BWS LIS)</h2>
+            <h2 class="text-sm font-bold text-gray-900">{{ $l('Hierarchical Multi-Approval Workflow (OJK & BWS LIS Standard)', 'Alur Multi-Persetujuan Berjenjang (Standar OJK & BWS LIS)') }}</h2>
           </div>
-          <span class="text-[11px] font-semibold text-gray-400">Total: {{ flowSteps.length }} Tahapan Pengesahan</span>
+          <span class="text-[11px] font-semibold text-gray-400">{{ $l(`Total: ${flowSteps.length} Approval Stages`, `Total: ${flowSteps.length} Tahapan Pengesahan`) }}</span>
         </div>
 
         <!-- Stepper Progress Bar -->
@@ -838,26 +843,26 @@ onMounted(() => {
                     : 'bg-gray-200 text-gray-600'
                 ]"
               >
-                Step {{ step.step_order }}
+                {{ $l('Step', 'Tahap') }} {{ step.step_order }}
               </span>
-              <span class="text-[11px] font-medium text-gray-400">SLA: {{ step.sla_days }} Hari</span>
+              <span class="text-[11px] font-medium text-gray-400">SLA: {{ step.sla_days }} {{ $l(step.sla_days === 1 ? 'Day' : 'Days', 'Hari') }}</span>
             </div>
 
             <h3 class="text-xs font-bold text-gray-900 mb-1 leading-snug">{{ step.step_name }}</h3>
-            <p class="text-[11px] text-gray-500 font-medium">Peran: {{ step.role_name }}</p>
+            <p class="text-[11px] text-gray-500 font-medium">{{ $l('Role:', 'Peran:') }} {{ step.role_name }}</p>
 
             <div class="mt-3 pt-2 border-t border-gray-200/60 flex items-center gap-1.5 text-[11px]">
               <template v-if="program.status === 'APPROVED' || (program.current_step_order > step.step_order)">
                 <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600" />
-                <span class="font-bold text-emerald-700">Telah Disetujui</span>
+                <span class="font-bold text-emerald-700">{{ $l('Approved', 'Telah Disetujui') }}</span>
               </template>
               <template v-else-if="program.current_step_order === step.step_order">
                 <Clock class="w-3.5 h-3.5 text-[#0067AC] animate-spin" />
-                <span class="font-bold text-[#0067AC]">Menunggu Otorisasi</span>
+                <span class="font-bold text-[#0067AC]">{{ $l('Pending Authorization', 'Menunggu Otorisasi') }}</span>
               </template>
               <template v-else>
                 <Clock class="w-3.5 h-3.5 text-gray-400" />
-                <span class="text-gray-400">Tahap Berikutnya</span>
+                <span class="text-gray-400">{{ $l('Next Stage', 'Tahap Berikutnya') }}</span>
               </template>
             </div>
           </div>
@@ -865,17 +870,17 @@ onMounted(() => {
 
         <!-- Approval History Logs Table -->
         <div class="mt-4 pt-3 border-t border-gray-100 space-y-2">
-          <span class="text-xs font-bold text-gray-700 block">Rekam Jejak Audit Otorisasi (Audit Trail Log):</span>
+          <span class="text-xs font-bold text-gray-700 block">{{ $l('Authorization Audit Trail Log:', 'Rekam Jejak Audit Otorisasi:') }}</span>
           <div class="overflow-x-auto">
             <table class="w-full text-xs text-left">
               <thead class="bg-gray-50 text-gray-500 font-bold border-b border-gray-100">
                 <tr>
-                  <th class="py-2 px-3">Waktu</th>
-                  <th class="py-2 px-3">Tahapan</th>
-                  <th class="py-2 px-3">Pejabat Otorisator</th>
-                  <th class="py-2 px-3">Peran (Role)</th>
-                  <th class="py-2 px-3 text-center">Keputusan</th>
-                  <th class="py-2 px-3">Catatan / Komentar</th>
+                  <th class="py-2 px-3">{{ $l('Timestamp', 'Waktu') }}</th>
+                  <th class="py-2 px-3">{{ $l('Stage', 'Tahapan') }}</th>
+                  <th class="py-2 px-3">{{ $l('Authorizing Official', 'Pejabat Otorisator') }}</th>
+                  <th class="py-2 px-3">{{ $l('Role', 'Peran') }}</th>
+                  <th class="py-2 px-3 text-center">{{ $l('Decision', 'Keputusan') }}</th>
+                  <th class="py-2 px-3">{{ $l('Notes / Comments', 'Catatan / Komentar') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
@@ -892,10 +897,10 @@ onMounted(() => {
                       {{ h.action }}
                     </span>
                   </td>
-                  <td class="py-2 px-3 text-gray-600 italic">"${h.notes || '-'}"</td>
+                  <td class="py-2 px-3 text-gray-600 italic">"{{ h.notes || '-' }}"</td>
                 </tr>
                 <tr v-if="!program.approval_histories || program.approval_histories.length === 0">
-                  <td colspan="6" class="py-4 text-center text-gray-400">Belum ada riwayat otorisasi untuk program ini.</td>
+                  <td colspan="6" class="py-4 text-center text-gray-400">{{ $l('No authorization history recorded for this program yet.', 'Belum ada riwayat otorisasi untuk program ini.') }}</td>
                 </tr>
               </tbody>
             </table>
@@ -910,10 +915,10 @@ onMounted(() => {
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2 text-[#002855]">
               <Sparkles class="w-4 h-4 text-[#0067AC]" />
-              <span class="font-extrabold text-sm">Formulir Otorisasi Anda — {{ currentStep?.step_name || 'Otorisasi' }}</span>
+              <span class="font-extrabold text-sm">{{ $l('Your Authorization Form', 'Formulir Otorisasi Anda') }} — {{ currentStep?.step_name || $l('Authorization', 'Otorisasi') }}</span>
             </div>
             <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#0067AC] text-white">
-              Role: {{ auth.user?.role_name }}
+              {{ $l('Role:', 'Peran:') }} {{ auth.user?.role_name }}
             </span>
           </div>
 
@@ -925,7 +930,7 @@ onMounted(() => {
               :class="approvalAction === 'APPROVE' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-emerald-50'"
             >
               <CheckCircle2 class="w-4 h-4" />
-              <span>Setujui Program (Approve)</span>
+              <span>{{ $l('Approve Program', 'Setujui Program') }}</span>
             </button>
 
             <button
@@ -935,7 +940,7 @@ onMounted(() => {
               :class="approvalAction === 'REQUEST_REVISION' ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-amber-50'"
             >
               <RotateCcw class="w-4 h-4" />
-              <span>Minta Revisi Program</span>
+              <span>{{ $l('Request Revision', 'Minta Revisi Program') }}</span>
             </button>
 
             <button
@@ -945,18 +950,18 @@ onMounted(() => {
               :class="approvalAction === 'REJECT' ? 'bg-rose-600 text-white border-rose-600 shadow-sm' : 'bg-white text-gray-700 border-gray-200 hover:bg-rose-50'"
             >
               <XCircle class="w-4 h-4" />
-              <span>Tolak Program (Reject)</span>
+              <span>{{ $l('Reject Program', 'Tolak Program') }}</span>
             </button>
           </div>
 
           <div class="space-y-1 text-xs">
-            <label class="font-bold text-gray-700">Catatan Otorisasi / Evaluasi RAB &amp; Kurikulum *</label>
+            <label class="font-bold text-gray-700">{{ $l('Authorization Notes / Budget (RAB) & Curriculum Evaluation *', 'Catatan Otorisasi / Evaluasi RAB & Kurikulum *') }}</label>
             <textarea
               v-model="approvalNotes"
               rows="3"
               required
               class="w-full bg-white rounded-xl p-3 text-xs text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition"
-              placeholder="Berikan justifikasi atau catatan otorisasi..."
+              :placeholder="$l('Provide justification or authorization notes...', 'Berikan justifikasi atau catatan otorisasi...')"
             ></textarea>
           </div>
 
@@ -969,7 +974,7 @@ onMounted(() => {
               :class="approvalAction === 'APPROVE' ? 'bg-emerald-600 hover:bg-emerald-700' : approvalAction === 'REJECT' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-amber-600 hover:bg-amber-700'"
             >
               <Send class="w-3.5 h-3.5" />
-              <span>{{ submittingApproval ? 'Memproses Otorisasi...' : 'Kirim Keputusan Otorisasi' }}</span>
+              <span>{{ submittingApproval ? $l('Processing Authorization...', 'Memproses Otorisasi...') : $l('Submit Authorization Decision', 'Kirim Keputusan Otorisasi') }}</span>
             </button>
           </div>
         </div>

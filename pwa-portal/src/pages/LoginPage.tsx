@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Lock, Mail, Eye, EyeOff, ArrowRight, ShieldCheck, AlertCircle, Sparkles, Building2, Smartphone, CheckCircle2 } from 'lucide-react';
 import apiClient from '@/api/client';
 import { LearnerUser } from '@/types/learner';
+import { useI18n } from '@/i18n';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 interface LoginPageProps {
   onLoginSuccess: (user: LearnerUser, token: string) => void;
 }
 
 export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
+  const { l } = useI18n();
   const [demoUsers, setDemoUsers] = useState<LearnerUser[]>([]);
   const [email, setEmail] = useState<string>('peserta@bws.co.id');
   const [password, setPassword] = useState<string>('password123');
@@ -44,7 +47,10 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
       setError(
         err.response?.data?.errors?.email?.[0] ||
           err.response?.data?.message ||
-          'Gagal terhubung ke server autentikasi Bank Woori Saudara.'
+          l(
+            'Failed to connect to Bank Woori Saudara authentication server.',
+            'Gagal terhubung ke server autentikasi Bank Woori Saudara.'
+          )
       );
     } finally {
       setLoading(false);
@@ -61,15 +67,18 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-extrabold text-sm text-[#002855] tracking-tight">LIS MOBILE</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#EBF4FC] text-[#0067AC] uppercase">Pegawai</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#EBF4FC] text-[#0067AC] uppercase">{l('Employee', 'Pegawai')}</span>
             </div>
             <span className="text-[10px] text-gray-400 block -mt-0.5">Learning Integrated System</span>
           </div>
         </div>
 
-        <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-gray-500 bg-[#EBF4FC]/60 px-3 py-1.5 rounded-full border border-[#0067AC]/20">
-          <Smartphone className="w-3.5 h-3.5 text-[#0067AC]" />
-          <span className="text-[#002855]">Portal Mandiri Pegawai BWS</span>
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-gray-500 bg-[#EBF4FC]/60 px-3 py-1.5 rounded-full border border-[#0067AC]/20">
+            <Smartphone className="w-3.5 h-3.5 text-[#0067AC]" />
+            <span className="text-[#002855]">{l('BWS Employee Self-Service Portal', 'Portal Mandiri Pegawai BWS')}</span>
+          </div>
+          <LanguageSwitcher />
         </div>
       </header>
 
@@ -80,20 +89,23 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EBF4FC] text-[#0067AC] text-xs font-bold">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Portal Belajar Pegawai BWS</span>
+              <span>{l('BWS Employee Learning Portal', 'Portal Belajar Pegawai BWS')}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#002855] tracking-tight">
-              Selamat Datang Kembali
+              {l('Welcome Back', 'Selamat Datang Kembali')}
             </h1>
             <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">
-              Silakan masukkan NIK atau email korporat Bank Woori Saudara Anda untuk mengakses kelas dan sertifikat.
+              {l(
+                'Enter your Bank Woori Saudara employee ID (NIK) or corporate email to access your training classes and certificates.',
+                'Silakan masukkan NIK atau email korporat Bank Woori Saudara Anda untuk mengakses kelas dan sertifikat.'
+              )}
             </p>
           </div>
 
           {demoUsers.length > 0 && (
             <div className="space-y-2">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                Pilih Cepat Akun Login Demo:
+                {l('Quick Demo Account Sign-In:', 'Pilih Cepat Akun Demo:')}
               </label>
               <div className="flex flex-wrap gap-2">
                 {demoUsers
@@ -112,7 +124,11 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
                           : 'bg-[#F8FAFC] text-gray-700 border-gray-200 hover:border-[#0067AC] hover:text-[#0067AC]'
                       }`}
                     >
-                      {u.role_name === 'Employee / Participant' ? 'Peserta (Ahmad Pratama)' : u.role_name === 'Facilitator / Trainer' ? 'Fasilitator Diklat' : 'Super Admin'}
+                      {u.role_name === 'Employee / Participant'
+                        ? l('Participant (Ahmad Pratama)', 'Peserta (Ahmad Pratama)')
+                        : u.role_name === 'Facilitator / Trainer'
+                        ? l('Training Facilitator', 'Fasilitator Diklat')
+                        : l('Super Admin', 'Administrator Utama')}
                     </button>
                   ))}
               </div>
@@ -129,7 +145,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-gray-700">
-                Email Korporat atau NIK
+                {l('Corporate Email or NIK', 'Email Korporat atau NIK')}
               </label>
               <div className="relative">
                 <input
@@ -138,7 +154,7 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-[#F8FAFC] rounded-2xl pl-4 pr-10 py-3 text-sm text-gray-900 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:ring-2 focus:ring-[#0067AC]/15 focus:outline-none transition font-medium"
-                  placeholder="nama@bws.co.id atau NIK pegawai"
+                  placeholder={l('name@bws.co.id or employee NIK', 'nama@bws.co.id atau NIK pegawai')}
                 />
                 <Mail className="w-4 h-4 text-gray-400 absolute right-3.5 top-3.5" />
               </div>
@@ -146,8 +162,8 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label className="block text-xs font-bold text-gray-700">Password</label>
-                <span className="text-[11px] font-mono text-[#0067AC] font-semibold">Default: password123</span>
+                <label className="block text-xs font-bold text-gray-700">{l('Password', 'Kata Sandi')}</label>
+                <span className="text-[11px] font-mono text-[#0067AC] font-semibold">{l('Default: password123', 'Bawaan: password123')}</span>
               </div>
               <div className="relative">
                 <input
@@ -173,14 +189,14 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
               disabled={loading}
               className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#002855] via-[#003876] to-[#0067AC] hover:opacity-95 text-white font-bold text-sm shadow-lg shadow-[#003876]/25 transition transform active:scale-[0.98] flex items-center justify-center gap-2.5 disabled:opacity-50"
             >
-              <span>{loading ? 'Mengautentikasi...' : 'Masuk ke Portal Pegawai'}</span>
+              <span>{loading ? l('Authenticating...', 'Mengautentikasi...') : l('Sign In to Employee Portal', 'Masuk ke Portal Pegawai')}</span>
               {!loading && <ArrowRight className="w-4 h-4" />}
             </button>
           </form>
 
           <div className="pt-2 flex items-center justify-center gap-2 text-xs text-gray-400">
             <ShieldCheck className="w-4 h-4 text-[#0067AC]" />
-            <span>Sistem Otentikasi Terintegrasi Bank Woori Saudara</span>
+            <span>{l('Bank Woori Saudara Integrated Authentication System', 'Sistem Autentikasi Terintegrasi Bank Woori Saudara')}</span>
           </div>
         </div>
 
@@ -205,13 +221,16 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
             {/* Statement Content */}
             <div className="relative z-10 space-y-4 max-w-md my-auto pt-8">
               <div className="inline-block px-3 py-1 rounded-xl bg-[#00A0E9]/25 border border-[#00A0E9]/40 text-[#00A0E9] text-[11px] font-extrabold uppercase tracking-widest">
-                Karyawan & Pegawai Mandiri
+                {l('Employee & Staff Self-Service', 'Layanan Mandiri Karyawan & Pegawai')}
               </div>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight">
-                Tuntaskan 20 Jam Pelatihan Tahunan Anda.
+                {l('Complete Your 20 Annual Training Hours.', 'Tuntaskan 20 Jam Pelatihan Tahunan Anda.')}
               </h2>
               <p className="text-xs sm:text-sm text-slate-200/90 leading-relaxed">
-                Akses materi modul pelatihan terintegrasi, kerjakan Action Learning Project, ikuti pre-test/post-test, dan unduh sertifikat resmi langsung dari smartphone atau browser Anda.
+                {l(
+                  'Access integrated training materials, submit Action Learning Projects, take pre-tests and post-tests, and download official certificates directly from your smartphone or browser.',
+                  'Akses materi modul pelatihan terintegrasi, kerjakan Proyek Aksi Pembelajaran, ikuti ujian awal dan ujian akhir, serta unduh sertifikat resmi langsung dari ponsel atau peramban Anda.'
+                )}
               </p>
             </div>
 
@@ -222,12 +241,12 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
                   <CheckCircle2 className="w-5 h-5 text-sky-200" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white">PWA & Offline Ready</h4>
-                  <p className="text-[11px] text-slate-300">Dapat diinstal di layar utama ponsel Anda</p>
+                  <h4 className="text-xs font-bold text-white">{l('PWA & Offline Ready', 'Aplikasi Web & Siap Luring')}</h4>
+                  <p className="text-[11px] text-slate-300">{l('Installable directly on your phone home screen', 'Dapat dipasang di layar utama ponsel Anda')}</p>
                 </div>
               </div>
               <span className="text-[10px] font-extrabold uppercase tracking-wider bg-white/20 text-white px-2.5 py-1 rounded-full shrink-0">
-                OJK & BI Compliant
+                {l('OJK & BI Compliant', 'Kepatuhan OJK & BI')}
               </span>
             </div>
           </div>

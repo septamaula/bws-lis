@@ -18,6 +18,9 @@ import {
 } from 'lucide-vue-next'
 import apiClient from '@/api/client'
 import SubpageHeader from '@/components/SubpageHeader.vue'
+import { useI18n } from '@/i18n'
+
+const { l } = useI18n()
 
 const emit = defineEmits(['back'])
 
@@ -64,7 +67,7 @@ async function fetchData() {
     }
   } catch (err) {
     feedbackType.value = 'error'
-    feedbackMsg.value = err.response?.data?.message || 'Gagal memuat master data Kategori BI/OJK.'
+    feedbackMsg.value = l('Failed to load BI/OJK Category master data.', err.response?.data?.message || 'Gagal memuat data master Kategori BI/OJK.')
   } finally {
     loading.value = false
   }
@@ -119,7 +122,7 @@ function openEditModal(item) {
 
 async function submitForm() {
   if (!form.value.code || !form.value.name) {
-    alert('Kode dan Nama Kategori wajib diisi!')
+    alert(l('Category Code and Name are required!', 'Kode dan Nama Kategori wajib diisi!'))
     return
   }
 
@@ -128,13 +131,13 @@ async function submitForm() {
 
   try {
     if (editingItem.value) {
-      const { data } = await apiClient.put(`/bi-categories/${editingItem.value.id}`, form.value)
+      await apiClient.put(`/bi-categories/${editingItem.value.id}`, form.value)
       feedbackType.value = 'success'
-      feedbackMsg.value = data.message || 'Kategori BI berhasil diperbarui.'
+      feedbackMsg.value = l('BI Category updated successfully.', 'Kategori BI berhasil diperbarui.')
     } else {
-      const { data } = await apiClient.post('/bi-categories', form.value)
+      await apiClient.post('/bi-categories', form.value)
       feedbackType.value = 'success'
-      feedbackMsg.value = data.message || 'Kategori BI baru berhasil ditambahkan.'
+      feedbackMsg.value = l('New BI Category added successfully.', 'Kategori BI baru berhasil ditambahkan.')
     }
     showModal.value = false
     await fetchData()
@@ -142,7 +145,7 @@ async function submitForm() {
       feedbackMsg.value = ''
     }, 4000)
   } catch (err) {
-    alert(err.response?.data?.message || 'Gagal menyimpan kategori BI.')
+    alert(l('Failed to save BI category.', err.response?.data?.message || 'Gagal menyimpan kategori BI.'))
   } finally {
     isSubmitting.value = false
   }
@@ -157,9 +160,9 @@ async function executeDelete() {
   if (!itemToDelete.value) return
   isDeleting.value = true
   try {
-    const { data } = await apiClient.delete(`/bi-categories/${itemToDelete.value.id}`)
+    await apiClient.delete(`/bi-categories/${itemToDelete.value.id}`)
     feedbackType.value = 'success'
-    feedbackMsg.value = data.message || 'Kategori BI berhasil dihapus.'
+    feedbackMsg.value = l('BI Category deleted successfully.', 'Kategori BI berhasil dihapus.')
     showDeleteModal.value = false
     itemToDelete.value = null
     await fetchData()
@@ -167,7 +170,7 @@ async function executeDelete() {
       feedbackMsg.value = ''
     }, 4000)
   } catch (err) {
-    alert(err.response?.data?.message || 'Gagal menghapus kategori BI.')
+    alert(l('Failed to delete BI category.', err.response?.data?.message || 'Gagal menghapus kategori BI.'))
   } finally {
     isDeleting.value = false
   }
@@ -179,10 +182,10 @@ async function executeDelete() {
 
     <!-- Subpage Header -->
     <SubpageHeader
-      back-label="Kembali ke Program List"
-      title="Kategori Regulasi BI / OJK"
-      subtitle="Klasifikasi kurikulum kepatuhan Bank Indonesia & OJK yang dirujuk saat penyusunan program kerja diklat"
-      badge="Regulasi Bank Indonesia & OJK"
+      :back-label="l('Back to Program List', 'Kembali ke Daftar Program')"
+      :title="l('BI / OJK Regulatory Categories', 'Kategori Regulasi BI / OJK')"
+      :subtitle="l('Bank Indonesia & OJK compliance curriculum classifications referenced during training workplan preparation', 'Klasifikasi kurikulum kepatuhan Bank Indonesia & OJK yang dirujuk saat penyusunan program kerja diklat')"
+      :badge="l('Bank Indonesia & OJK Regulations', 'Regulasi Bank Indonesia & OJK')"
       @back="emit('back')"
     />
 
@@ -205,9 +208,9 @@ async function executeDelete() {
       <!-- Total Categories -->
       <div class="bg-white rounded-3xl p-5 border border-gray-100 shadow-2xs flex items-center justify-between">
         <div class="flex flex-col gap-1">
-          <span class="text-[11px] font-bold tracking-wider uppercase text-gray-400">Total Kategori Regulasi</span>
+          <span class="text-[11px] font-bold tracking-wider uppercase text-gray-400">{{ l('Total Regulatory Categories', 'Total Kategori Regulasi') }}</span>
           <span class="text-2xl font-black text-gray-900">{{ stats.total }}</span>
-          <span class="text-[10px] text-gray-500 font-semibold">Tercatat dalam sistem</span>
+          <span class="text-[10px] text-gray-500 font-semibold">{{ l('Recorded in system', 'Tercatat dalam sistem') }}</span>
         </div>
         <div class="w-12 h-12 rounded-2xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
           <Scale class="w-6 h-6" />
@@ -217,7 +220,7 @@ async function executeDelete() {
       <!-- Mandatory Categories -->
       <div class="bg-white rounded-3xl p-5 border border-gray-100 shadow-2xs flex items-center justify-between">
         <div class="flex flex-col gap-1">
-          <span class="text-[11px] font-bold tracking-wider uppercase text-amber-500">Wajib Regulasi (Mandatori)</span>
+          <span class="text-[11px] font-bold tracking-wider uppercase text-amber-500">{{ l('Regulatory Mandatory', 'Wajib Regulasi (Mandatori)') }}</span>
           <span class="text-2xl font-black text-amber-600">{{ stats.mandatory }}</span>
           <span class="text-[10px] text-gray-500 font-semibold">POJK / PBI / PADG BI</span>
         </div>
@@ -229,9 +232,9 @@ async function executeDelete() {
       <!-- Active Categories -->
       <div class="bg-white rounded-3xl p-5 border border-gray-100 shadow-2xs flex items-center justify-between">
         <div class="flex flex-col gap-1">
-          <span class="text-[11px] font-bold tracking-wider uppercase text-emerald-600">Status Aktif Digunakan</span>
+          <span class="text-[11px] font-bold tracking-wider uppercase text-emerald-600">{{ l('Active in Use', 'Status Aktif Digunakan') }}</span>
           <span class="text-2xl font-black text-emerald-700">{{ stats.active }}</span>
-          <span class="text-[10px] text-emerald-600 font-semibold">Muncul di pilihan dropdown</span>
+          <span class="text-[10px] text-emerald-600 font-semibold">{{ l('Available in selection lists', 'Tersedia pada daftar pilihan') }}</span>
         </div>
         <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
           <BookOpenCheck class="w-6 h-6" />
@@ -253,23 +256,23 @@ async function executeDelete() {
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Cari kode, nama kategori, dasar regulasi..."
+              :placeholder="l('Search code, category name, regulation basis...', 'Cari kode, nama kategori, dasar regulasi...')"
               class="w-full bg-gray-50 border border-gray-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#0067AC] focus:bg-white transition"
             />
             <Search class="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
           </div>
 
           <div class="flex items-center gap-2 min-w-[210px]">
-            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0">Mandatori:</span>
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0">{{ l('Mandatory:', 'Mandatori:') }}</span>
             <AppSearchableSelect
               v-model="selectedMandatory"
               :options="[
-                { value: 'ALL', label: 'Semua Sifat' },
-                { value: 'MANDATORY', label: 'Wajib Regulasi' },
-                { value: 'OPTIONAL', label: 'Non-Mandatori / Pendukung' }
+                { value: 'ALL', label: l('All Classifications', 'Semua Sifat') },
+                { value: 'MANDATORY', label: l('Regulatory Mandatory', 'Wajib Regulasi') },
+                { value: 'OPTIONAL', label: l('Non-Mandatory / Supporting', 'Non-Mandatori / Pendukung') }
               ]"
-              placeholder="Semua Sifat"
-              search-placeholder="Cari sifat..."
+              :placeholder="l('All Classifications', 'Semua Sifat')"
+              :search-placeholder="l('Search classification...', 'Cari sifat...')"
               input-class="bg-gray-50 rounded-2xl py-2 px-3 border-gray-200 font-bold text-gray-700"
             />
           </div>
@@ -282,7 +285,7 @@ async function executeDelete() {
           class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0067AC] hover:bg-[#00558F] text-white text-xs font-bold rounded-2xl shadow-xs transition cursor-pointer shrink-0"
         >
           <Plus class="w-4 h-4" />
-          <span>Tambah Kategori BI Baru</span>
+          <span>{{ l('Add New BI Category', 'Tambah Kategori BI Baru') }}</span>
         </button>
 
       </div>
@@ -292,24 +295,24 @@ async function executeDelete() {
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="bg-gray-50/80 border-b border-gray-200 text-[11px] font-extrabold text-gray-600 uppercase tracking-wider">
-              <th class="py-3 px-4 w-28">Kode</th>
-              <th class="py-3 px-4">Nama Kategori Regulasi</th>
-              <th class="py-3 px-4">Dasar Hukum / Regulasi Acuan</th>
-              <th class="py-3 px-4 w-36 text-center">Sifat Regulasi</th>
-              <th class="py-3 px-4 w-24 text-center">Status</th>
-              <th class="py-3 px-4 w-28 text-center">Aksi</th>
+              <th class="py-3 px-4 w-28">{{ l('Code', 'Kode') }}</th>
+              <th class="py-3 px-4">{{ l('Regulatory Category Name', 'Nama Kategori Regulasi') }}</th>
+              <th class="py-3 px-4">{{ l('Legal Basis / Reference Regulation', 'Dasar Hukum / Regulasi Acuan') }}</th>
+              <th class="py-3 px-4 w-36 text-center">{{ l('Regulation Type', 'Sifat Regulasi') }}</th>
+              <th class="py-3 px-4 w-24 text-center">{{ l('Status', 'Status') }}</th>
+              <th class="py-3 px-4 w-28 text-center">{{ l('Actions', 'Aksi') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 text-xs">
             <tr v-if="loading">
               <td colspan="6" class="py-12 text-center text-gray-400 font-semibold">
-                Memuat data kategori BI...
+                {{ l('Loading BI category data...', 'Memuat data kategori BI...') }}
               </td>
             </tr>
 
             <tr v-else-if="filteredList.length === 0">
               <td colspan="6" class="py-12 text-center text-gray-400 font-semibold">
-                Tidak ada kategori BI yang sesuai dengan filter pencarian.
+                {{ l('No BI categories match your search filter.', 'Tidak ada kategori BI yang sesuai dengan filter pencarian.') }}
               </td>
             </tr>
 
@@ -350,13 +353,13 @@ async function executeDelete() {
                   class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200"
                 >
                   <ShieldCheck class="w-3 h-3 text-amber-600" />
-                  Wajib Regulasi
+                  {{ l('Regulatory Mandatory', 'Wajib Regulasi') }}
                 </span>
                 <span
                   v-else
                   class="inline-block px-2.5 py-1 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-200"
                 >
-                  Pendukung / Non-Mandatori
+                  {{ l('Supporting / Non-Mandatory', 'Pendukung / Non-Mandatori') }}
                 </span>
               </td>
 
@@ -367,13 +370,13 @@ async function executeDelete() {
                   class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
                 >
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Aktif
+                  {{ l('Active', 'Aktif') }}
                 </span>
                 <span
                   v-else
                   class="inline-block px-2.5 py-1 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 border border-gray-200"
                 >
-                  Non-Aktif
+                  {{ l('Inactive', 'Non-Aktif') }}
                 </span>
               </td>
 
@@ -383,14 +386,14 @@ async function executeDelete() {
                   <button
                     @click="openEditModal(item)"
                     class="p-1.5 text-gray-400 hover:text-[#0067AC] hover:bg-blue-50 rounded-lg transition cursor-pointer"
-                    title="Edit Kategori BI"
+                    :title="l('Edit BI Category', 'Ubah Kategori BI')"
                   >
                     <Edit2 class="w-4 h-4" />
                   </button>
                   <button
                     @click="confirmDelete(item)"
                     class="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                    title="Hapus Kategori BI"
+                    :title="l('Delete BI Category', 'Hapus Kategori BI')"
                   >
                     <Trash2 class="w-4 h-4" />
                   </button>
@@ -417,9 +420,9 @@ async function executeDelete() {
             </div>
             <div>
               <h3 class="text-sm font-extrabold text-gray-900">
-                {{ editingItem ? 'Edit Kategori BI / OJK' : 'Tambah Kategori BI Baru' }}
+                {{ editingItem ? l('Edit BI / OJK Category', 'Ubah Kategori BI / OJK') : l('Add New BI Category', 'Tambah Kategori BI Baru') }}
               </h3>
-              <p class="text-[11px] text-gray-500">Konfigurasi klasifikasi kepatuhan regulasi diklat</p>
+              <p class="text-[11px] text-gray-500">{{ l('Configure training regulatory compliance classification', 'Konfigurasi klasifikasi kepatuhan regulasi diklat') }}</p>
             </div>
           </div>
           <button
@@ -434,51 +437,51 @@ async function executeDelete() {
           
           <div>
             <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">
-              Kode Kategori <span class="text-rose-500">*</span>
+              {{ l('Category Code', 'Kode Kategori') }} <span class="text-rose-500">*</span>
             </label>
             <input
               v-model="form.code"
               type="text"
               required
               class="w-full bg-white rounded-xl px-3.5 py-2 border border-gray-300 font-mono font-bold text-gray-900 focus:border-[#0067AC] focus:outline-none uppercase"
-              placeholder="e.g. BI-OPS-01"
+              :placeholder="l('e.g. BI-OPS-01', 'Contoh: BI-OPS-01')"
             />
           </div>
 
           <div>
             <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">
-              Nama Kategori Regulasi <span class="text-rose-500">*</span>
+              {{ l('Regulatory Category Name', 'Nama Kategori Regulasi') }} <span class="text-rose-500">*</span>
             </label>
             <input
               v-model="form.name"
               type="text"
               required
               class="w-full bg-white rounded-xl px-3.5 py-2 border border-gray-300 font-bold text-gray-900 focus:border-[#0067AC] focus:outline-none"
-              placeholder="e.g. Operasional Perbankan & Sistem Pembayaran"
+              :placeholder="l('e.g. Banking Operations & Payment Systems', 'Contoh: Operasional Perbankan & Sistem Pembayaran')"
             />
           </div>
 
           <div>
             <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">
-              Dasar Regulasi Acuan (POJK / PADG / UU)
+              {{ l('Reference Regulation Basis (POJK / PADG / Law)', 'Dasar Regulasi Acuan (POJK / PADG / UU)') }}
             </label>
             <input
               v-model="form.regulation_reference"
               type="text"
               class="w-full bg-white rounded-xl px-3.5 py-2 border border-gray-300 focus:border-[#0067AC] focus:outline-none"
-              placeholder="e.g. PADG BI No. 24/2022 & SKNBI/BI-FAST"
+              :placeholder="l('e.g. PADG BI No. 24/2022 & SKNBI/BI-FAST', 'Contoh: PADG BI No. 24/2022 & SKNBI/BI-FAST')"
             />
           </div>
 
           <div>
             <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">
-              Deskripsi / Ruang Lingkup Materi
+              {{ l('Description / Curriculum Scope', 'Deskripsi / Ruang Lingkup Materi') }}
             </label>
             <textarea
               v-model="form.description"
               rows="2"
               class="w-full bg-white rounded-xl px-3.5 py-2 border border-gray-300 focus:border-[#0067AC] focus:outline-none"
-              placeholder="Keterangan materi diklat yang tercakup..."
+              :placeholder="l('Overview of training materials covered...', 'Keterangan materi diklat yang tercakup...')"
             ></textarea>
           </div>
 
@@ -491,7 +494,7 @@ async function executeDelete() {
                 class="w-4 h-4 rounded text-amber-600 border-gray-300 focus:ring-amber-500 cursor-pointer"
               />
               <label for="cat-mandatory" class="font-bold text-gray-700 cursor-pointer">
-                Wajib Regulasi BI / OJK (Mandatori Kepatuhan)
+                {{ l('Mandatory under BI / OJK Regulation (Compliance Mandatory)', 'Wajib Regulasi BI / OJK (Mandatori Kepatuhan)') }}
               </label>
             </div>
 
@@ -503,7 +506,7 @@ async function executeDelete() {
                 class="w-4 h-4 rounded text-[#0067AC] border-gray-300 focus:ring-[#0067AC] cursor-pointer"
               />
               <label for="cat-active" class="font-bold text-gray-700 cursor-pointer">
-                Status Aktif (Tersedia untuk dirujuk pada Form Usulan Program)
+                {{ l('Active Status (Available for Program Proposal Form selection)', 'Status Aktif (Tersedia untuk dirujuk pada Formulir Usulan Program)') }}
               </label>
             </div>
           </div>
@@ -514,7 +517,7 @@ async function executeDelete() {
               @click="showModal = false"
               class="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
             >
-              Batal
+              {{ l('Cancel', 'Batal') }}
             </button>
             <button
               type="submit"
@@ -522,7 +525,7 @@ async function executeDelete() {
               class="px-5 py-2 rounded-xl text-xs font-bold bg-[#0067AC] hover:bg-[#00558F] text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <Save class="w-3.5 h-3.5" />
-              <span>{{ isSubmitting ? 'Menyimpan...' : 'Simpan Kategori' }}</span>
+              <span>{{ isSubmitting ? l('Saving...', 'Menyimpan...') : l('Save Category', 'Simpan Kategori') }}</span>
             </button>
           </div>
         </form>
@@ -541,13 +544,13 @@ async function executeDelete() {
             <Trash2 class="w-6 h-6" />
           </div>
           <div>
-            <h3 class="text-base font-extrabold text-gray-900">Hapus Kategori BI</h3>
-            <p class="text-xs text-gray-500">Konfirmasi Penghapusan Regulasi</p>
+            <h3 class="text-base font-extrabold text-gray-900">{{ l('Delete BI Category', 'Hapus Kategori BI') }}</h3>
+            <p class="text-xs text-gray-500">{{ l('Confirm Regulatory Deletion', 'Konfirmasi Penghapusan Regulasi') }}</p>
           </div>
         </div>
 
         <div class="bg-rose-50/70 p-3.5 rounded-2xl border border-rose-100 text-xs text-rose-800 leading-relaxed">
-          Apakah Anda yakin ingin menghapus kategori <strong>{{ itemToDelete?.name }}</strong> ({{ itemToDelete?.code }})?
+          {{ l('Are you sure you want to delete category', 'Apakah Anda yakin ingin menghapus kategori') }} <strong>{{ itemToDelete?.name }}</strong> ({{ itemToDelete?.code }})?
         </div>
 
         <div class="flex items-center justify-end gap-2.5 pt-2">
@@ -555,7 +558,7 @@ async function executeDelete() {
             @click="showDeleteModal = false; itemToDelete = null"
             class="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
           >
-            Batal
+            {{ l('Cancel', 'Batal') }}
           </button>
           <button
             @click="executeDelete"
@@ -563,7 +566,7 @@ async function executeDelete() {
             class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             <Trash2 class="w-3.5 h-3.5" />
-            <span>{{ isDeleting ? 'Menghapus...' : 'Ya, Hapus Sekarang' }}</span>
+            <span>{{ isDeleting ? l('Deleting...', 'Menghapus...') : l('Yes, Delete Now', 'Ya, Hapus Sekarang') }}</span>
           </button>
         </div>
       </div>

@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { ChevronDown, Search, X, Check } from 'lucide-vue-next'
+import { useI18n } from '@/i18n'
+
+const { t, l } = useI18n()
 
 const props = defineProps({
   modelValue: {
@@ -13,7 +16,7 @@ const props = defineProps({
   },
   placeholder: {
     type: String,
-    default: 'Pilih...'
+    default: ''
   },
   disabled: {
     type: Boolean,
@@ -21,7 +24,7 @@ const props = defineProps({
   },
   searchPlaceholder: {
     type: String,
-    default: 'Ketik untuk mencari...'
+    default: ''
   },
   clearable: {
     type: Boolean,
@@ -191,7 +194,7 @@ onBeforeUnmount(() => {
         class="truncate pr-2"
         :class="displayLabel ? 'text-gray-800 font-semibold' : 'text-gray-400'"
       >
-        {{ displayLabel || placeholder }}
+        {{ displayLabel || placeholder || t('common.selectPlaceholder') }}
       </span>
 
       <div class="flex items-center gap-1 shrink-0 text-gray-400">
@@ -200,7 +203,7 @@ onBeforeUnmount(() => {
           type="button"
           @click="clearSelection"
           class="w-4 h-4 rounded-full hover:bg-gray-200 text-gray-400 hover:text-gray-600 flex items-center justify-center transition cursor-pointer"
-          title="Hapus pilihan"
+          :title="t('common.clearSelection')"
         >
           <X class="w-3 h-3" />
         </button>
@@ -225,7 +228,7 @@ onBeforeUnmount(() => {
             v-model="searchQuery"
             type="text"
             class="w-full bg-white border border-gray-200 rounded-lg pl-8 pr-7 py-1.5 text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#0067AC] focus:ring-1 focus:ring-[#0067AC]"
-            :placeholder="searchPlaceholder"
+            :placeholder="searchPlaceholder || t('common.searchPlaceholder')"
             @click.stop
           />
           <button
@@ -266,7 +269,7 @@ onBeforeUnmount(() => {
           v-if="filteredOptions.length === 0"
           class="px-3 py-4 text-center text-gray-400 text-xs italic"
         >
-          Tidak ada hasil pencarian
+          {{ t('common.noResults') }}
         </div>
       </div>
     </div>

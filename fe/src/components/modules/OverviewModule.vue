@@ -14,6 +14,9 @@ import {
   Clock
 } from 'lucide-vue-next'
 import DataTable from '@/components/DataTable.vue'
+import { useI18n } from '@/i18n'
+
+const { l, t } = useI18n()
 
 const props = defineProps({
   kpis: {
@@ -55,16 +58,16 @@ const priorityQueueData = computed(() => {
     items.push({
       id: `TRX-${f.id}`,
       code: f.trx_number || `#TRX-2026-${String(f.id).padStart(3, '0')}`,
-      type: 'Transaction (Reimburse)',
+      type: l('Transaction (Reimbursement)', 'Transaksi (Penggantian Biaya)'),
       typeColor: 'text-[#0067AC]',
-      title: f.description || `Reimburse Operasional Diklat #${f.id}`,
-      subtitle: `${formatRupiah(f.amount)} • Bukti Kwitansi Terlampir`,
-      pic: f.maker?.name || 'Class PIC',
-      picRole: 'Maker / PIC',
-      approvalPosition: 'Menunggu Manager / Checker',
+      title: f.description || l('Operational Training Expense Claim #{id}', 'Klaim Biaya Operasional Pelatihan #{id}', { id: f.id }),
+      subtitle: `${formatRupiah(f.amount)} • ${l('Receipt Attached', 'Bukti Kuitansi Terlampir')}`,
+      pic: f.maker?.name || l('Class PIC', 'PIC Kelas'),
+      picRole: l('Maker / PIC', 'Pembuat / PIC'),
+      approvalPosition: l('Awaiting Manager / Checker', 'Menunggu Manajer / Pemeriksa'),
       approvalBadgeClass: 'bg-amber-50 text-amber-700',
       approvalDotClass: 'bg-amber-500',
-      actionLabel: 'Review & Approve',
+      actionLabel: l('Review & Approve', 'Tinjau & Setujui'),
       actionType: 'voucher',
       entityId: f.id,
       date: f.created_at || '2026-05-10'
@@ -76,16 +79,16 @@ const priorityQueueData = computed(() => {
     items.push({
       id: `CLS-${c.id}`,
       code: c.class_code || `#CLS-2026-${String(c.id).padStart(3, '0')}`,
-      type: 'Class (Dual-Control)',
+      type: l('Class (Dual-Control)', 'Kelas (Kendali Ganda)'),
       typeColor: 'text-blue-600',
-      title: `${c.program?.title || 'Batch Diklat'} - ${c.batch_name}`,
-      subtitle: `${c.location_or_url || 'BWS Learning Center'} • Kuota ${c.max_quota} Peserta`,
+      title: `${c.program?.title || l('Training Batch', 'Angkatan Pelatihan')} - ${c.batch_name}`,
+      subtitle: `${c.location_or_url || 'BWS Learning Center'} • ${l('Quota {quota} Participants', 'Kuota {quota} Peserta', { quota: c.max_quota })}`,
       pic: c.maker?.name || 'HC Training Maker',
-      picRole: 'HC Maker',
-      approvalPosition: 'Menunggu HC Learning Head (Checker)',
+      picRole: l('HC Maker', 'Pembuat HC'),
+      approvalPosition: l('Awaiting HC Learning Head (Checker)', 'Menunggu Kepala Pembelajaran HC (Pemeriksa)'),
       approvalBadgeClass: 'bg-blue-50 text-blue-700',
       approvalDotClass: 'bg-blue-500',
-      actionLabel: 'Otorisasi Checker',
+      actionLabel: l('Checker Authorization', 'Otorisasi Pemeriksa'),
       actionType: 'class',
       entityId: c.id,
       date: c.created_at || '2026-05-12'
@@ -94,37 +97,37 @@ const priorityQueueData = computed(() => {
 
   // Pending TNA Proposals (Multi-Approval Pipeline)
   props.tnaProposals.filter(t => ['SUBMITTED', 'CHECKER_REVIEW', 'APPROVER_REVIEW', 'REVISION'].includes(t.status)).forEach(t => {
-    let approvalPosition = 'Menunggu Review HCBP'
+    let approvalPosition = l('Awaiting HCBP Review', 'Menunggu Tinjauan HCBP')
     let approvalBadgeClass = 'bg-purple-50 text-purple-700'
     let approvalDotClass = 'bg-purple-600'
-    let actionLabel = 'Validasi HCBP'
+    let actionLabel = l('HCBP Validation', 'Validasi HCBP')
 
     if (t.status === 'CHECKER_REVIEW') {
-      approvalPosition = 'Menunggu Checker HC Learning'
+      approvalPosition = l('Awaiting HC Learning Checker', 'Menunggu Pemeriksa Pembelajaran HC')
       approvalBadgeClass = 'bg-blue-50 text-blue-700'
       approvalDotClass = 'bg-[#0067AC]'
-      actionLabel = 'Otorisasi Checker'
+      actionLabel = l('Checker Authorization', 'Otorisasi Pemeriksa')
     } else if (t.status === 'APPROVER_REVIEW') {
-      approvalPosition = 'Menunggu Kadiv HC / BoD'
+      approvalPosition = l('Awaiting HC Div Head / BoD', 'Menunggu Kepala Divisi HC / Direksi')
       approvalBadgeClass = 'bg-amber-50 text-amber-700'
       approvalDotClass = 'bg-amber-500'
-      actionLabel = 'Sign-Off Kadiv'
+      actionLabel = l('Div Head Sign-Off', 'Pengesahan Kadiv')
     } else if (t.status === 'REVISION') {
-      approvalPosition = 'Perlu Revisi Dept Head'
+      approvalPosition = l('Requires Dept Head Revision', 'Perlu Revisi Kepala Departemen')
       approvalBadgeClass = 'bg-rose-50 text-rose-700'
       approvalDotClass = 'bg-rose-500'
-      actionLabel = 'Perbaiki Usulan'
+      actionLabel = l('Revise Proposal', 'Perbaiki Usulan')
     }
 
     items.push({
       id: `TNA-${t.id}`,
       code: t.proposal_code || `#TNA-2026-${String(t.id).padStart(3, '0')}`,
-      type: 'TNA (Perencanaan)',
+      type: l('TNA (Annual Plan)', 'TNA (Perencanaan)'),
       typeColor: 'text-[#002855]',
-      title: `Usulan TNA Divisi ${t.department} - Tahun ${t.year}`,
-      subtitle: `Estimasi Anggaran: ${formatRupiah(t.total_budget_requested)} • ${t.items?.length || 0} Mata Diklat`,
+      title: l('{dept} Division TNA Proposal - Year {year}', 'Usulan TNA Divisi {dept} - Tahun {year}', { dept: t.department, year: t.year }),
+      subtitle: l('Estimated Budget: {budget} • {count} Training Items', 'Estimasi Anggaran: {budget} • {count} Mata Pelatihan', { budget: formatRupiah(t.total_budget_requested), count: t.items?.length || 0 }),
       pic: t.proposer?.name || 'Dept Head',
-      picRole: 'Dept Head',
+      picRole: l('Dept Head', 'Kepala Departemen'),
       approvalPosition,
       approvalBadgeClass,
       approvalDotClass,
@@ -141,16 +144,16 @@ const priorityQueueData = computed(() => {
       {
         id: 'TRX-2026-089',
         code: '#TRX-2026-089',
-        type: 'Transaction (Reimburse)',
+        type: l('Transaction (Reimbursement)', 'Transaksi (Penggantian Biaya)'),
         typeColor: 'text-[#0067AC]',
-        title: 'Reimburse Ujian Sertifikasi SMR Level 2 (12 Peserta)',
-        subtitle: 'Rp 42.000.000 • Bukti Kwitansi LSPP Terlampir',
+        title: l('SMR Level 2 Certification Exam Reimbursement (12 Participants)', 'Penggantian Biaya Ujian Sertifikasi SMR Tingkat 2 (12 Peserta)'),
+        subtitle: l('IDR 42,000,000 • Official LSPP Receipt Attached', 'Rp 42.000.000 • Bukti Kuitansi Resmi LSPP Terlampir'),
         pic: 'Nadia Putri',
-        picRole: 'Class PIC',
-        approvalPosition: 'Menunggu Manager L&D',
+        picRole: l('Class PIC', 'PIC Kelas'),
+        approvalPosition: l('Awaiting L&D Manager', 'Menunggu Manajer L&D'),
         approvalBadgeClass: 'bg-amber-50 text-amber-700',
         approvalDotClass: 'bg-amber-500',
-        actionLabel: 'Review & Approve',
+        actionLabel: l('Review & Approve', 'Tinjau & Setujui'),
         actionType: 'voucher',
         entityId: 1,
         date: '2026-05-10'
@@ -158,16 +161,16 @@ const priorityQueueData = computed(() => {
       {
         id: 'RPT-2026-Q2',
         code: '#RPT-2026-Q2',
-        type: 'All Training Report',
+        type: l('Training Report', 'Laporan Pelatihan'),
         typeColor: 'text-blue-600',
-        title: 'Laporan Evaluasi & Realisasi Pelatihan Kuartal II 2026',
-        subtitle: 'Sudah Direview Supervisor L&D • Butuh Approved (1) & (2)',
+        title: l('Q2 2026 Training Evaluation & Realization Report', 'Laporan Evaluasi & Realisasi Pelatihan Triwulan II 2026'),
+        subtitle: l('Reviewed by L&D Supervisor • Awaiting Tier 1 & Tier 2 Sign-Off', 'Sudah Ditinjau Supervisor L&D • Membutuhkan Pengesahan Tahap 1 & 2'),
         pic: 'Hendra Wijaya',
         picRole: 'Spv L&D',
-        approvalPosition: 'Approved Report (1) Mgr',
+        approvalPosition: l('Sign-Off Level 1 (Manager)', 'Pengesahan Tahap 1 (Manajer)'),
         approvalBadgeClass: 'bg-purple-50 text-purple-700',
         approvalDotClass: 'bg-purple-600',
-        actionLabel: 'Sign-Off Report',
+        actionLabel: l('Sign-Off Report', 'Sahkan Laporan'),
         actionType: 'report',
         entityId: 2,
         date: '2026-05-12'
@@ -175,16 +178,16 @@ const priorityQueueData = computed(() => {
       {
         id: 'TSK-2026-041',
         code: '#TSK-2026-041',
-        type: 'Task (Class Activity)',
+        type: l('Task (Class Activity)', 'Penugasan (Aktivitas Kelas)'),
         typeColor: 'text-[#0067AC]',
-        title: 'Action Learning Project: Credit Analyst Batch IV',
-        subtitle: '25/25 Peserta telah Upload File • Direview oleh PIC',
+        title: l('Action Learning Project: Credit Analyst Batch IV', 'Proyek Pembelajaran Aksi: Analis Kredit Angkatan IV'),
+        subtitle: l('25/25 Participants Submitted • Reviewed by PIC', '25/25 Peserta Sudah Mengunggah Berkas • Ditinjau oleh PIC'),
         pic: 'Rina Melati',
-        picRole: 'Class PIC',
-        approvalPosition: 'Menunggu Spv, Mgr & Kadiv',
+        picRole: l('Class PIC', 'PIC Kelas'),
+        approvalPosition: l('Awaiting Spv, Mgr & Div Head', 'Menunggu Supervisor, Manajer & Kepala Divisi'),
         approvalBadgeClass: 'bg-[#EBF4FC] text-[#0067AC]',
         approvalDotClass: 'bg-[#0067AC]',
-        actionLabel: 'Buka Modul Task',
+        actionLabel: l('Open Task Module', 'Buka Modul Penugasan'),
         actionType: 'task',
         entityId: 3,
         date: '2026-05-14'
@@ -195,13 +198,13 @@ const priorityQueueData = computed(() => {
   return items
 })
 
-const priorityColumns = [
-  { key: 'code', label: 'Modul & ID', sortable: true },
-  { key: 'title', label: 'Deskripsi Aktivitas', sortable: true },
-  { key: 'pic', label: 'Pengaju / PIC', sortable: true },
-  { key: 'approvalPosition', label: 'Posisi Approval Saat Ini', sortable: true },
-  { key: 'date', label: 'Tanggal Pengajuan', sortable: true, format: (val) => val ? val.substring(0, 10) : '-' }
-]
+const priorityColumns = computed(() => [
+  { key: 'code', label: l('Module & ID', 'Modul & ID'), sortable: true },
+  { key: 'title', label: l('Activity Description', 'Deskripsi Aktivitas'), sortable: true },
+  { key: 'pic', label: l('Requester / PIC', 'Pengaju / PIC'), sortable: true },
+  { key: 'approvalPosition', label: l('Current Approval Stage', 'Posisi Persetujuan Saat Ini'), sortable: true },
+  { key: 'date', label: l('Submission Date', 'Tanggal Pengajuan'), sortable: true, format: (val) => val ? val.substring(0, 10) : '-' }
+])
 </script>
 
 <template>
@@ -219,13 +222,13 @@ const priorityColumns = [
             <div class="bg-white rounded-3xl p-5 shadow-sm flex-1 flex flex-col justify-between border border-gray-100">
               <div class="flex items-start justify-between mb-3">
                 <div>
-                  <h2 class="font-bold text-base text-gray-900">Pagu Anggaran L&D 2026</h2>
-                  <p class="text-xs text-gray-400">Approved TNA Budget vs Realisasi</p>
+                  <h2 class="font-bold text-base text-gray-900">{{ $l('2026 L&D Budget Ceiling', 'Pagu Anggaran L&D 2026') }}</h2>
+                  <p class="text-xs text-gray-400">{{ $l('Approved TNA Budget vs. Realization', 'Anggaran TNA Disetujui vs. Realisasi') }}</p>
                 </div>
                 <button
                   @click="emit('switch-view', 'tna')"
                   class="w-8 h-8 rounded-full bg-[#f4f6f5] flex items-center justify-center text-gray-600 hover:bg-[#0067AC] hover:text-white transition"
-                  title="Lihat Detail TNA"
+                  :title="$l('View TNA Details', 'Lihat Rincian TNA')"
                 >
                   <ArrowUpRight class="w-4 h-4" />
                 </button>
@@ -242,14 +245,14 @@ const priorityColumns = [
                   <span class="text-[10px] bg-white/15 px-2.5 py-0.5 rounded-full font-semibold text-sky-200">FY 2026</span>
                 </div>
                 <div class="my-3 relative z-10">
-                  <p class="text-[11px] text-sky-200/90 mb-0.5">Total Approved Training Budget</p>
+                  <p class="text-[11px] text-sky-200/90 mb-0.5">{{ $l('Total Approved Training Budget', 'Total Anggaran Pelatihan Disetujui') }}</p>
                   <p class="text-2xl font-bold tracking-tight text-white">
                     {{ formatRupiah(kpis.total_budget_approved || 8450000000) }}
                   </p>
                 </div>
                 <div class="flex items-center justify-between text-xs text-sky-200/90 pt-2 border-t border-white/15 relative z-10">
-                  <span>Terserap: <strong class="text-white">{{ formatRupiah(kpis.total_budget_disbursed || 5180000000) }} ({{ kpis.budget_utilization_pct || 61.3 }}%)</strong></span>
-                  <span class="text-white font-medium">34 Program</span>
+                  <span>{{ $l('Utilized:', 'Terserap:') }} <strong class="text-white">{{ formatRupiah(kpis.total_budget_disbursed || 5180000000) }} ({{ kpis.budget_utilization_pct || 61.3 }}%)</strong></span>
+                  <span class="text-white font-medium">{{ $l('34 Programs', '34 Program') }}</span>
                 </div>
               </div>
             </div>
@@ -257,11 +260,11 @@ const priorityColumns = [
             <!-- Mandatory Certification KPI Card -->
             <div class="bg-white rounded-3xl px-5 py-4 shadow-sm flex items-center justify-between border border-gray-100">
               <div>
-                <p class="text-xs text-gray-400 mb-0.5">Realisasi Sertifikasi Wajib (YTD)</p>
-                <p class="text-xl font-bold text-gray-900">412 / 450 Lulus</p>
+                <p class="text-xs text-gray-400 mb-0.5">{{ $l('Mandatory Certification Fulfillment (YTD)', 'Realisasi Sertifikasi Wajib (Tahun Berjalan)') }}</p>
+                <p class="text-xl font-bold text-gray-900">{{ $l('412 / 450 Passed', '412 / 450 Lulus') }}</p>
               </div>
               <span class="bg-[#0067AC] text-white text-xs font-semibold px-3 py-1 rounded-full">
-                91.5% Target
+                {{ $l('91.5% Target', '91,5% Target') }}
               </span>
             </div>
           </div>
@@ -274,27 +277,27 @@ const priorityColumns = [
                   <BarChart2 class="w-4 h-4 text-[#0067AC]" />
                 </div>
                 <div>
-                  <h2 class="font-bold text-base text-gray-900">Realisasi Kelas & Serapan Anggaran</h2>
-                  <p class="text-[11px] text-gray-400">Monitoring Bulanan Training Operation 2026</p>
+                  <h2 class="font-bold text-base text-gray-900">{{ $l('Class Realization & Budget Absorption', 'Realisasi Kelas & Serapan Anggaran') }}</h2>
+                  <p class="text-[11px] text-gray-400">{{ $l('2026 Monthly Training Operations Monitoring', 'Pemantauan Bulanan Operasional Pelatihan 2026') }}</p>
                 </div>
               </div>
               <div class="bg-[#f4f6f5] p-1 rounded-full flex items-center text-xs font-medium">
-                <span class="px-3 py-1 rounded-full bg-[#0067AC] text-white font-semibold shadow-xs">S1 2026</span>
-                <span class="px-3 py-1 rounded-full text-gray-500">Full Year</span>
+                <span class="px-3 py-1 rounded-full bg-[#0067AC] text-white font-semibold shadow-xs">{{ $l('H1 2026', 'Semester 1 2026') }}</span>
+                <span class="px-3 py-1 rounded-full text-gray-500">{{ $l('Full Year', 'Satu Tahun Penuh') }}</span>
               </div>
             </div>
 
             <!-- Chart Bars -->
             <div class="mt-6 flex gap-4 items-end h-52 relative">
               <div class="flex flex-col justify-between h-full text-[11px] text-gray-400 pb-6 pr-1 select-none">
-                <span>1.5M</span><span>1.2M</span><span>900jt</span><span>600jt</span><span>300jt</span><span>0</span>
+                <span>{{ $l('1.5B', '1,5M') }}</span><span>{{ $l('1.2B', '1,2M') }}</span><span>{{ $l('900M', '900jt') }}</span><span>{{ $l('600M', '600jt') }}</span><span>{{ $l('300M', '300jt') }}</span><span>0</span>
               </div>
               <div class="flex-1 h-full grid grid-cols-6 gap-3 items-end pt-8">
                 
                 <!-- JAN -->
                 <div class="flex flex-col items-center gap-2 h-full justify-end relative group cursor-pointer">
                   <div class="absolute -top-7 bg-gray-900 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-10">
-                    8 Kelas
+                    {{ $l('8 Classes', '8 Kelas') }}
                     <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
                   </div>
                   <div class="w-full max-w-[42px] h-[44%] rounded-full bg-[#93C5FD] transition hover:brightness-95"></div>
@@ -304,7 +307,7 @@ const priorityColumns = [
                 <!-- FEB -->
                 <div class="flex flex-col items-center gap-2 h-full justify-end relative group cursor-pointer">
                   <div class="absolute -top-7 bg-gray-900 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-10">
-                    12 Kelas
+                    {{ $l('12 Classes', '12 Kelas') }}
                     <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
                   </div>
                   <div class="w-full max-w-[42px] h-[68%] rounded-full bg-[#93C5FD] transition hover:brightness-95"></div>
@@ -314,7 +317,7 @@ const priorityColumns = [
                 <!-- MAR -->
                 <div class="flex flex-col items-center gap-2 h-full justify-end relative group cursor-pointer">
                   <div class="absolute -top-7 bg-gray-900 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-10">
-                    10 Kelas
+                    {{ $l('10 Classes', '10 Kelas') }}
                     <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
                   </div>
                   <div class="w-full max-w-[42px] h-[55%] rounded-full bg-[#93C5FD] transition hover:brightness-95"></div>
@@ -324,27 +327,27 @@ const priorityColumns = [
                 <!-- APR -->
                 <div class="flex flex-col items-center gap-2 h-full justify-end relative group cursor-pointer">
                   <div class="absolute -top-7 bg-gray-900 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-10">
-                    14 Kelas
+                    {{ $l('14 Classes', '14 Kelas') }}
                     <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
                   </div>
                   <div class="w-full max-w-[42px] h-[75%] rounded-full bg-[#93C5FD] transition hover:brightness-95"></div>
                   <span class="text-[11px] text-gray-400 group-hover:text-gray-700">APR</span>
                 </div>
 
-                <!-- MEI (Active Peak) -->
+                <!-- MAY (Active Peak) -->
                 <div class="flex flex-col items-center gap-2 h-full justify-end relative group cursor-pointer">
                   <div class="absolute -top-7 bg-gray-900 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-md whitespace-nowrap z-10">
-                    18 Kelas (Puncak)
+                    {{ $l('18 Classes (Peak)', '18 Kelas (Puncak)') }}
                     <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
                   </div>
                   <div class="w-full max-w-[42px] h-[95%] rounded-full bg-[#0067AC] transition hover:brightness-110 shadow-sm"></div>
-                  <span class="text-[11px] font-bold text-[#0067AC]">MEI</span>
+                  <span class="text-[11px] font-bold text-[#0067AC]">{{ $l('MAY', 'MEI') }}</span>
                 </div>
 
                 <!-- JUN -->
                 <div class="flex flex-col items-center gap-2 h-full justify-end relative group cursor-pointer">
                   <div class="absolute -top-7 bg-gray-900 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-10">
-                    15 Kelas
+                    {{ $l('15 Classes', '15 Kelas') }}
                     <div class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1.5 h-1.5 bg-gray-900 rotate-45"></div>
                   </div>
                   <div class="w-full max-w-[42px] h-[80%] rounded-full bg-[#93C5FD] transition hover:brightness-95"></div>
@@ -357,14 +360,14 @@ const priorityColumns = [
           </div>
         </div>
 
-        <!-- Antrean Review & Approval Prioritas Powered by Standard DataTable -->
+        <!-- Priority Review & Approval Queue DataTable -->
         <DataTable
           :data="priorityQueueData"
           :columns="priorityColumns"
           date-key="date"
-          title="Antrean Review & Approval Prioritas"
-          subtitle="Dokumen lintas modul (Program, Kelas, Task, Transaction, Report) yang membutuhkan tindakan"
-          export-filename="antrean_approval_prioritas_bws"
+          :title="$l('Priority Review & Approval Queue', 'Antrean Tinjauan & Persetujuan Prioritas')"
+          :subtitle="$l('Cross-module items (Programs, Classes, Tasks, Transactions, Reports) awaiting action', 'Dokumen lintas modul (Program, Kelas, Tugas, Transaksi, Laporan) yang membutuhkan tindakan')"
+          export-filename="bws_priority_approval_queue"
           :default-per-page="5"
         >
           <!-- Custom Header Action: Switch to Transaction Module -->
@@ -373,7 +376,7 @@ const priorityColumns = [
               @click="emit('switch-view', 'transaction')"
               class="text-xs font-semibold text-[#0067AC] hover:text-[#003876] hover:underline flex items-center gap-1.5 transition"
             >
-              Lihat Semua Transaksi & Approval &rarr;
+              {{ $l('View All Transactions & Approvals', 'Lihat Semua Transaksi & Persetujuan') }} &rarr;
             </button>
           </template>
 
@@ -448,21 +451,21 @@ const priorityColumns = [
         <div class="bg-white rounded-3xl p-5 shadow-sm flex flex-col justify-between border border-gray-100">
           <div class="flex items-start justify-between">
             <div>
-              <h2 class="font-bold text-base text-gray-900">Total Jam Pelatihan (LIS)</h2>
-              <p class="text-xs text-gray-400">Akumulasi Learning Hours Karyawan BWS</p>
+              <h2 class="font-bold text-base text-gray-900">{{ $l('Total Training Hours (LIS)', 'Total Jam Pelatihan (LIS)') }}</h2>
+              <p class="text-xs text-gray-400">{{ $l('Cumulative BWS Employee Learning Hours', 'Akumulasi Jam Belajar Karyawan BWS') }}</p>
             </div>
             <button
               @click="emit('switch-view', 'participants')"
               class="w-8 h-8 rounded-full bg-[#f4f6f5] flex items-center justify-center text-gray-600 hover:bg-[#0067AC] hover:text-white transition"
-              title="Lihat Peserta"
+              :title="$l('View Participants', 'Lihat Peserta')"
             >
               <ArrowUpRight class="w-4 h-4" />
             </button>
           </div>
           
           <div class="text-center my-4">
-            <p class="text-3xl font-bold text-gray-900">28,450 <span class="text-sm text-gray-400 font-normal">Jam</span></p>
-            <p class="text-[11px] text-[#0067AC] font-semibold mt-0.5">+19.4% dibanding periode 2025</p>
+            <p class="text-3xl font-bold text-gray-900">28,450 <span class="text-sm text-gray-400 font-normal">{{ $l('Hours', 'Jam') }}</span></p>
+            <p class="text-[11px] text-[#0067AC] font-semibold mt-0.5">{{ $l('+19.4% compared to 2025 period', '+19,4% dibandingkan periode 2025') }}</p>
           </div>
 
           <!-- Mini Sparkline Simulation -->
@@ -476,44 +479,44 @@ const priorityColumns = [
           </div>
         </div>
 
-        <!-- Kalender & Agenda Pelatihan Pekan Ini -->
+        <!-- Weekly Training Agenda -->
         <div class="bg-white rounded-3xl p-5 shadow-sm flex flex-col gap-4 border border-gray-100">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="font-bold text-base text-gray-900">Agenda Pekan Ini</h2>
-              <p class="text-xs text-gray-400">Pelatihan Aktif BWS Learning Center</p>
+              <h2 class="font-bold text-base text-gray-900">{{ $l("This Week's Agenda", 'Agenda Pekan Ini') }}</h2>
+              <p class="text-xs text-gray-400">{{ $l('Active Classes at BWS Learning Center', 'Pelatihan Aktif di Pusat Pembelajaran BWS') }}</p>
             </div>
             <span class="text-xs font-semibold bg-[#EBF4FC] text-[#0067AC] px-2.5 py-1 rounded-full">
-              4 Batch
+              {{ $l('4 Batches', '4 Angkatan') }}
             </span>
           </div>
 
           <div class="space-y-3">
             <div class="p-3 rounded-2xl bg-[#f8faf9] border border-gray-100 flex items-start justify-between gap-2">
               <div>
-                <span class="text-[10px] font-bold text-[#0067AC] uppercase tracking-wide">Risk Management</span>
-                <p class="font-semibold text-xs text-gray-900 mt-0.5">SMR Level 2 Sertifikasi</p>
-                <p class="text-[11px] text-gray-400">12 Mei - 14 Mei 2026 • R. Diklat 101</p>
+                <span class="text-[10px] font-bold text-[#0067AC] uppercase tracking-wide">{{ $l('Risk Management', 'Manajemen Risiko') }}</span>
+                <p class="font-semibold text-xs text-gray-900 mt-0.5">{{ $l('SMR Level 2 Certification', 'Sertifikasi Manajemen Risiko Tingkat 2') }}</p>
+                <p class="text-[11px] text-gray-400">{{ $l('May 12 - May 14, 2026 • Training Room 101', '12 Mei - 14 Mei 2026 • Ruang Pelatihan 101') }}</p>
               </div>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700">Ongoing</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700">{{ $l('Ongoing', 'Berlangsung') }}</span>
             </div>
 
             <div class="p-3 rounded-2xl bg-[#f8faf9] border border-gray-100 flex items-start justify-between gap-2">
               <div>
-                <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wide">Lending & Credit</span>
-                <p class="font-semibold text-xs text-gray-900 mt-0.5">Commercial Credit Analysis IV</p>
-                <p class="text-[11px] text-gray-400">14 Mei - 16 Mei 2026 • Hybrid Zoom</p>
+                <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wide">{{ $l('Lending & Credit', 'Kredit & Pembiayaan') }}</span>
+                <p class="font-semibold text-xs text-gray-900 mt-0.5">{{ $l('Commercial Credit Analysis IV', 'Analisis Kredit Komersial IV') }}</p>
+                <p class="text-[11px] text-gray-400">{{ $l('May 14 - May 16, 2026 • Hybrid Zoom', '14 Mei - 16 Mei 2026 • Hibrida Zoom') }}</p>
               </div>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700">Confirmed</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700">{{ $l('Confirmed', 'Terkonfirmasi') }}</span>
             </div>
 
             <div class="p-3 rounded-2xl bg-[#f8faf9] border border-gray-100 flex items-start justify-between gap-2">
               <div>
-                <span class="text-[10px] font-bold text-purple-600 uppercase tracking-wide">Operational</span>
-                <p class="font-semibold text-xs text-gray-900 mt-0.5">Anti-Money Laundering (APU-PPT)</p>
-                <p class="text-[11px] text-gray-400">18 Mei 2026 • Portal Belajar LIS</p>
+                <span class="text-[10px] font-bold text-purple-600 uppercase tracking-wide">{{ $l('Operational', 'Operasional') }}</span>
+                <p class="font-semibold text-xs text-gray-900 mt-0.5">{{ $l('Anti-Money Laundering (AML-CFT)', 'Anti Pencucian Uang (APU-PPT)') }}</p>
+                <p class="text-[11px] text-gray-400">{{ $l('May 18, 2026 • LIS Learning Portal', '18 Mei 2026 • Portal Pembelajaran LIS') }}</p>
               </div>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700">Upcoming</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700">{{ $l('Upcoming', 'Akan Datang') }}</span>
             </div>
           </div>
         </div>

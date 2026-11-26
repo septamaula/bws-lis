@@ -19,6 +19,8 @@ import {
 import { useLearnerPortal, useSubmitTask } from '@/hooks/useLearnerData';
 import { EnrolledClass, LearnerUser } from '@/types/learner';
 import apiClient from '@/api/client';
+import { useI18n } from '@/i18n';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 interface LearnerDashboardProps {
   user: LearnerUser;
@@ -26,6 +28,7 @@ interface LearnerDashboardProps {
 }
 
 export default function LearnerDashboard({ user, onLogout }: LearnerDashboardProps) {
+  const { l } = useI18n();
   const [activeTab, setActiveTab] = useState<'classes' | 'tasks' | 'certificates'>('classes');
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [selectedCert, setSelectedCert] = useState<EnrolledClass | null>(null);
@@ -70,11 +73,11 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
 
   const handleSubmitTask = async (enrollmentId: number) => {
     try {
-      const res = await submitTaskMutation.mutateAsync({ enrollmentId });
-      setToastMsg(res.message || 'Tugas Action Plan berhasil dikumpulkan!');
+      await submitTaskMutation.mutateAsync({ enrollmentId });
+      setToastMsg(l('Action Plan task submitted successfully!', 'Tugas Rencana Aksi berhasil dikumpulkan!'));
       setTimeout(() => setToastMsg(''), 4000);
     } catch {
-      setToastMsg('Gagal mengunggah tugas. Periksa koneksi jaringan.');
+      setToastMsg(l('Failed to upload task. Please check your network connection.', 'Gagal mengunggah tugas. Periksa koneksi jaringan.'));
     }
   };
 
@@ -87,7 +90,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
       {!isOnline && (
         <div className="bg-amber-600 text-white text-xs px-4 py-2 flex items-center justify-center gap-2 sticky top-0 z-50 shadow-sm animate-pulse">
           <WifiOff className="w-4 h-4" />
-          <span>Mode Offline Aktif — Anda tetap dapat melihat materi & jadwal yang tersimpan.</span>
+          <span>{l('Offline Mode Active — You can still view saved materials & schedules.', 'Mode Luring Aktif — Anda tetap dapat melihat materi & jadwal yang tersimpan.')}</span>
         </div>
       )}
 
@@ -109,7 +112,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
               <div className="flex items-center gap-1.5">
                 <span className="font-extrabold text-sm tracking-tight text-[#002855]">LIS</span>
                 <span className="bg-[#EBF4FC] text-[#0067AC] text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-blue-200">
-                  Portal Belajar
+                  {l('Learning Portal', 'Portal Belajar')}
                 </span>
               </div>
               <p className="text-[10px] text-gray-400">Learning Integrated System</p>
@@ -117,10 +120,12 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
           </div>
 
           <div className="flex items-center gap-2">
+            <LanguageSwitcher compact />
+
             <button
               onClick={() => refetch()}
               className="w-8 h-8 rounded-full bg-[#f4f6f5] hover:bg-blue-50 hover:text-[#0067AC] text-gray-500 flex items-center justify-center transition"
-              title="Sinkronkan Data"
+              title={l('Sync Data', 'Sinkronkan Data')}
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-[#0067AC]' : ''}`} />
             </button>
@@ -128,15 +133,15 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             <a
               href={opsPortalUrl}
               className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-xs font-semibold text-gray-700 transition"
-              title="Buka Portal Admin"
+              title={l('Open Admin Portal', 'Buka Portal Admin')}
             >
-              <span>Portal Admin &rarr;</span>
+              <span>{l('Admin Portal', 'Portal Admin')} &rarr;</span>
             </a>
 
             <button
               onClick={handleLogoutClick}
               className="w-8 h-8 rounded-full bg-[#f4f6f5] hover:bg-rose-50 hover:text-rose-600 text-gray-500 flex items-center justify-center transition"
-              title="Keluar"
+              title={l('Sign Out', 'Keluar')}
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -166,10 +171,10 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
               </div>
               <div>
                 <h2 className="font-bold text-base text-gray-900 leading-tight">
-                  {currentUser?.name || 'Pegawai Bank Woori Saudara'}
+                  {currentUser?.name || l('Bank Woori Saudara Employee', 'Pegawai Bank Woori Saudara')}
                 </h2>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  <span className="font-mono text-[#0067AC] font-semibold">{currentUser?.nik || 'NIK-BWS'}</span> • {currentUser?.department || 'Kantor Cabang'}
+                  <span className="font-mono text-[#0067AC] font-semibold">{currentUser?.nik || 'NIK-BWS'}</span> • {currentUser?.department || l('Branch Office', 'Kantor Cabang')}
                 </p>
               </div>
             </div>
@@ -177,7 +182,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             <div className="flex items-center gap-2 self-start sm:self-auto">
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#EBF4FC] text-[#0067AC]">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>OJK 20 Jam Target</span>
+                <span>{l('OJK 20-Hour Target', 'Target OJK 20 Jam')}</span>
               </span>
             </div>
           </div>
@@ -186,10 +191,10 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-gray-700 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-[#0067AC]" />
-                Akumulasi Jam Pelatihan 2026:
+                {l('2026 Accumulated Training Hours:', 'Akumulasi Jam Pelatihan 2026:')}
               </span>
               <span className="font-mono font-bold text-gray-900">
-                {kpis?.completed_hours ?? 16} / {kpis?.target_hours ?? 20} Jam
+                {kpis?.completed_hours ?? 16} / {kpis?.target_hours ?? 20} {l('Hrs', 'Jam')}
               </span>
             </div>
 
@@ -201,7 +206,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             </div>
 
             <p className="text-[10px] text-gray-400 text-right">
-              Tercapai <strong>{progressPercentage}%</strong> dari target tahunan
+              {l('Achieved', 'Tercapai')} <strong>{progressPercentage}%</strong> {l('of annual target', 'dari target tahunan')}
             </p>
           </div>
         </div>
@@ -217,7 +222,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             }`}
           >
             <Calendar className="w-3.5 h-3.5" />
-            <span>Kelas Saya ({enrolledClasses.length})</span>
+            <span>{l('My Classes', 'Kelas Saya')} ({enrolledClasses.length})</span>
           </button>
 
           <button
@@ -229,7 +234,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>Penugasan ({tasks.length})</span>
+            <span>{l('Assignments', 'Penugasan')} ({tasks.length})</span>
           </button>
 
           <button
@@ -241,7 +246,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             }`}
           >
             <Award className="w-3.5 h-3.5" />
-            <span>Sertifikat Digital</span>
+            <span>{l('Digital Certificates', 'Sertifikat Digital')}</span>
           </button>
         </div>
 
@@ -259,8 +264,8 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             {enrolledClasses.length === 0 ? (
               <div className="bg-white rounded-3xl p-8 text-center text-gray-400 border border-gray-100">
                 <BookOpen className="w-10 h-10 mx-auto text-gray-300 mb-2" />
-                <p className="font-semibold text-gray-700 text-sm">Belum Ada Kelas Terdaftar</p>
-                <p className="text-xs text-gray-400 mt-1">Anda akan menerima notifikasi saat HC Training mendaftarkan jadwal diklat baru.</p>
+                <p className="font-semibold text-gray-700 text-sm">{l('No Enrolled Classes Yet', 'Belum Ada Kelas Terdaftar')}</p>
+                <p className="text-xs text-gray-400 mt-1">{l('You will receive a notification once HC Training registers a new training schedule.', 'Anda akan menerima notifikasi saat Pelatihan HC mendaftarkan jadwal diklat baru.')}</p>
               </div>
             ) : (
               enrolledClasses.map((cls) => (
@@ -280,7 +285,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
                     <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 pt-1">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5 text-[#0067AC]" />
-                        {cls.start_date} s/d {cls.end_date}
+                        {cls.start_date} {l('to', 's/d')} {cls.end_date}
                       </span>
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5 text-rose-500" />
@@ -302,7 +307,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
                           cls.completion_status === 'PASSED' ? 'bg-[#0067AC]' : 'bg-blue-600'
                         }`}
                       ></span>
-                      {cls.completion_status === 'PASSED' ? 'Lulus' : `Progress ${cls.elapse_progress_pct}%`}
+                      {cls.completion_status === 'PASSED' ? l('Passed', 'Lulus') : l('Progress {pct}%', 'Progres {pct}%', { pct: cls.elapse_progress_pct })}
                     </span>
 
                     {cls.completion_status === 'PASSED' && (
@@ -311,7 +316,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
                         className="text-xs font-semibold text-[#0067AC] hover:underline flex items-center gap-1"
                       >
                         <Award className="w-3.5 h-3.5" />
-                        <span>Lihat Sertifikat</span>
+                        <span>{l('View Certificate', 'Lihat Sertifikat')}</span>
                       </button>
                     )}
                   </div>
@@ -327,7 +332,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             {tasks.length === 0 ? (
               <div className="bg-white rounded-3xl p-8 text-center text-gray-400 border border-gray-100">
                 <CheckCircle className="w-10 h-10 mx-auto text-emerald-400 mb-2" />
-                <p className="font-semibold text-gray-700 text-sm">Semua Penugasan Selesai</p>
+                <p className="font-semibold text-gray-700 text-sm">{l('All Assignments Completed', 'Semua Penugasan Selesai')}</p>
               </div>
             ) : (
               tasks.map((task) => (
@@ -335,17 +340,17 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
                   <div>
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{task.class_title}</span>
                     <h3 className="font-bold text-sm text-gray-900 mt-0.5">{task.title}</h3>
-                    <p className="text-xs text-gray-400 mt-1">Batas Pengumpulan: <strong>{task.deadline}</strong></p>
+                    <p className="text-xs text-gray-400 mt-1">{l('Submission Deadline:', 'Batas Pengumpulan:')} <strong>{task.deadline}</strong></p>
                   </div>
 
                   <div className="flex items-center gap-3 self-end sm:self-auto">
                     {task.grade !== null ? (
                       <span className="font-mono text-xs font-bold text-[#0067AC] bg-[#EBF4FC] px-3 py-1 rounded-full border border-blue-200">
-                        Nilai: {task.grade} / 100
+                        {l('Score:', 'Nilai:')} {task.grade} / 100
                       </span>
                     ) : task.status === 'SUBMITTED' ? (
                       <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded-full">
-                        Terkirim (Menunggu Nilai)
+                        {l('Submitted (Awaiting Grade)', 'Terkirim (Menunggu Nilai)')}
                       </span>
                     ) : (
                       <button
@@ -354,7 +359,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
                         className="px-4 py-1.5 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-xs disabled:opacity-50"
                       >
                         <UploadCloud className="w-3.5 h-3.5" />
-                        <span>{submitTaskMutation.isPending ? 'Mengunggah...' : 'Submit Action Plan'}</span>
+                        <span>{submitTaskMutation.isPending ? l('Uploading...', 'Mengunggah...') : l('Submit Action Plan', 'Kumpulkan Rencana Aksi')}</span>
                       </button>
                     )}
                   </div>
@@ -374,7 +379,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
                     <Award className="w-5 h-5" />
                   </div>
                   <span className="text-[10px] text-[#0067AC] bg-[#EBF4FC] px-2 py-0.5 rounded-full font-semibold">
-                    Resmi
+                    {l('Official', 'Resmi')}
                   </span>
                 </div>
 
@@ -389,7 +394,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
                     className="w-full py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-2xs"
                   >
                     <Printer className="w-3.5 h-3.5" />
-                    <span>Buka / Cetak E-Sertifikat</span>
+                    <span>{l('Open / Print E-Certificate', 'Buka / Cetak E-Sertifikat')}</span>
                   </button>
                 </div>
               </div>
@@ -408,7 +413,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <Award className="w-5 h-5 text-[#0067AC]" />
-                <h3 className="font-bold text-base text-gray-900">E-Sertifikat Resmi Bank Woori Saudara</h3>
+                <h3 className="font-bold text-base text-gray-900">{l('Official Bank Woori Saudara E-Certificate', 'E-Sertifikat Resmi Bank Woori Saudara')}</h3>
               </div>
               <button
                 onClick={() => setSelectedCert(null)}
@@ -420,16 +425,16 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
 
             <div className="border-4 border-double border-[#0067AC]/30 rounded-2xl p-6 bg-gradient-to-b from-[#fbfdfc] to-white text-center space-y-3">
               <p className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">PT BANK WOORI SAUDARA INDONESIA 1906, TBK</p>
-              <h2 className="text-xl font-serif font-black uppercase text-gray-900">SERTIFIKAT KELULUSAN</h2>
+              <h2 className="text-xl font-serif font-black uppercase text-gray-900">{l('CERTIFICATE OF COMPLETION', 'SERTIFIKAT KELULUSAN')}</h2>
               <p className="text-[10px] font-mono text-gray-400">NO: {selectedCert.certificate_number}</p>
-              <p className="text-xs text-gray-500 pt-2">Diberikan kepada:</p>
+              <p className="text-xs text-gray-500 pt-2">{l('Awarded to:', 'Diberikan kepada:')}</p>
               <h3 className="text-lg font-bold text-[#0067AC]">{currentUser?.name}</h3>
-              <p className="text-xs text-gray-600">Atas kelulusan memuaskan pada program:</p>
+              <p className="text-xs text-gray-600">{l('For satisfactory completion of the training program:', 'Atas kelulusan memuaskan pada program:')}</p>
               <h4 className="font-bold text-sm text-gray-900">{selectedCert.program_title}</h4>
               
               <div className="pt-4 flex items-center justify-center gap-2">
                 <QrCode className="w-12 h-12 text-[#0067AC]" />
-                <span className="text-[9px] text-gray-400 font-medium">Verifikasi Digital Resmi BWS</span>
+                <span className="text-[9px] text-gray-400 font-medium">{l('Official BWS Digital Verification', 'Verifikasi Digital Resmi BWS')}</span>
               </div>
             </div>
 
@@ -439,7 +444,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
                 className="px-4 py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-xs"
               >
                 <Printer className="w-3.5 h-3.5" />
-                <span>Cetak Lembar Sertifikat</span>
+                <span>{l('Print Certificate Copy', 'Cetak Lembar Sertifikat')}</span>
               </button>
             </div>
           </div>
@@ -455,7 +460,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
           }`}
         >
           <Calendar className="w-4 h-4" />
-          <span>Kelas</span>
+          <span>{l('Classes', 'Kelas')}</span>
         </button>
 
         <button
@@ -465,7 +470,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
           }`}
         >
           <FileText className="w-4 h-4" />
-          <span>Tugas</span>
+          <span>{l('Tasks', 'Tugas')}</span>
         </button>
 
         <button
@@ -475,7 +480,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
           }`}
         >
           <Award className="w-4 h-4" />
-          <span>Sertifikat</span>
+          <span>{l('Certificates', 'Sertifikat')}</span>
         </button>
 
         <a
@@ -483,7 +488,7 @@ export default function LearnerDashboard({ user, onLogout }: LearnerDashboardPro
           className="flex flex-col items-center text-[10px] font-semibold gap-1 text-gray-400 hover:text-gray-700"
         >
           <User className="w-4 h-4" />
-          <span>Admin</span>
+          <span>{l('Admin', 'Admin')}</span>
         </a>
       </nav>
 

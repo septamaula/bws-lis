@@ -20,9 +20,12 @@ import {
   X,
   FileText
 } from 'lucide-vue-next'
+import { useI18n } from '@/i18n'
 import apiClient from '@/api/client'
 import ProgramCreatePage from './programs/ProgramCreatePage.vue'
 import ProgramDetailPage from './programs/ProgramDetailPage.vue'
+
+const { l, t, formatLocaleDate } = useI18n()
 
 const props = defineProps({
   trainingPrograms: {
@@ -90,17 +93,11 @@ function formatRupiah(num) {
 
 function formatDateDisplay(d) {
   if (!d) return '-'
-  try {
-    const date = new Date(d)
-    if (isNaN(date.getTime())) return d
-    return new Intl.DateTimeFormat('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: '2-digit'
-    }).format(date).replace(/\s/g, '-')
-  } catch {
-    return d
-  }
+  return formatLocaleDate(d, {
+    day: '2-digit',
+    month: 'short',
+    year: '2-digit'
+  }).replace(/[\s,]+/g, '-')
 }
 
 async function fetchPrograms() {
@@ -134,26 +131,26 @@ const availableYears = computed(() => {
 })
 
 const yearOptions = computed(() => [
-  { value: 'ALL', label: 'Semua Tahun' },
-  ...availableYears.value.map(yr => ({ value: yr, label: `Tahun ${yr}` }))
+  { value: 'ALL', label: l('All Years', 'Semua Tahun') },
+  ...availableYears.value.map(yr => ({ value: yr, label: l(`Year ${yr}`, `Tahun ${yr}`) }))
 ])
 
-const processOptions = [
-  { value: 'ALL', label: 'Semua Status' },
-  { value: 'APPROVED', label: 'Disetujui Final' },
-  { value: 'SUBMITTED', label: 'Menunggu Review' },
-  { value: 'DRAFT', label: 'Draft' }
-]
+const processOptions = computed(() => [
+  { value: 'ALL', label: l('All Statuses', 'Semua Status') },
+  { value: 'APPROVED', label: l('Final Approved', 'Disetujui Final') },
+  { value: 'SUBMITTED', label: l('Pending Review', 'Menunggu Peninjauan') },
+  { value: 'DRAFT', label: l('Draft', 'Draf') }
+])
 
-const programColumns = [
-  { key: 'program_code', label: 'Program ID', sortable: true, align: 'center', width: '120px' },
-  { key: 'title', label: 'Program Pelatihan & Kategori', sortable: true },
-  { key: 'start_date', label: 'Jadwal Diklat', sortable: true, width: '160px', align: 'center' },
-  { key: 'location', label: 'Lokasi / Ruang', sortable: true, width: '140px' },
-  { key: 'facilitator', label: 'Fasilitator', sortable: true, width: '150px' },
+const programColumns = computed(() => [
+  { key: 'program_code', label: l('Program ID', 'Kode Program'), sortable: true, align: 'center', width: '120px' },
+  { key: 'title', label: l('Training Program & Category', 'Program Pelatihan & Kategori'), sortable: true },
+  { key: 'start_date', label: l('Schedule', 'Jadwal Diklat'), sortable: true, width: '160px', align: 'center' },
+  { key: 'location', label: l('Location / Room', 'Lokasi / Ruang'), sortable: true, width: '140px' },
+  { key: 'facilitator', label: l('Facilitator', 'Fasilitator'), sortable: true, width: '150px' },
   {
     key: 'total_budget',
-    label: 'Pagu Anggaran',
+    label: l('Budget Ceiling', 'Pagu Anggaran'),
     sortable: true,
     align: 'right',
     width: '130px',
@@ -161,13 +158,13 @@ const programColumns = [
   },
   {
     key: 'realization_amount',
-    label: 'Realisasi',
+    label: l('Realization', 'Realisasi'),
     sortable: true,
     align: 'right',
     width: '130px',
     format: val => (val > 0 ? formatRupiah(val) : '-')
   }
-]
+])
 
 function openCreate() {
   selectedProgramId.value = null
@@ -185,7 +182,7 @@ function openEdit(id) {
 }
 
 function handleProgramCreated(msg) {
-  flashSuccess.value = msg || 'Program kerja berhasil disimpan.'
+  flashSuccess.value = l('Work program has been saved.', 'Program kerja berhasil disimpan.')
   programViewMode.value = 'list'
   fetchPrograms()
   setTimeout(() => {
@@ -203,7 +200,10 @@ async function executeDelete() {
   deleting.value = true
   try {
     const { data } = await apiClient.delete(`/programs/${targetDeleteProgram.value.id}`)
-    flashSuccess.value = data.message || `Program ${targetDeleteProgram.value.program_code} berhasil dihapus.`
+    flashSuccess.value = l(
+      `Program ${targetDeleteProgram.value.program_code} has been deleted.`,
+      `Program ${targetDeleteProgram.value.program_code} berhasil dihapus.`
+    )
     deleteModalOpen.value = false
     targetDeleteProgram.value = null
     await fetchPrograms()
@@ -211,7 +211,7 @@ async function executeDelete() {
       flashSuccess.value = ''
     }, 5000)
   } catch (err) {
-    flashError.value = err.response?.data?.message || 'Gagal menghapus program kerja.'
+    flashError.value = err.response?.data?.message || l('Failed to delete work program.', 'Gagal menghapus program kerja.')
     setTimeout(() => {
       flashError.value = ''
     }, 5000)
@@ -292,8 +292,8 @@ defineExpose({
             <AppSearchableSelect
               v-model="selectedYear"
               :options="yearOptions"
-              placeholder="Semua Tahun"
-              search-placeholder="Cari tahun..."
+              :placeholder="$l('All Years', 'Semua Tahun')"
+              :search-placeholder="$l('Search year...', 'Cari tahun...')"
               input-class="bg-white rounded-full py-1.5 px-3 border-gray-200 text-xs shadow-2xs"
               @change="fetchPrograms"
             />
@@ -304,8 +304,8 @@ defineExpose({
             <AppSearchableSelect
               v-model="selectedProcess"
               :options="processOptions"
-              placeholder="Semua Status"
-              search-placeholder="Cari status..."
+              :placeholder="$l('All Statuses', 'Semua Status')"
+              :search-placeholder="$l('Search status...', 'Cari status...')"
               input-class="bg-white rounded-full py-1.5 px-3 border-gray-200 text-xs shadow-2xs"
               @change="fetchPrograms"
             />
@@ -333,7 +333,7 @@ defineExpose({
         <template #cell-start_date="{ row }">
           <div class="flex flex-col items-center">
             <span class="font-mono text-gray-800 font-semibold text-xs">{{ formatDateDisplay(row.start_date) }}</span>
-            <span class="text-[10px] text-gray-400 font-mono">s/d {{ formatDateDisplay(row.end_date) }}</span>
+            <span class="text-[10px] text-gray-400 font-mono">{{ $l('to', 's/d') }} {{ formatDateDisplay(row.end_date) }}</span>
           </div>
         </template>
 
@@ -367,30 +367,30 @@ defineExpose({
             <button
               @click="openDetail(row.id)"
               class="px-2.5 py-1 rounded-lg text-xs font-bold text-[#0067AC] hover:bg-[#0067AC] hover:text-white transition flex items-center gap-1 cursor-pointer"
-              title="View Program"
+              :title="$l('View Program', 'Lihat Program')"
             >
               <Eye class="w-3.5 h-3.5" />
-              <span>View</span>
+              <span>{{ $t('common.view') }}</span>
             </button>
             <span class="text-gray-300">|</span>
             <!-- Edit -->
             <button
               @click="openEdit(row.id)"
               class="px-2.5 py-1 rounded-lg text-xs font-bold text-amber-700 hover:bg-amber-600 hover:text-white transition flex items-center gap-1 cursor-pointer"
-              title="Edit Program"
+              :title="$l('Edit Program', 'Ubah Program')"
             >
               <Edit3 class="w-3.5 h-3.5" />
-              <span>Edit</span>
+              <span>{{ $t('common.edit') }}</span>
             </button>
             <span class="text-gray-300">|</span>
             <!-- Delete -->
             <button
               @click="confirmDelete(row)"
               class="px-2.5 py-1 rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-600 hover:text-white transition flex items-center gap-1 cursor-pointer"
-              title="Delete Program"
+              :title="$l('Delete Program', 'Hapus Program')"
             >
               <Trash2 class="w-3.5 h-3.5" />
-              <span>Delete</span>
+              <span>{{ $t('common.delete') }}</span>
             </button>
           </div>
         </template>
@@ -409,15 +409,22 @@ defineExpose({
             <Trash2 class="w-6 h-6" />
           </div>
           <div>
-            <h3 class="text-base font-extrabold text-gray-900">Hapus Program Pelatihan</h3>
-            <p class="text-xs text-gray-500">Konfirmasi Penghapusan Program</p>
+            <h3 class="text-base font-extrabold text-gray-900">{{ $l('Delete Training Program', 'Hapus Program Pelatihan') }}</h3>
+            <p class="text-xs text-gray-500">{{ $l('Program Deletion Confirmation', 'Konfirmasi Penghapusan Program') }}</p>
           </div>
         </div>
 
         <div class="bg-rose-50/70 p-3.5 rounded-2xl border border-rose-100 text-xs text-rose-800 leading-relaxed">
-          Apakah Anda yakin ingin menghapus program <strong>{{ targetDeleteProgram?.program_code }} - {{ targetDeleteProgram?.title }}</strong>?
-          <br><br>
-          <span class="font-bold">Peringatan:</span> Seluruh data rincian anggaran (RAB) program ini akan ikut terhapus.
+          <template v-if="$locale === 'en'">
+            Are you sure you want to delete program <strong>{{ targetDeleteProgram?.program_code }} - {{ targetDeleteProgram?.title }}</strong>?
+            <br><br>
+            <span class="font-bold">Warning:</span> All budget breakdown items (RAB) for this program will also be deleted.
+          </template>
+          <template v-else>
+            Apakah Anda yakin ingin menghapus program <strong>{{ targetDeleteProgram?.program_code }} - {{ targetDeleteProgram?.title }}</strong>?
+            <br><br>
+            <span class="font-bold">Peringatan:</span> Seluruh data rincian anggaran (RAB) program ini akan ikut terhapus.
+          </template>
         </div>
 
         <div class="flex items-center justify-end gap-2.5 pt-2">
@@ -425,7 +432,7 @@ defineExpose({
             @click="deleteModalOpen = false; targetDeleteProgram = null"
             class="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
           >
-            Batal
+            {{ $t('common.cancel') }}
           </button>
           <button
             @click="executeDelete"
@@ -433,7 +440,7 @@ defineExpose({
             class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             <Trash2 class="w-3.5 h-3.5" />
-            <span>{{ deleting ? 'Menghapus...' : 'Ya, Hapus Sekarang' }}</span>
+            <span>{{ deleting ? $l('Deleting...', 'Menghapus...') : $l('Yes, Delete Now', 'Ya, Hapus Sekarang') }}</span>
           </button>
         </div>
       </div>

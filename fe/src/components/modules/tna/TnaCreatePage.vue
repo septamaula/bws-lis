@@ -26,6 +26,9 @@ import {
 import * as XLSX from 'xlsx'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from '@/i18n'
+
+const { l, t } = useI18n()
 
 const props = defineProps({
   editProposalId: {
@@ -118,7 +121,13 @@ function openImportModal() {
 
 function downloadTemplate() {
   const wsData = [
-    ['No', 'Kategori Pelatihan', 'Judul Program Pelatihan', 'Pagu Investasi (Rp)', 'Estimasi Realisasi (Rp)'],
+    [
+      l('No', 'No'),
+      l('Training Category', 'Kategori Pelatihan'),
+      l('Training Program Title', 'Judul Program Pelatihan'),
+      l('Investment Ceiling (IDR)', 'Pagu Investasi (Rp)'),
+      l('Estimated Realization (IDR)', 'Estimasi Realisasi (Rp)')
+    ],
     [1, 'Operasional & Layanan Perbankan', 'Frontliner, Teller & Service Excellence', 65000000, 0],
     [2, 'Operasional & Layanan Perbankan', 'Back Office, Kliring & Sistem Pembayaran (SKNBI/FAST)', 55000000, 0],
     [3, 'Operasional & Layanan Perbankan', 'Trade Finance & Transaksi Ekspor-Impor', 65000000, 0],
@@ -137,14 +146,14 @@ function downloadTemplate() {
     { wch: 6 },
     { wch: 45 },
     { wch: 55 },
-    { wch: 22 },
-    { wch: 22 }
+    { wch: 24 },
+    { wch: 26 }
   ]
 
   const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'Rincian Program TNA')
+  XLSX.utils.book_append_sheet(wb, ws, l('TNA Program Breakdown', 'Rincian Program TNA'))
 
-  XLSX.writeFile(wb, 'Template_Usulan_Program_TNA_BWS.xlsx')
+  XLSX.writeFile(wb, l('BWS_TNA_Program_Proposal_Template.xlsx', 'Template_Usulan_Program_TNA_BWS.xlsx'))
 }
 
 function handleImportFileChange(e) {
@@ -178,10 +187,10 @@ async function processExcelFile(file) {
     }
 
     const sheet = wb.Sheets[targetSheet]
-    if (!sheet) throw new Error('Sheet data tidak ditemukan di file Excel.')
+    if (!sheet) throw new Error(l('Data sheet not found in Excel file.', 'Sheet data tidak ditemukan di berkas Excel.'))
 
     const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 })
-    if (!rows || rows.length === 0) throw new Error('File Excel tidak memiliki baris data.')
+    if (!rows || rows.length === 0) throw new Error(l('Excel file contains no data rows.', 'Berkas Excel tidak memiliki baris data.'))
 
     // Find header row
     let headerIdx = -1
@@ -249,12 +258,15 @@ async function processExcelFile(file) {
     }
 
     if (items.length === 0) {
-      throw new Error('Tidak ada baris program yang dapat dibaca. Pastikan kolom "Kategori", "Program Pelatihan", dan "Pagu Investasi" terisi.')
+      throw new Error(l(
+        'No readable program rows found. Ensure "Category", "Training Program", and "Investment Ceiling" columns are populated.',
+        'Tidak ada baris program yang dapat dibaca. Pastikan kolom "Kategori", "Judul Program Pelatihan", dan "Pagu Investasi" terisi.'
+      ))
     }
 
     parsedItems.value = items
   } catch (err) {
-    importError.value = err.message || 'Gagal memproses file Excel.'
+    importError.value = err.message || l('Failed to process Excel file.', 'Gagal memproses berkas Excel.')
     parsedItems.value = []
   } finally {
     isParsingExcel.value = false
@@ -272,7 +284,10 @@ function applyImportedItems() {
 
   feedback.value = {
     type: 'success',
-    message: `Berhasil mengimpor ${parsedItems.value.length} program pelatihan ke tabel TNA.`
+    message: l(
+      `Successfully imported ${parsedItems.value.length} training programs into the TNA table.`,
+      `Berhasil mengimpor ${parsedItems.value.length} program pelatihan ke tabel TNA.`
+    )
   }
 
   showImportModal.value = false
@@ -293,7 +308,7 @@ function onFileSelect(e) {
   if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|docx|doc|xlsx|xls)$/i)) {
     feedback.value = {
       type: 'error',
-      message: 'Format berkas tidak didukung. Harap unggah dokumen PDF, Word, atau Excel.'
+      message: l('Unsupported file format. Please upload a PDF, Word, or Excel document.', 'Format berkas tidak didukung. Harap unggah dokumen PDF, Word, atau Excel.')
     }
     return
   }
@@ -301,7 +316,7 @@ function onFileSelect(e) {
   if (file.size > 15 * 1024 * 1024) {
     feedback.value = {
       type: 'error',
-      message: 'Ukuran file melebihi batas maksimal 15 MB.'
+      message: l('File size exceeds the maximum 15 MB limit.', 'Ukuran berkas melebihi batas maksimal 15 MB.')
     }
     return
   }
@@ -315,12 +330,12 @@ function removeFile() {
   if (fileInputRef.value) fileInputRef.value.value = ''
 }
 
-const itemColumns = [
-  { key: 'category_name', label: 'Category', width: '32%' },
-  { key: 'recommended_program', label: 'Training Program' },
-  { key: 'budget', label: 'Investment (Projection)', align: 'right', width: '220px' },
-  { key: 'action', label: 'Aksi', align: 'center', width: '60px' }
-]
+const itemColumns = computed(() => [
+  { key: 'category_name', label: l('Category', 'Kategori'), width: '32%' },
+  { key: 'recommended_program', label: l('Training Program', 'Program Pelatihan') },
+  { key: 'budget', label: l('Investment (Projection)', 'Proyeksi Investasi'), align: 'right', width: '220px' },
+  { key: 'action', label: l('Action', 'Aksi'), align: 'center', width: '60px' }
+])
 
 function addItemRow() {
   const firstCat = categories.value[0]
@@ -344,7 +359,7 @@ function removeItemRow(index) {
   if (form.value.items.length <= 1) {
     feedback.value = {
       type: 'error',
-      message: 'TNA harus memiliki minimal satu program pelatihan.'
+      message: l('TNA must include at least one training program.', 'TNA harus memiliki minimal satu program pelatihan.')
     }
     return
   }
@@ -449,7 +464,7 @@ async function loadMasterData() {
   } catch (err) {
     feedback.value = {
       type: 'error',
-      message: 'Gagal memuat master data kategori atau rincian usulan.'
+      message: l('Failed to load category master data or proposal details.', 'Gagal memuat data master kategori atau rincian usulan.')
     }
   } finally {
     loadingMasters.value = false
@@ -459,21 +474,21 @@ async function loadMasterData() {
 const fiscalYearSelectOptions = computed(() => {
   return fiscalYears.value.map(fy => ({
     value: fy.year,
-    label: `${fy.year} — ${fy.status === 'AKTIF' ? 'Aktif' : 'Tutup'}`,
-    subLabel: fy.status === 'AKTIF' ? 'Tahun Fiskal Berjalan' : `Status: ${fy.status}`
+    label: `${fy.year} — ${fy.status === 'AKTIF' ? l('Active', 'Aktif') : l('Closed', 'Tutup')}`,
+    subLabel: fy.status === 'AKTIF' ? l('Current Fiscal Year', 'Tahun Fiskal Berjalan') : `Status: ${fy.status}`
   }))
 })
 
-const tnaStatusOptions = [
-  { value: 'Aktif', label: 'Aktif (Dapat Dirujuk Program)' },
-  { value: 'Closed', label: 'Closed (Siklus Selesai / Arsip)' }
-]
+const tnaStatusOptions = computed(() => [
+  { value: 'Aktif', label: l('Active (Available for Programs)', 'Aktif (Dapat Dirujuk Program)') },
+  { value: 'Closed', label: l('Closed (Cycle Completed / Archive)', 'Ditutup (Siklus Selesai / Arsip)') }
+])
 
 const categorySelectOptions = computed(() => {
   return categories.value.map(c => ({
     value: c.name,
     label: c.name,
-    subLabel: c.code ? `Kode: ${c.code}` : ''
+    subLabel: c.code ? l(`Code: ${c.code}`, `Kode: ${c.code}`) : ''
   }))
 })
 
@@ -483,20 +498,23 @@ onMounted(() => {
 
 async function submitForm() {
   if (!form.value.year) {
-    feedback.value = { type: 'error', message: 'Tahun Anggaran wajib diisi.' }
+    feedback.value = { type: 'error', message: l('Fiscal Year is required.', 'Tahun Anggaran wajib diisi.') }
     return
   }
 
   if (!isEditMode.value && isYearAlreadyRegistered.value) {
     feedback.value = {
       type: 'error',
-      message: `Tahun Anggaran ${form.value.year} sudah memiliki dokumen TNA terdaftar. Dalam 1 tahun anggaran hanya terdapat 1 dokumen TNA Induk.`
+      message: l(
+        `Fiscal Year ${form.value.year} already has a registered TNA document. Only 1 Master TNA document is permitted per fiscal year.`,
+        `Tahun Anggaran ${form.value.year} sudah memiliki dokumen TNA terdaftar. Dalam 1 tahun anggaran hanya terdapat 1 dokumen TNA Induk.`
+      )
     }
     return
   }
 
   if (form.value.items.length === 0) {
-    feedback.value = { type: 'error', message: 'Minimal 1 baris program pelatihan harus dimasukkan.' }
+    feedback.value = { type: 'error', message: l('At least 1 training program row must be included.', 'Minimal 1 baris program pelatihan harus dimasukkan.') }
     return
   }
 
@@ -550,9 +568,9 @@ async function submitForm() {
       })
     }
 
-    emit('created', res.data.message || 'Dokumen TNA berhasil disimpan.')
+    emit('created', l('TNA document has been saved.', 'Dokumen TNA berhasil disimpan.'))
   } catch (err) {
-    const msg = err.response?.data?.message || 'Gagal menyimpan usulan TNA.'
+    const msg = err.response?.data?.message || l('Failed to save TNA proposal.', 'Gagal menyimpan usulan TNA.')
     feedback.value = { type: 'error', message: msg }
   } finally {
     isSubmitting.value = false
@@ -565,10 +583,10 @@ async function submitForm() {
 
     <!-- Standard Subpage Header (Navigation) -->
     <SubpageHeader
-      back-label="Kembali ke List TNA"
-      :title="isEditMode ? `Edit Usulan TNA - Tahun Anggaran ${form.year}` : 'Form Usulan TNA Baru (Rencana Tahunan)'"
-      subtitle="Perencanaan kebutuhan diklat dan alokasi pagu investasi bank-wide"
-      :badge="isEditMode ? 'Mode Edit' : '1 Dokumen per Tahun'"
+      :back-label="$l('Back to TNA List', 'Kembali ke Daftar TNA')"
+      :title="isEditMode ? $l(`Edit TNA Proposal - Fiscal Year ${form.year}`, `Ubah Usulan TNA - Tahun Anggaran ${form.year}`) : $l('New TNA Proposal Form (Annual Plan)', 'Formulir Usulan TNA Baru (Rencana Tahunan)')"
+      :subtitle="$l('Bank-wide training needs planning and investment budget allocation', 'Perencanaan kebutuhan diklat dan alokasi pagu investasi bank-wide')"
+      :badge="isEditMode ? $l('Edit Mode', 'Mode Ubah') : $l('1 Document per Year', '1 Dokumen per Tahun')"
       @back="emit('back')"
     />
 
@@ -601,31 +619,31 @@ async function submitForm() {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                <span>Year (Tahun)</span>
-                <span class="text-[10px] text-[#0067AC] font-semibold">Wajib</span>
+                <span>{{ $l('Fiscal Year', 'Tahun Anggaran') }}</span>
+                <span class="text-[10px] text-[#0067AC] font-semibold">{{ $l('Required', 'Wajib') }}</span>
               </label>
               <AppSearchableSelect
                 v-model="form.year"
                 :options="fiscalYearSelectOptions"
                 :disabled="isEditMode || loadingMasters"
-                placeholder="Pilih Tahun Fiskal..."
-                search-placeholder="Cari tahun fiskal..."
+                :placeholder="$l('Select Fiscal Year...', 'Pilih Tahun Fiskal...')"
+                :search-placeholder="$l('Search fiscal year...', 'Cari tahun fiskal...')"
                 input-class="bg-white rounded-xl px-3 py-2.5 border-gray-300 font-bold text-gray-900"
               />
             </div>
 
             <div>
               <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                <span>Status Siklus TNA</span>
+                <span>{{ $l('TNA Cycle Status', 'Status Siklus TNA') }}</span>
                 <span class="text-[10px] font-bold" :class="form.tna_status === 'Aktif' ? 'text-emerald-600' : 'text-gray-500'">
-                  {{ form.tna_status }}
+                  {{ form.tna_status === 'Closed' ? $l('Closed', 'Ditutup') : $l('Active', 'Aktif') }}
                 </span>
               </label>
               <AppSearchableSelect
                 v-model="form.tna_status"
                 :options="tnaStatusOptions"
-                placeholder="Pilih Status Siklus..."
-                search-placeholder="Cari status siklus..."
+                :placeholder="$l('Select Cycle Status...', 'Pilih Status Siklus...')"
+                :search-placeholder="$l('Search cycle status...', 'Cari status siklus...')"
                 input-class="bg-white rounded-xl px-3 py-2.5 border-gray-300 font-bold text-gray-900"
               />
             </div>
@@ -634,8 +652,8 @@ async function submitForm() {
           <!-- Field 2: Upload Document -->
           <div>
             <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>Upload Document</span>
-              <span class="text-[11px] text-gray-400 font-normal">TOR / Memo Pendukung (PDF, DOCX)</span>
+              <span>{{ $l('Upload Document', 'Unggah Dokumen') }}</span>
+              <span class="text-[11px] text-gray-400 font-normal">{{ $l('Supporting TOR / Memo (PDF, DOCX)', 'TOR / Memo Pendukung (PDF, DOCX)') }}</span>
             </label>
             <div class="flex items-center gap-2">
               <input
@@ -651,7 +669,7 @@ async function submitForm() {
                 class="px-4 py-2 rounded-xl bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 font-bold text-xs shadow-2xs transition flex items-center gap-1.5 cursor-pointer shrink-0"
               >
                 <FileUp class="w-3.5 h-3.5 text-[#0067AC]" />
-                <span>Browse File</span>
+                <span>{{ $l('Browse File', 'Pilih Berkas') }}</span>
               </button>
 
               <div class="flex-1 min-w-0">
@@ -663,9 +681,9 @@ async function submitForm() {
                 </div>
                 <div v-else-if="existingAttachment" class="flex items-center justify-between bg-gray-100 px-3 py-1.5 rounded-xl text-xs text-gray-700">
                   <span class="truncate font-semibold text-[11px]">{{ existingAttachment.name }}</span>
-                  <span class="text-[10px] text-gray-400 shrink-0">(Tersimpan)</span>
+                  <span class="text-[10px] text-gray-400 shrink-0">{{ $l('(Saved)', '(Tersimpan)') }}</span>
                 </div>
-                <span v-else class="text-xs text-gray-400 italic">Belum ada file dipilih</span>
+                <span v-else class="text-xs text-gray-400 italic">{{ $l('No file selected', 'Belum ada berkas dipilih') }}</span>
               </div>
             </div>
           </div>
@@ -673,7 +691,7 @@ async function submitForm() {
           <!-- Field 3: Minimum Investment Projection Based on Regulator Statement -->
           <div>
             <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>Minimum Investment Projection Based on Regulator Statement</span>
+              <span>{{ $l('Minimum Regulator Investment Projection', 'Proyeksi Investasi Minimum Regulasi') }}</span>
             </label>
             <AppNumberInput
               v-model="form.minimum_regulator_investment"
@@ -681,24 +699,24 @@ async function submitForm() {
               placeholder="1.000.000.000"
             />
             <p class="text-[10px] text-gray-400 mt-1 font-mono">
-              Ketentuan Alokasi OJK / Regulasi Bank
+              {{ $l('OJK Allocation Rules & Banking Regulations', 'Ketentuan Alokasi OJK & Regulasi Perbankan') }}
             </p>
           </div>
 
           <!-- Field 4: Investment (Projection) Total -->
           <div>
             <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>Investment (Projection) - Total Usulan</span>
-              <span class="text-[10px] text-emerald-600 font-bold">Kalkulasi Otomatis</span>
+              <span>{{ $l('Investment (Projection) - Proposed Total', 'Proyeksi Investasi - Total Usulan') }}</span>
+              <span class="text-[10px] text-emerald-600 font-bold">{{ $l('Auto Calculated', 'Kalkulasi Otomatis') }}</span>
             </label>
             <div class="bg-blue-50/80 px-4 py-2.5 rounded-xl border border-blue-200 flex items-center justify-between">
-              <span class="text-xs font-bold text-gray-500">Total Proyeksi:</span>
+              <span class="text-xs font-bold text-gray-500">{{ $l('Total Projection:', 'Total Proyeksi:') }}</span>
               <span class="text-base font-extrabold text-[#0067AC] font-mono">
                 {{ formatRupiah(totalInvestment) }}
               </span>
             </div>
             <p class="text-[10px] text-gray-400 mt-1">
-              Akumulasi total dari {{ form.items.length }} program pelatihan di bawah.
+              {{ $l(`Cumulative total across ${form.items.length} training programs below.`, `Akumulasi total dari ${form.items.length} program pelatihan di bawah.`) }}
             </p>
           </div>
 
@@ -708,8 +726,8 @@ async function submitForm() {
         <div class="flex flex-col gap-3">
           <div class="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <h3 class="text-sm font-extrabold text-gray-900">Rincian Program Pelatihan & Anggaran</h3>
-              <p class="text-[11px] text-gray-500">Tentukan kategori diklat, judul program, dan pagu proyeksi investasi</p>
+              <h3 class="text-sm font-extrabold text-gray-900">{{ $l('Training Program & Budget Breakdown', 'Rincian Program Pelatihan & Anggaran') }}</h3>
+              <p class="text-[11px] text-gray-500">{{ $l('Define training categories, program titles, and investment budget projections', 'Tentukan kategori diklat, judul program, dan pagu proyeksi investasi') }}</p>
             </div>
 
             <div class="flex items-center gap-2">
@@ -718,11 +736,11 @@ async function submitForm() {
                 variant="outline"
                 size="sm"
                 @click="openImportModal"
-                title="Import data program pelatihan dari file Excel/CSV"
+                :title="$l('Import training program data from Excel/CSV file', 'Impor data program pelatihan dari berkas Excel/CSV')"
               >
                 <span class="flex items-center gap-1.5">
                   <FileSpreadsheet class="w-3.5 h-3.5 text-emerald-600" />
-                  Import Excel
+                  {{ $l('Import Excel', 'Impor Excel') }}
                 </span>
               </AppButton>
               <AppButton
@@ -732,7 +750,7 @@ async function submitForm() {
                 icon="plus"
                 @click="addItemRow"
               >
-                Tambah Baris
+                {{ $l('Add Row', 'Tambah Baris') }}
               </AppButton>
             </div>
           </div>
@@ -756,8 +774,8 @@ async function submitForm() {
                     v-model="item.category_name"
                     :options="categorySelectOptions"
                     @change="onCategoryChange(item)"
-                    placeholder="Pilih Kategori Diklat..."
-                    search-placeholder="Cari kategori..."
+                    :placeholder="$l('Select Training Category...', 'Pilih Kategori Diklat...')"
+                    :search-placeholder="$l('Search category...', 'Cari kategori...')"
                     input-class="bg-white rounded-lg px-2.5 py-1.5 border-gray-200 font-semibold text-gray-800"
                   />
                 </td>
@@ -767,7 +785,7 @@ async function submitForm() {
                   <input
                     v-model="item.recommended_program"
                     type="text"
-                    placeholder="Judul / nama program pelatihan..."
+                    :placeholder="$l('Training program title / name...', 'Judul / nama program pelatihan...')"
                     class="w-full bg-white text-xs text-gray-800 rounded-lg px-3 py-1.5 border border-gray-200 focus:border-[#0067AC] focus:outline-none transition shadow-2xs placeholder:text-gray-300"
                   />
                 </td>
@@ -789,7 +807,7 @@ async function submitForm() {
                     type="button"
                     @click="removeItemRow(idx)"
                     class="p-1 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                    title="Hapus baris"
+                    :title="$l('Delete row', 'Hapus baris')"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
                   </button>
@@ -798,7 +816,7 @@ async function submitForm() {
 
               <tr v-if="form.items.length === 0">
                 <td colspan="5" class="py-8 text-center text-gray-400">
-                  Belum ada baris program. Klik tombol "Tambah Baris" di atas.
+                  {{ $l('No program rows added yet. Click the "Add Row" button above.', 'Belum ada baris program. Klik tombol "Tambah Baris" di atas.') }}
                 </td>
               </tr>
             </template>
@@ -807,7 +825,7 @@ async function submitForm() {
             <template #tfoot>
               <tr class="bg-[#f8faf9] border-t-2 border-gray-300 font-extrabold text-xs">
                 <td colspan="3" class="py-3.5 px-4 text-right text-gray-800 uppercase tracking-wider">
-                  Total Investment (Projection):
+                  {{ $l('Total Investment (Projection):', 'Total Proyeksi Investasi:') }}
                 </td>
                 <td class="py-3.5 px-4 text-right font-mono text-sm text-[#0067AC]">
                   {{ formatRupiah(totalInvestment) }}
@@ -825,7 +843,7 @@ async function submitForm() {
             @click="emit('back')"
             class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 font-bold text-xs transition cursor-pointer"
           >
-            Cancel
+            {{ $t('common.cancel') }}
           </button>
 
           <button
@@ -835,7 +853,7 @@ async function submitForm() {
             class="px-8 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md hover:shadow-lg transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <Save class="w-4 h-4" />
-            <span>{{ isSubmitting ? 'Menyimpan...' : 'Save' }}</span>
+            <span>{{ isSubmitting ? $l('Saving...', 'Menyimpan...') : $t('common.save') }}</span>
           </button>
         </div>
 
@@ -859,8 +877,8 @@ async function submitForm() {
               <FileSpreadsheet class="w-5 h-5" />
             </div>
             <div>
-              <h3 class="font-extrabold text-sm text-gray-900">Import Program Pelatihan & Anggaran TNA</h3>
-              <p class="text-[11px] text-gray-500">Unduh template resmi atau unggah file spreadsheet untuk mengisi tabel program</p>
+              <h3 class="font-extrabold text-sm text-gray-900">{{ $l('Import Training Programs & TNA Budget', 'Impor Program Pelatihan & Anggaran TNA') }}</h3>
+              <p class="text-[11px] text-gray-500">{{ $l('Download the official template or upload a spreadsheet to populate the program table', 'Unduh templat resmi atau unggah berkas spreadsheet untuk mengisi tabel program') }}</p>
             </div>
           </div>
           <button
@@ -878,11 +896,11 @@ async function submitForm() {
           <div class="p-4 rounded-2xl bg-gradient-to-r from-[#0067AC]/5 via-blue-50/40 to-slate-50 border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
             <div class="space-y-1">
               <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded-full bg-[#0067AC] text-white text-[10px] font-bold uppercase tracking-wider">Step 1</span>
-                <span class="font-bold text-gray-900">Unduh Format Template Resmi BWS</span>
+                <span class="px-2 py-0.5 rounded-full bg-[#0067AC] text-white text-[10px] font-bold uppercase tracking-wider">{{ $l('Step 1', 'Langkah 1') }}</span>
+                <span class="font-bold text-gray-900">{{ $l('Download Official BWS Template', 'Unduh Format Templat Resmi BWS') }}</span>
               </div>
               <p class="text-[11px] text-gray-600 leading-relaxed">
-                Gunakan format template standar dengan kolom Kategori Pelatihan, Program, dan Pagu Investasi agar data terbaca otomatis.
+                {{ $l('Use the standard template format with Category, Program, and Investment Budget columns for accurate auto-parsing.', 'Gunakan format templat standar dengan kolom Kategori Pelatihan, Program, dan Pagu Investasi agar data terbaca otomatis.') }}
               </p>
             </div>
             <button
@@ -891,15 +909,15 @@ async function submitForm() {
               class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-blue-200 text-[#0067AC] hover:bg-blue-50 font-bold text-xs transition shadow-2xs hover:shadow-xs shrink-0 cursor-pointer"
             >
               <Download class="w-4 h-4 text-[#0067AC]" />
-              <span>Download Template (.xlsx)</span>
+              <span>{{ $l('Download Template (.xlsx)', 'Unduh Templat (.xlsx)') }}</span>
             </button>
           </div>
 
           <!-- Step 2: Upload File Area -->
           <div class="space-y-2">
             <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded-full bg-gray-800 text-white text-[10px] font-bold uppercase tracking-wider">Step 2</span>
-              <span class="font-bold text-gray-900">Unggah File Spreadsheet yang Sudah Diisi</span>
+              <span class="px-2 py-0.5 rounded-full bg-gray-800 text-white text-[10px] font-bold uppercase tracking-wider">{{ $l('Step 2', 'Langkah 2') }}</span>
+              <span class="font-bold text-gray-900">{{ $l('Upload Completed Spreadsheet File', 'Unggah Berkas Spreadsheet yang Sudah Diisi') }}</span>
             </div>
 
             <div
@@ -929,19 +947,19 @@ async function submitForm() {
                 <p class="font-bold text-gray-900 text-xs">{{ importFile.name }}</p>
                 <p class="text-[11px] text-gray-500 font-mono">{{ formatFileSize(importFile.size) }}</p>
                 <p class="text-[10px] text-emerald-700 font-semibold flex items-center justify-center gap-1">
-                  <CheckCircle2 class="w-3.5 h-3.5" /> File berhasil diproses. Klik untuk mengganti file.
+                  <CheckCircle2 class="w-3.5 h-3.5" /> {{ $l('File processed successfully. Click to replace.', 'Berkas berhasil diproses. Klik untuk mengganti.') }}
                 </p>
               </div>
               <div v-else class="space-y-1">
-                <p class="font-bold text-gray-700 text-xs">Tarik & lepaskan file Excel di sini, atau <span class="text-[#0067AC] underline font-semibold">Pilih File</span></p>
-                <p class="text-[10px] text-gray-400">Mendukung format .xlsx, .xls, dan .csv</p>
+                <p class="font-bold text-gray-700 text-xs">{{ $l('Drag & drop an Excel file here, or', 'Tarik & lepaskan berkas Excel di sini, atau') }} <span class="text-[#0067AC] underline font-semibold">{{ $l('Browse File', 'Pilih Berkas') }}</span></p>
+                <p class="text-[10px] text-gray-400">{{ $l('Supports .xlsx, .xls, and .csv formats', 'Mendukung format .xlsx, .xls, dan .csv') }}</p>
               </div>
             </div>
           </div>
 
           <!-- Loading Spinner during parse -->
           <div v-if="isParsingExcel" class="p-3 text-center text-xs text-gray-500 animate-pulse">
-            Sedang membaca dan memetakan baris program pelatihan...
+            {{ $l('Reading and mapping training program rows...', 'Sedang membaca dan memetakan baris program pelatihan...') }}
           </div>
 
           <!-- Error Alert -->
@@ -954,8 +972,8 @@ async function submitForm() {
           <div v-if="parsedItems.length > 0" class="space-y-3 pt-1 border-t border-gray-100">
             <div class="flex items-center justify-between flex-wrap gap-2">
               <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider">Hasil Baca</span>
-                <span class="font-bold text-gray-900">{{ parsedItems.length }} Program Pelatihan Terdeteksi</span>
+                <span class="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider">{{ $l('Preview', 'Hasil Baca') }}</span>
+                <span class="font-bold text-gray-900">{{ parsedItems.length }} {{ $l(parsedItems.length === 1 ? 'Training Program Detected' : 'Training Programs Detected', 'Program Pelatihan Terdeteksi') }}</span>
               </div>
               <span class="font-mono font-bold text-xs text-[#0067AC]">
                 Total: {{ formatRupiah(parsedItemsTotal) }}
@@ -970,7 +988,7 @@ async function submitForm() {
                 class="py-1.5 px-3 rounded-lg transition text-center cursor-pointer"
                 :class="importMode === 'replace' ? 'bg-white text-[#0067AC] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-800'"
               >
-                Ganti Seluruh Tabel (Replace)
+                {{ $l('Replace Entire Table', 'Ganti Seluruh Tabel') }}
               </button>
               <button
                 type="button"
@@ -978,7 +996,7 @@ async function submitForm() {
                 class="py-1.5 px-3 rounded-lg transition text-center cursor-pointer"
                 :class="importMode === 'append' ? 'bg-white text-[#0067AC] shadow-2xs font-bold' : 'text-gray-500 hover:text-gray-800'"
               >
-                Tambahkan ke Tabel (Append)
+                {{ $l('Append to Table', 'Tambahkan ke Tabel') }}
               </button>
             </div>
 
@@ -988,9 +1006,9 @@ async function submitForm() {
                 <thead class="sticky top-0 bg-[#F8FAFC] border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider text-[10px]">
                   <tr>
                     <th class="py-2 px-3 w-10 text-center">No</th>
-                    <th class="py-2 px-3">Kategori</th>
-                    <th class="py-2 px-3">Program Pelatihan</th>
-                    <th class="py-2 px-3 text-right">Pagu</th>
+                    <th class="py-2 px-3">{{ $l('Category', 'Kategori') }}</th>
+                    <th class="py-2 px-3">{{ $l('Training Program', 'Program Pelatihan') }}</th>
+                    <th class="py-2 px-3 text-right">{{ $l('Budget', 'Pagu') }}</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -1013,7 +1031,7 @@ async function submitForm() {
             @click="showImportModal = false"
             class="px-4 py-2 rounded-xl text-gray-600 hover:bg-gray-200/60 font-bold text-xs transition cursor-pointer"
           >
-            Batal
+            {{ $t('common.cancel') }}
           </button>
 
           <button
@@ -1023,7 +1041,7 @@ async function submitForm() {
             class="px-5 py-2 rounded-xl bg-[#0067AC] hover:bg-[#00528c] text-white font-bold text-xs shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <CheckCircle2 class="w-4 h-4" />
-            <span>Terapkan ke Tabel TNA ({{ parsedItems.length }} Program)</span>
+            <span>{{ $l(`Apply to TNA Table (${parsedItems.length} Programs)`, `Terapkan ke Tabel TNA (${parsedItems.length} Program)`) }}</span>
           </button>
         </div>
       </div>

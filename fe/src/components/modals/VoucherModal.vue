@@ -2,6 +2,9 @@
 import { reactive, ref, computed } from 'vue'
 import { X, Receipt, Scale, Paperclip } from 'lucide-vue-next'
 import apiClient from '@/api/client'
+import { useI18n } from '@/i18n'
+
+const { l, t } = useI18n()
 
 const props = defineProps({
   show: Boolean,
@@ -16,27 +19,27 @@ const loading = ref(false)
 const errorMessage = ref('')
 
 const classOptions = computed(() => [
-  { value: null, label: '-- Biaya Operasional Umum L&D --' },
+  { value: null, label: l('-- General L&D Operational Expense --', '-- Biaya Operasional Umum L&D --') },
   ...props.classes.map(c => ({
     value: c.id,
     label: `${c.batch_name} - ${c.program?.title || ''}`,
-    subLabel: c.class_code ? `Kode: ${c.class_code}` : ''
+    subLabel: c.class_code ? `${l('Code:', 'Kode:')} ${c.class_code}` : ''
   }))
 ])
 
-const voucherCategoryOptions = [
-  { value: 'Certification Fee', label: 'Ujian Sertifikasi Resmi' },
-  { value: 'Vendor Fee', label: 'Biaya Lembaga / Vendor' },
-  { value: 'Facilitator Honorarium', label: 'Honorarium Instruktur' },
-  { value: 'Venue & Catering', label: 'Akomodasi & Konsumsi' },
-  { value: 'Learning Materials', label: 'Materi & Modul Ajar' }
-]
+const voucherCategoryOptions = computed(() => [
+  { value: 'Certification Fee', label: l('Official Certification Exam', 'Ujian Sertifikasi Resmi') },
+  { value: 'Vendor Fee', label: l('Institution / Vendor Fee', 'Biaya Lembaga / Vendor') },
+  { value: 'Facilitator Honorarium', label: l('Instructor Honorarium', 'Honorarium Instruktur') },
+  { value: 'Venue & Catering', label: l('Venue & Catering', 'Akomodasi & Konsumsi') },
+  { value: 'Learning Materials', label: l('Learning Modules & Materials', 'Materi & Modul Ajar') }
+])
 
 const form = reactive({
   training_class_id: null,
   amount: 42000000,
   category: 'Certification Fee',
-  description: 'Reimburse Ujian Sertifikasi Manajemen Risiko SMR Level 2 (12 Peserta)',
+  description: 'Risk Management Certification Exam SMR Level 2 Reimbursement (12 Participants)',
   receipt_attachment_url: 'Kwitansi_Resmi_LSPP_BWS2026.pdf'
 })
 
@@ -44,11 +47,11 @@ async function submit() {
   loading.value = true
   errorMessage.value = ''
   try {
-    const { data } = await apiClient.post('/transactions', form)
-    emit('submitted', data.message)
+    await apiClient.post('/transactions', form)
+    emit('submitted', l('Disbursement voucher has been submitted to Checker.', 'Voucher pencairan berhasil dikirim ke Verifikator.'))
     emit('close')
   } catch (err) {
-    errorMessage.value = err.response?.data?.message || 'Gagal mengajukan voucher pencairan.'
+    errorMessage.value = err.response?.data?.message || l('Failed to submit disbursement voucher.', 'Gagal mengajukan voucher pencairan.')
   } finally {
     loading.value = false
   }
@@ -66,8 +69,8 @@ async function submit() {
             <Receipt class="w-4 h-4" />
           </div>
           <div>
-            <h3 class="font-bold text-base text-gray-900">Form Pengajuan Klaim / Voucher Dana</h3>
-            <p class="text-xs text-gray-400">Pencairan Dana Diklat & Verifikasi Dual-Control Checker</p>
+            <h3 class="font-bold text-base text-gray-900">{{ $l('Fund Claim / Disbursement Voucher Form', 'Formulir Pengajuan Klaim / Voucher Dana') }}</h3>
+            <p class="text-xs text-gray-400">{{ $l('Training Fund Disbursement & Dual-Control Checker Verification', 'Pencairan Dana Diklat & Verifikasi Kontrol Ganda') }}</p>
           </div>
         </div>
         <button @click="emit('close')" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition">
@@ -81,40 +84,40 @@ async function submit() {
 
       <form @submit.prevent="submit" class="space-y-4 text-xs">
         <div>
-          <label class="block font-semibold text-gray-700 mb-1">Pilih Kelas Terkait</label>
+          <label class="block font-semibold text-gray-700 mb-1">{{ $l('Select Related Class', 'Pilih Kelas Terkait') }}</label>
           <AppSearchableSelect
             v-model="form.training_class_id"
             :options="classOptions"
-            placeholder="Pilih Kelas Terkait..."
-            search-placeholder="Cari batch / program..."
+            :placeholder="$l('Select Related Class...', 'Pilih Kelas Terkait...')"
+            :search-placeholder="$l('Search batch / program...', 'Cari angkatan / program...')"
             input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-transparent"
           />
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block font-semibold text-gray-700 mb-1">Kategori Biaya</label>
+            <label class="block font-semibold text-gray-700 mb-1">{{ $l('Cost Category', 'Kategori Biaya') }}</label>
             <AppSearchableSelect
               v-model="form.category"
               :options="voucherCategoryOptions"
-              placeholder="Pilih Kategori Biaya..."
-              search-placeholder="Cari kategori..."
+              :placeholder="$l('Select Cost Category...', 'Pilih Kategori Biaya...')"
+              :search-placeholder="$l('Search category...', 'Cari kategori...')"
               input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-transparent"
             />
           </div>
           <div>
-            <label class="block font-semibold text-gray-700 mb-1">Nominal Biaya (IDR)</label>
+            <label class="block font-semibold text-gray-700 mb-1">{{ $l('Amount (IDR)', 'Nominal Biaya (IDR)') }}</label>
             <AppNumberInput v-model="form.amount" prefix="Rp" :min="10000" placeholder="10.000" required />
           </div>
         </div>
 
         <div>
-          <label class="block font-semibold text-gray-700 mb-1">Rincian Transaksi / Keperluan</label>
+          <label class="block font-semibold text-gray-700 mb-1">{{ $l('Transaction Details / Purpose', 'Rincian Transaksi / Keperluan') }}</label>
           <textarea v-model="form.description" rows="2" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required></textarea>
         </div>
 
         <div>
-          <label class="block font-semibold text-gray-700 mb-1">Berkas Bukti Kwitansi (PDF/JPG)</label>
+          <label class="block font-semibold text-gray-700 mb-1">{{ $l('Receipt Proof File (PDF/JPG)', 'Berkas Bukti Kwitansi (PDF/JPG)') }}</label>
           <div class="flex items-center gap-2">
             <Paperclip class="w-4 h-4 text-[#0067AC]" />
             <input type="text" v-model="form.receipt_attachment_url" class="flex-1 bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" />
@@ -124,16 +127,21 @@ async function submit() {
         <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-900 flex items-start gap-2.5">
           <Scale class="w-4 h-4 text-[#0067AC] shrink-0 mt-0.5" />
           <p class="text-[11px] leading-tight">
-            <strong>Kepatuhan Standar Perbankan:</strong> Maker dilarang menyetujui transaksi miliknya sendiri. Voucher akan diteruskan ke antrean Checker.
+            <template v-if="$locale === 'en'">
+              <strong>Banking Compliance Standard:</strong> Makers are strictly prohibited from approving their own transactions. This voucher will be routed to the Checker queue.
+            </template>
+            <template v-else>
+              <strong>Kepatuhan Standar Perbankan:</strong> Pembuat dilarang menyetujui transaksi miliknya sendiri. Voucher akan diteruskan ke antrean Verifikator.
+            </template>
           </p>
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
           <button type="button" @click="emit('close')" class="px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition">
-            Batal
+            {{ $t('common.cancel') }}
           </button>
           <button type="submit" :disabled="loading" class="px-5 py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white font-semibold transition shadow-sm disabled:opacity-50">
-            {{ loading ? 'Mengirim...' : 'Kirim Voucher ke Checker' }}
+            {{ loading ? $l('Submitting...', 'Mengirim...') : $l('Submit Voucher to Checker', 'Kirim Voucher ke Verifikator') }}
           </button>
         </div>
       </form>

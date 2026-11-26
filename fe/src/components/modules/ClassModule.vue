@@ -24,6 +24,9 @@ import DataTable from '@/components/DataTable.vue'
 import apiClient from '@/api/client'
 import ClassCreatePage from './classes/ClassCreatePage.vue'
 import ClassDetailPage from './classes/ClassDetailPage.vue'
+import { useI18n } from '@/i18n'
+
+const { l, locale } = useI18n()
 
 const props = defineProps({
   trainingClasses: {
@@ -93,36 +96,36 @@ const availableFilteredPrograms = computed(() => {
 })
 
 const tnaOptions = computed(() => [
-  { value: '', label: '-- Seluruh Usulan TNA --' },
+  { value: '', label: l('-- All TNA Proposals --', '-- Seluruh Usulan TNA --') },
   ...tnaList.value.map(t => ({
     value: t.id,
-    label: `[${t.document_number || 'TNA-' + t.year}] ${t.title || 'TNA ' + t.year} (${t.tna_status || 'Aktif'})`
+    label: `[${t.document_number || 'TNA-' + t.year}] ${t.title || 'TNA ' + t.year} (${t.tna_status === 'Closed' ? l('Closed', 'Ditutup') : l('Active', 'Aktif')})`
   }))
 ])
 
 const programOptions = computed(() => [
-  { value: '', label: '-- Seluruh Program Pelatihan --' },
+  { value: '', label: l('-- All Training Programs --', '-- Seluruh Program Pelatihan --') },
   ...availableFilteredPrograms.value.map(p => ({
     value: p.id,
     label: `[${p.program_code}] ${p.title}`
   }))
 ])
 
-const statusOptions = [
-  { value: '', label: '-- Seluruh Status Otorisasi --' },
-  { value: 'APPROVED', label: 'Disetujui Checker (APPROVED)' },
-  { value: 'PENDING_CHECKER', label: 'Menunggu Checker' },
-  { value: 'ONGOING', label: 'Sedang Berjalan (ONGOING)' },
-  { value: 'COMPLETED', label: 'Selesai (COMPLETED)' }
-]
+const statusOptions = computed(() => [
+  { value: '', label: l('-- All Authorization Statuses --', '-- Seluruh Status Otorisasi --') },
+  { value: 'APPROVED', label: l('Approved by Checker', 'Disetujui Verifikator') },
+  { value: 'PENDING_CHECKER', label: l('Pending Checker', 'Menunggu Verifikator') },
+  { value: 'ONGOING', label: l('Ongoing', 'Sedang Berjalan') },
+  { value: 'COMPLETED', label: l('Completed', 'Selesai') }
+])
 
-const methodOptions = [
-  { value: '', label: '-- Seluruh Metode --' },
-  { value: 'In-Classroom', label: 'In-Classroom' },
-  { value: 'Virtual', label: 'Virtual Classroom' },
-  { value: 'Hybrid', label: 'Hybrid' },
-  { value: 'E-Learning', label: 'ELAPSE E-Learning' }
-]
+const methodOptions = computed(() => [
+  { value: '', label: l('-- All Methods --', '-- Seluruh Metode --') },
+  { value: 'In-Classroom', label: l('In-Classroom', 'Tatap Muka (Kelas)') },
+  { value: 'Virtual', label: l('Virtual Classroom', 'Kelas Virtual') },
+  { value: 'Hybrid', label: l('Hybrid', 'Kombinasi (Hybrid)') },
+  { value: 'E-Learning', label: l('ELAPSE E-Learning', 'Pembelajaran Daring ELAPSE') }
+])
 
 // Formatted data list for DataTable searching and sorting
 const formattedClasses = computed(() => {
@@ -137,16 +140,16 @@ const formattedClasses = computed(() => {
 
 // Columns matching SS2 Excel Wireframe:
 // Class ID | Program ID | PIC | Program | Start Date | End Date | Location | Facilitator | Action
-const classColumns = [
-  { key: 'class_code', label: 'Class ID', sortable: true, width: '130px', align: 'center' },
-  { key: 'program_code', label: 'Program ID', sortable: true, width: '130px', align: 'center' },
-  { key: 'pic_name', label: 'PIC', sortable: true, width: '140px' },
-  { key: 'program_title', label: 'Program', sortable: true },
-  { key: 'start_date', label: 'Start Date', sortable: true, width: '120px', align: 'center' },
-  { key: 'end_date', label: 'End Date', sortable: true, width: '120px', align: 'center' },
-  { key: 'location_or_url', label: 'Location', sortable: true, width: '160px' },
-  { key: 'trainer_name', label: 'Facilitator', sortable: true, width: '160px' }
-]
+const classColumns = computed(() => [
+  { key: 'class_code', label: l('Class ID', 'Kode Kelas'), sortable: true, width: '130px', align: 'center' },
+  { key: 'program_code', label: l('Program ID', 'Kode Program'), sortable: true, width: '130px', align: 'center' },
+  { key: 'pic_name', label: l('PIC', 'Penanggung Jawab'), sortable: true, width: '140px' },
+  { key: 'program_title', label: l('Program', 'Program'), sortable: true },
+  { key: 'start_date', label: l('Start Date', 'Tanggal Mulai'), sortable: true, width: '120px', align: 'center' },
+  { key: 'end_date', label: l('End Date', 'Tanggal Selesai'), sortable: true, width: '120px', align: 'center' },
+  { key: 'location_or_url', label: l('Location', 'Lokasi'), sortable: true, width: '160px' },
+  { key: 'trainer_name', label: l('Facilitator', 'Fasilitator'), sortable: true, width: '160px' }
+])
 
 function formatDateShort(val) {
   if (!val) return '-'
@@ -154,7 +157,9 @@ function formatDateShort(val) {
     const d = new Date(val)
     if (isNaN(d.getTime())) return val
     const day = String(d.getDate()).padStart(2, '0')
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+    const months = locale.value === 'en'
+      ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
     const month = months[d.getMonth()]
     const year = d.getFullYear()
     return `${day}-${month}-${year}`
@@ -241,7 +246,7 @@ function handleClassCreated(msg) {
   preselectedProgramId.value = null
   classViewMode.value = 'list'
   feedbackType.value = 'success'
-  feedbackMessage.value = msg || 'Batch Kelas berhasil disimpan!'
+  feedbackMessage.value = msg || l('Training class batch has been saved!', 'Angkatan kelas pelatihan berhasil disimpan!')
   fetchClasses()
 }
 
@@ -254,16 +259,19 @@ async function executeDelete() {
   if (!classToDelete.value) return
   isDeleting.value = true
   try {
-    const { data } = await apiClient.delete(`/classes/${classToDelete.value.id}`)
+    await apiClient.delete(`/classes/${classToDelete.value.id}`)
     feedbackType.value = 'success'
-    feedbackMessage.value = data.message || `Kelas ${classToDelete.value.class_code} berhasil dihapus.`
+    feedbackMessage.value = l(
+      `Class ${classToDelete.value.class_code} has been deleted.`,
+      `Kelas ${classToDelete.value.class_code} berhasil dihapus.`
+    )
     showDeleteModal.value = false
     classToDelete.value = null
     fetchClasses()
   } catch (err) {
     console.error('Failed to delete class:', err)
     feedbackType.value = 'error'
-    feedbackMessage.value = err.response?.data?.message || 'Gagal menghapus batch kelas.'
+    feedbackMessage.value = err.response?.data?.message || l('Failed to delete class batch.', 'Gagal menghapus angkatan kelas.')
     showDeleteModal.value = false
   } finally {
     isDeleting.value = false
@@ -335,8 +343,8 @@ defineExpose({
             <Presentation class="w-5 h-5" />
           </div>
           <div>
-            <p class="text-[11px] text-gray-400 font-medium">Batch Terdaftar</p>
-            <p class="text-xl font-extrabold text-gray-900">{{ classes.length }} Batch</p>
+            <p class="text-[11px] text-gray-400 font-medium">{{ $l('Registered Batches', 'Angkatan Terdaftar') }}</p>
+            <p class="text-xl font-extrabold text-gray-900">{{ classes.length }} {{ $l(classes.length === 1 ? 'Batch' : 'Batches', 'Angkatan') }}</p>
           </div>
         </div>
 
@@ -345,8 +353,8 @@ defineExpose({
             <Scale class="w-5 h-5" />
           </div>
           <div>
-            <p class="text-[11px] text-gray-400 font-medium">Antrean Checker</p>
-            <p class="text-xl font-extrabold text-amber-600 font-mono">{{ stats.pending_checker }} Menunggu</p>
+            <p class="text-[11px] text-gray-400 font-medium">{{ $l('Checker Queue', 'Antrean Verifikasi') }}</p>
+            <p class="text-xl font-extrabold text-amber-600 font-mono">{{ stats.pending_checker }} {{ $l('Pending', 'Menunggu') }}</p>
           </div>
         </div>
 
@@ -355,8 +363,8 @@ defineExpose({
             <Users class="w-5 h-5" />
           </div>
           <div>
-            <p class="text-[11px] text-gray-400 font-medium">Peserta Terdaftar</p>
-            <p class="text-xl font-extrabold text-gray-900">{{ stats.total_enrolled }} Pegawai</p>
+            <p class="text-[11px] text-gray-400 font-medium">{{ $l('Enrolled Participants', 'Peserta Terdaftar') }}</p>
+            <p class="text-xl font-extrabold text-gray-900">{{ stats.total_enrolled }} {{ $l('Employees', 'Pegawai') }}</p>
           </div>
         </div>
 
@@ -365,8 +373,8 @@ defineExpose({
             <ShieldCheck class="w-5 h-5" />
           </div>
           <div>
-            <p class="text-[11px] text-gray-400 font-medium">Batch Terotorisasi</p>
-            <p class="text-xl font-extrabold text-emerald-700">{{ stats.active_classes }} Aktif</p>
+            <p class="text-[11px] text-gray-400 font-medium">{{ $l('Authorized Batches', 'Angkatan Terotorisasi') }}</p>
+            <p class="text-xl font-extrabold text-emerald-700">{{ stats.active_classes }} {{ $l('Active', 'Aktif') }}</p>
           </div>
         </div>
       </div>
@@ -376,45 +384,45 @@ defineExpose({
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           <!-- Filter TNA -->
           <div>
-            <label class="block text-[11px] font-bold text-gray-600 mb-1">Filter TNA Usulan</label>
+            <label class="block text-[11px] font-bold text-gray-600 mb-1">{{ $l('TNA Proposal Filter', 'Filter Usulan TNA') }}</label>
             <AppSearchableSelect
               v-model="filterTnaId"
               :options="tnaOptions"
-              placeholder="-- Seluruh Usulan TNA --"
+              :placeholder="$l('-- All TNA Proposals --', '-- Seluruh Usulan TNA --')"
               @change="onFilterTnaChange"
             />
           </div>
 
           <!-- Filter Program -->
           <div>
-            <label class="block text-[11px] font-bold text-gray-600 mb-1">Filter Program Kerja</label>
+            <label class="block text-[11px] font-bold text-gray-600 mb-1">{{ $l('Work Program Filter', 'Filter Program Kerja') }}</label>
             <AppSearchableSelect
               v-model="filterProgramId"
               :options="programOptions"
-              placeholder="-- Seluruh Program Pelatihan --"
+              :placeholder="$l('-- All Training Programs --', '-- Seluruh Program Pelatihan --')"
               @change="fetchClasses"
             />
           </div>
 
           <!-- Filter Dual-Control Status -->
           <div>
-            <label class="block text-[11px] font-bold text-gray-600 mb-1">Filter Status Otorisasi</label>
+            <label class="block text-[11px] font-bold text-gray-600 mb-1">{{ $l('Authorization Status Filter', 'Filter Status Otorisasi') }}</label>
             <AppSearchableSelect
               v-model="filterStatus"
               :options="statusOptions"
-              placeholder="-- Seluruh Status Otorisasi --"
+              :placeholder="$l('-- All Authorization Statuses --', '-- Seluruh Status Otorisasi --')"
               @change="fetchClasses"
             />
           </div>
 
           <!-- Filter Metode & Reset -->
           <div>
-            <label class="block text-[11px] font-bold text-gray-600 mb-1">Metode Diklat</label>
+            <label class="block text-[11px] font-bold text-gray-600 mb-1">{{ $l('Training Method', 'Metode Pelatihan') }}</label>
             <div class="flex items-center gap-2">
               <AppSearchableSelect
                 v-model="filterMethod"
                 :options="methodOptions"
-                placeholder="-- Seluruh Metode --"
+                :placeholder="$l('-- All Methods --', '-- Seluruh Metode --')"
                 class="flex-1"
                 @change="fetchClasses"
               />
@@ -423,7 +431,7 @@ defineExpose({
                 @click="resetFilters"
                 type="button"
                 class="p-2 rounded-xl text-gray-400 hover:text-[#0067AC] hover:bg-blue-50 transition cursor-pointer shrink-0"
-                title="Reset Filter"
+                :title="$l('Reset Filters', 'Atur Ulang Filter')"
               >
                 <RotateCcw class="w-4 h-4" />
               </button>
@@ -447,7 +455,7 @@ defineExpose({
             <span
               @click="openDetail(row.id)"
               class="font-mono font-bold text-xs text-[#0067AC] bg-blue-50/80 px-2.5 py-0.5 rounded-md border border-blue-100 hover:bg-blue-100 transition cursor-pointer"
-              title="Klik untuk detail kelas"
+              :title="$l('Click for class details', 'Klik untuk detail kelas')"
             >
               {{ row.class_code }}
             </span>
@@ -482,7 +490,7 @@ defineExpose({
                 {{ row.method || 'In-Classroom' }}
               </span>
               <span>•</span>
-              <span class="font-medium text-gray-600">{{ row.enrolled_count || 0 }} Peserta</span>
+              <span class="font-medium text-gray-600">{{ row.enrolled_count || 0 }} {{ $l('Participants', 'Peserta') }}</span>
             </div>
           </div>
         </template>
@@ -506,7 +514,7 @@ defineExpose({
           <div class="flex items-center gap-1.5 text-gray-700 max-w-[180px]">
             <MapPin class="w-3.5 h-3.5 text-rose-500 shrink-0" />
             <span class="text-xs truncate font-medium" :title="row.location_or_url">
-              {{ row.location_or_url || 'Ruang 1' }}
+              {{ row.location_or_url || $l('Room 1', 'Ruang 1') }}
             </span>
           </div>
         </template>
@@ -526,10 +534,10 @@ defineExpose({
               type="button"
               @click="openDetail(row.id)"
               class="px-2.5 py-1 rounded-lg bg-blue-50 text-[#0067AC] hover:bg-blue-100 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
-              title="Lihat Detail, Presensi & Evaluasi"
+              :title="$l('View Details, Attendance & Evaluation', 'Lihat Detail, Presensi & Evaluasi')"
             >
               <Eye class="w-3.5 h-3.5" />
-              <span>Detail</span>
+              <span>{{ $l('Details', 'Rincian') }}</span>
             </button>
 
             <!-- Edit -->
@@ -537,10 +545,10 @@ defineExpose({
               type="button"
               @click="openEdit(row.id)"
               class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
-              title="Edit Batch Kelas"
+              :title="$l('Edit Class Batch', 'Ubah Angkatan Kelas')"
             >
               <Pencil class="w-3.5 h-3.5" />
-              <span>Edit</span>
+              <span>{{ $t('common.edit') }}</span>
             </button>
 
             <!-- Delete -->
@@ -548,10 +556,10 @@ defineExpose({
               type="button"
               @click="confirmDelete(row)"
               class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
-              title="Hapus Kelas"
+              :title="$l('Delete Class', 'Hapus Kelas')"
             >
               <Trash2 class="w-3.5 h-3.5" />
-              <span>Hapus</span>
+              <span>{{ $t('common.delete') }}</span>
             </button>
           </div>
         </template>
@@ -570,36 +578,41 @@ defineExpose({
             <Trash2 class="w-6 h-6 text-rose-600" />
           </div>
           <div>
-            <h3 class="font-bold text-gray-900 text-base">Hapus Batch Kelas</h3>
-            <p class="text-xs text-gray-500">Konfirmasi pembatalan dan penghapusan data kelas</p>
+            <h3 class="font-bold text-gray-900 text-base">{{ $l('Delete Class Batch', 'Hapus Angkatan Kelas') }}</h3>
+            <p class="text-xs text-gray-500">{{ $l('Confirm class cancellation and deletion', 'Konfirmasi pembatalan dan penghapusan data kelas') }}</p>
           </div>
         </div>
 
         <div class="bg-gray-50 rounded-2xl p-4 mb-4 border border-gray-100 space-y-2 text-xs">
           <div class="flex justify-between items-center">
-            <span class="text-gray-400">Class ID:</span>
+            <span class="text-gray-400">{{ $l('Class ID:', 'Kode Kelas:') }}</span>
             <span class="font-mono font-bold text-[#0067AC]">{{ classToDelete.class_code }}</span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-gray-400">Batch:</span>
+            <span class="text-gray-400">{{ $l('Batch:', 'Angkatan:') }}</span>
             <span class="font-bold text-gray-800">{{ classToDelete.batch_name }}</span>
           </div>
           <div class="flex justify-between items-start">
-            <span class="text-gray-400">Program:</span>
+            <span class="text-gray-400">{{ $l('Program:', 'Program:') }}</span>
             <span class="font-bold text-gray-800 text-right max-w-[200px] truncate" :title="classToDelete.program?.title">
               {{ classToDelete.program?.title || '-' }}
             </span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-gray-400">Jadwal:</span>
+            <span class="text-gray-400">{{ $l('Schedule:', 'Jadwal:') }}</span>
             <span class="font-medium text-gray-700 font-mono">
-              {{ formatDateShort(classToDelete.start_date) }} s/d {{ formatDateShort(classToDelete.end_date) }}
+              {{ formatDateShort(classToDelete.start_date) }} {{ $l('to', 's/d') }} {{ formatDateShort(classToDelete.end_date) }}
             </span>
           </div>
         </div>
 
         <div class="bg-rose-50 text-rose-700 p-3 rounded-2xl border border-rose-100 text-xs mb-6 leading-relaxed">
-          <strong>Peringatan:</strong> Seluruh data sesi agenda, dokumen materi, dokumentasi foto, dan riwayat peserta pada kelas ini akan ikut terhapus permanen.
+          <template v-if="$locale === 'en'">
+            <strong>Warning:</strong> All session agendas, learning materials, photo documentation, and participant records for this class will be permanently deleted.
+          </template>
+          <template v-else>
+            <strong>Peringatan:</strong> Seluruh data sesi agenda, dokumen materi, dokumentasi foto, dan riwayat peserta pada kelas ini akan ikut terhapus permanen.
+          </template>
         </div>
 
         <div class="flex items-center justify-end gap-2.5">
@@ -609,7 +622,7 @@ defineExpose({
             :disabled="isDeleting"
             class="px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer"
           >
-            Batal
+            {{ $t('common.cancel') }}
           </button>
           <button
             type="button"
@@ -617,8 +630,8 @@ defineExpose({
             :disabled="isDeleting"
             class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
-            <span v-if="isDeleting">Menghapus...</span>
-            <span v-else>Ya, Hapus Kelas</span>
+            <span v-if="isDeleting">{{ $l('Deleting...', 'Menghapus...') }}</span>
+            <span v-else>{{ $l('Yes, Delete Class', 'Ya, Hapus Kelas') }}</span>
           </button>
         </div>
       </div>

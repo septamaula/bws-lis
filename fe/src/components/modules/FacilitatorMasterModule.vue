@@ -21,6 +21,9 @@ import {
 } from 'lucide-vue-next'
 import apiClient from '@/api/client'
 import SubpageHeader from '@/components/SubpageHeader.vue'
+import { useI18n } from '@/i18n'
+
+const { l } = useI18n()
 
 const emit = defineEmits(['back'])
 
@@ -62,12 +65,29 @@ const showDeleteModal = ref(false)
 const itemToDelete = ref(null)
 const isDeleting = ref(false)
 
+const getTypeLabel = (type) => {
+  const map = {
+    'External Vendor': l('External Vendor', 'Vendor Eksternal'),
+    'Lembaga Sertifikasi': l('Certification Body', 'Lembaga Sertifikasi'),
+    'Internal Trainer': l('Internal Trainer', 'Pengajar Internal'),
+    'Institusi / Akademisi': l('Institution / Academic', 'Institusi / Akademisi')
+  }
+  return map[type] || type
+}
+
 const typeOptions = [
   'External Vendor',
   'Lembaga Sertifikasi',
   'Internal Trainer',
   'Institusi / Akademisi'
 ]
+
+const typeSelectOptions = computed(() =>
+  typeOptions.map(t => ({
+    value: t,
+    label: getTypeLabel(t)
+  }))
+)
 
 async function fetchData() {
   loading.value = true
@@ -79,7 +99,7 @@ async function fetchData() {
     }
   } catch (err) {
     feedbackType.value = 'error'
-    feedbackMsg.value = err.response?.data?.message || 'Gagal memuat data facilitator.'
+    feedbackMsg.value = l('Failed to load facilitator data.', err.response?.data?.message || 'Gagal memuat data fasilitator.')
   } finally {
     loading.value = false
   }
@@ -139,24 +159,24 @@ function openEditModal(item) {
 
 async function saveForm() {
   if (!form.value.name.trim()) {
-    alert('Nama Lembaga / Facilitator wajib diisi.')
+    alert(l('Institution / Facilitator Name is required.', 'Nama Lembaga / Fasilitator wajib diisi.'))
     return
   }
   isSubmitting.value = true
   try {
     if (editingItem.value) {
       await apiClient.put(`/facilitators/${editingItem.value.id}`, form.value)
-      feedbackMsg.value = `Facilitator '${form.value.name}' berhasil diperbarui.`
+      feedbackMsg.value = l(`Facilitator '${form.value.name}' updated successfully.`, `Fasilitator '${form.value.name}' berhasil diperbarui.`)
     } else {
       await apiClient.post('/facilitators', form.value)
-      feedbackMsg.value = `Facilitator '${form.value.name}' berhasil ditambahkan.`
+      feedbackMsg.value = l(`Facilitator '${form.value.name}' added successfully.`, `Fasilitator '${form.value.name}' berhasil ditambahkan.`)
     }
     feedbackType.value = 'success'
     showModal.value = false
     await fetchData()
     setTimeout(() => { feedbackMsg.value = '' }, 4000)
   } catch (err) {
-    alert(err.response?.data?.message || 'Gagal menyimpan data facilitator.')
+    alert(l('Failed to save facilitator data.', err.response?.data?.message || 'Gagal menyimpan data fasilitator.'))
   } finally {
     isSubmitting.value = false
   }
@@ -173,13 +193,13 @@ async function executeDelete() {
   try {
     await apiClient.delete(`/facilitators/${itemToDelete.value.id}`)
     feedbackType.value = 'success'
-    feedbackMsg.value = `Facilitator '${itemToDelete.value.name}' berhasil dihapus.`
+    feedbackMsg.value = l(`Facilitator '${itemToDelete.value.name}' deleted successfully.`, `Fasilitator '${itemToDelete.value.name}' berhasil dihapus.`)
     showDeleteModal.value = false
     itemToDelete.value = null
     await fetchData()
     setTimeout(() => { feedbackMsg.value = '' }, 4000)
   } catch (err) {
-    alert(err.response?.data?.message || 'Gagal menghapus facilitator.')
+    alert(l('Failed to delete facilitator.', err.response?.data?.message || 'Gagal menghapus fasilitator.'))
   } finally {
     isDeleting.value = false
   }
@@ -190,10 +210,10 @@ async function executeDelete() {
   <div class="flex flex-col gap-6 w-full pb-16">
     <!-- Subpage Navigation Header -->
     <SubpageHeader
-      back-label="Kembali ke Program Pelatihan"
-      title="Lembaga & Facilitator Pelatihan"
-      subtitle="Database vendor pelatihan eksternal, lembaga sertifikasi, dan trainer internal Bank Woori Saudara"
-      badge="Data Program"
+      :back-label="l('Back to Training Programs', 'Kembali ke Program Pelatihan')"
+      :title="l('Training Institutions & Facilitators', 'Lembaga & Fasilitator Pelatihan')"
+      :subtitle="l('Database of external training vendors, certification bodies, and internal trainers at Bank Woori Saudara', 'Basis data vendor pelatihan eksternal, lembaga sertifikasi, dan pengajar internal Bank Woori Saudara')"
+      :badge="l('Program Data', 'Data Program')"
       @back="emit('back')"
     >
       <template #actions>
@@ -202,7 +222,7 @@ async function executeDelete() {
           class="px-4 py-2 rounded-xl bg-[#0067AC] hover:bg-[#00558F] text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
         >
           <Plus class="w-4 h-4" />
-          <span>Tambah Facilitator</span>
+          <span>{{ l('Add Facilitator', 'Tambah Fasilitator') }}</span>
         </button>
       </template>
     </SubpageHeader>
@@ -230,8 +250,8 @@ async function executeDelete() {
           <Briefcase class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Total Facilitator</p>
-          <p class="text-lg font-extrabold text-gray-900">{{ facilitators.length }} Rekanan</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ l('Total Facilitators', 'Total Fasilitator') }}</p>
+          <p class="text-lg font-extrabold text-gray-900">{{ facilitators.length }} {{ l('Partners', 'Rekanan') }}</p>
         </div>
       </div>
 
@@ -240,9 +260,9 @@ async function executeDelete() {
           <Building2 class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">External Vendor</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ l('External Vendors', 'Vendor Eksternal') }}</p>
           <p class="text-lg font-extrabold text-purple-700">
-            {{ facilitators.filter(f => f.type === 'External Vendor').length }} Vendor
+            {{ facilitators.filter(f => f.type === 'External Vendor').length }} {{ l('Vendors', 'Vendor') }}
           </p>
         </div>
       </div>
@@ -252,9 +272,9 @@ async function executeDelete() {
           <Award class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Lembaga Sertifikasi</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ l('Certification Bodies', 'Lembaga Sertifikasi') }}</p>
           <p class="text-lg font-extrabold text-amber-700">
-            {{ facilitators.filter(f => f.type === 'Lembaga Sertifikasi').length }} Lembaga
+            {{ facilitators.filter(f => f.type === 'Lembaga Sertifikasi').length }} {{ l('Bodies', 'Lembaga') }}
           </p>
         </div>
       </div>
@@ -264,9 +284,9 @@ async function executeDelete() {
           <BookOpen class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Internal Academy</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ l('Internal Academy', 'Akademi Internal') }}</p>
           <p class="text-lg font-extrabold text-emerald-700">
-            {{ facilitators.filter(f => f.type === 'Internal Trainer').length }} Trainer
+            {{ facilitators.filter(f => f.type === 'Internal Trainer').length }} {{ l('Trainers', 'Pengajar') }}
           </p>
         </div>
       </div>
@@ -280,7 +300,7 @@ async function executeDelete() {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Cari nama, kode, atau spesialisasi..."
+            :placeholder="l('Search name, code, or specialization...', 'Cari nama, kode, atau spesialisasi...')"
             class="w-full bg-white text-xs text-gray-800 rounded-xl pl-9 pr-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
           />
           <Search class="w-4 h-4 text-gray-400 absolute left-3 top-3" />
@@ -292,7 +312,7 @@ async function executeDelete() {
             class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer"
             :class="selectedType === 'ALL' ? 'bg-[#0067AC] text-white shadow-2xs' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'"
           >
-            Semua Tipe
+            {{ l('All Types', 'Semua Tipe') }}
           </button>
           <button
             v-for="t in typeOptions"
@@ -301,7 +321,7 @@ async function executeDelete() {
             class="px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer"
             :class="selectedType === t ? 'bg-[#0067AC] text-white shadow-2xs' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'"
           >
-            {{ t }}
+            {{ getTypeLabel(t) }}
           </button>
         </div>
       </div>
@@ -311,24 +331,24 @@ async function executeDelete() {
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="border-b border-gray-200 bg-gray-50/80 text-[11px] font-extrabold text-gray-600 uppercase tracking-wider">
-              <th class="py-3.5 px-4 w-24">Kode</th>
-              <th class="py-3.5 px-4">Nama Facilitator / Provider</th>
-              <th class="py-3.5 px-4 w-40">Tipe Rekanan</th>
-              <th class="py-3.5 px-4">Kontak & PIC</th>
-              <th class="py-3.5 px-4">Bidang Spesialisasi</th>
-              <th class="py-3.5 px-4 w-24 text-center">Status</th>
-              <th class="py-3.5 px-4 w-28 text-center">Aksi</th>
+              <th class="py-3.5 px-4 w-24">{{ l('Code', 'Kode') }}</th>
+              <th class="py-3.5 px-4">{{ l('Facilitator / Provider Name', 'Nama Fasilitator / Penyedia') }}</th>
+              <th class="py-3.5 px-4 w-40">{{ l('Partner Type', 'Tipe Rekanan') }}</th>
+              <th class="py-3.5 px-4">{{ l('Contact & PIC', 'Kontak & Penanggung Jawab') }}</th>
+              <th class="py-3.5 px-4">{{ l('Specialization', 'Bidang Spesialisasi') }}</th>
+              <th class="py-3.5 px-4 w-24 text-center">{{ l('Status', 'Status') }}</th>
+              <th class="py-3.5 px-4 w-28 text-center">{{ l('Actions', 'Aksi') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100 font-medium text-gray-700">
             <tr v-if="loading">
               <td colspan="7" class="py-12 text-center text-gray-400">
-                Memuat data facilitator...
+                {{ l('Loading facilitator data...', 'Memuat data fasilitator...') }}
               </td>
             </tr>
             <tr v-else-if="filteredList.length === 0">
               <td colspan="7" class="py-12 text-center text-gray-400">
-                Tidak ada data facilitator yang sesuai pencarian.
+                {{ l('No facilitator records match your search.', 'Tidak ada data fasilitator yang sesuai pencarian.') }}
               </td>
             </tr>
             <tr
@@ -356,7 +376,7 @@ async function executeDelete() {
                     'bg-emerald-50 text-emerald-700 border border-emerald-200'
                   ]"
                 >
-                  {{ item.type }}
+                  {{ getTypeLabel(item.type) }}
                 </span>
               </td>
               <td class="py-3.5 px-4">
@@ -383,7 +403,7 @@ async function executeDelete() {
                   :class="item.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-100 text-gray-500 border border-gray-200'"
                 >
                   <span class="w-1.5 h-1.5 rounded-full" :class="item.is_active ? 'bg-emerald-500' : 'bg-gray-400'"></span>
-                  <span>{{ item.is_active ? 'Aktif' : 'Non-Aktif' }}</span>
+                  <span>{{ item.is_active ? l('Active', 'Aktif') : l('Inactive', 'Non-Aktif') }}</span>
                 </span>
               </td>
               <td class="py-3.5 px-4 text-center">
@@ -391,14 +411,14 @@ async function executeDelete() {
                   <button
                     @click="openEditModal(item)"
                     class="p-1 rounded-lg text-amber-600 hover:bg-amber-100 transition cursor-pointer"
-                    title="Edit Facilitator"
+                    :title="l('Edit Facilitator', 'Ubah Fasilitator')"
                   >
                     <Edit2 class="w-3.5 h-3.5" />
                   </button>
                   <button
                     @click="confirmDelete(item)"
                     class="p-1 rounded-lg text-rose-600 hover:bg-rose-100 transition cursor-pointer"
-                    title="Hapus Facilitator"
+                    :title="l('Delete Facilitator', 'Hapus Fasilitator')"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
                   </button>
@@ -423,9 +443,9 @@ async function executeDelete() {
             </div>
             <div>
               <h3 class="text-sm font-extrabold text-gray-900">
-                {{ editingItem ? 'Edit Data Facilitator' : 'Tambah Facilitator Baru' }}
+                {{ editingItem ? l('Edit Facilitator Details', 'Ubah Data Fasilitator') : l('Add New Facilitator', 'Tambah Fasilitator Baru') }}
               </h3>
-              <p class="text-[11px] text-gray-400">Pengaturan mitra lembaga pelatihan & trainer</p>
+              <p class="text-[11px] text-gray-400">{{ l('Configure training partner institutions and trainers', 'Pengaturan mitra lembaga pelatihan & pengajar') }}</p>
             </div>
           </div>
           <button @click="showModal = false" class="text-gray-400 hover:text-gray-600 p-1">
@@ -436,7 +456,7 @@ async function executeDelete() {
         <form @submit.prevent="saveForm" class="flex flex-col gap-3.5 text-xs">
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">Kode Rekanan</label>
+              <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">{{ l('Partner Code', 'Kode Rekanan') }}</label>
               <input
                 v-model="form.code"
                 type="text"
@@ -445,12 +465,12 @@ async function executeDelete() {
               />
             </div>
             <div>
-              <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">Tipe Rekanan</label>
+              <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">{{ l('Partner Type', 'Tipe Rekanan') }}</label>
               <AppSearchableSelect
                 v-model="form.type"
-                :options="typeOptions"
-                placeholder="Pilih tipe rekanan..."
-                search-placeholder="Cari tipe..."
+                :options="typeSelectOptions"
+                :placeholder="l('Select partner type...', 'Pilih tipe rekanan...')"
+                :search-placeholder="l('Search type...', 'Cari tipe...')"
                 input-class="rounded-xl px-3.5 py-2 border-gray-300 font-semibold text-gray-800 bg-white"
               />
             </div>
@@ -458,29 +478,29 @@ async function executeDelete() {
 
           <div>
             <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">
-              Nama Lembaga / Trainer <span class="text-rose-500">*</span>
+              {{ l('Institution / Trainer Name', 'Nama Lembaga / Pengajar') }} <span class="text-rose-500">*</span>
             </label>
             <input
               v-model="form.name"
               type="text"
               required
               class="w-full bg-white rounded-xl px-3.5 py-2 border border-gray-300 font-bold text-gray-900 focus:border-[#0067AC] focus:outline-none"
-              placeholder="e.g. PT Mitra Konsultan Perbankan"
+              :placeholder="l('e.g. PT Mitra Konsultan Perbankan', 'Contoh: PT Mitra Konsultan Perbankan')"
             />
           </div>
 
           <div class="grid grid-cols-3 gap-2.5">
             <div>
-              <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">Nama PIC</label>
+              <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">{{ l('PIC Name', 'Nama Penanggung Jawab') }}</label>
               <input
                 v-model="form.contact_person"
                 type="text"
                 class="w-full bg-white rounded-xl px-3 py-2 border border-gray-300 focus:border-[#0067AC] focus:outline-none"
-                placeholder="PIC / Koordinator"
+                :placeholder="l('PIC / Coordinator', 'Penanggung Jawab / Koordinator')"
               />
             </div>
             <div>
-              <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">No. Telp / WA</label>
+              <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">{{ l('Phone / WA', 'No. Telp / WA') }}</label>
               <input
                 v-model="form.phone"
                 type="text"
@@ -489,7 +509,7 @@ async function executeDelete() {
               />
             </div>
             <div>
-              <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">Email Resmi</label>
+              <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">{{ l('Official Email', 'Email Resmi') }}</label>
               <input
                 v-model="form.email"
                 type="email"
@@ -500,22 +520,22 @@ async function executeDelete() {
           </div>
 
           <div>
-            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">Bidang Spesialisasi Pelatihan</label>
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">{{ l('Training Specialization Field', 'Bidang Spesialisasi Pelatihan') }}</label>
             <input
               v-model="form.specialization"
               type="text"
               class="w-full bg-white rounded-xl px-3.5 py-2 border border-gray-300 focus:border-[#0067AC] focus:outline-none"
-              placeholder="e.g. Operasional Layanan, Credit Underwriting, Keamanan Siber"
+              :placeholder="l('e.g. Banking Operations, Credit Underwriting, Cybersecurity', 'Contoh: Operasional Layanan, Penilaian Kredit, Keamanan Siber')"
             />
           </div>
 
           <div>
-            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">Alamat Kantor / Domisili</label>
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1">{{ l('Office Address / Location', 'Alamat Kantor / Domisili') }}</label>
             <textarea
               v-model="form.address"
               rows="2"
               class="w-full bg-white rounded-xl px-3.5 py-2 border border-gray-300 focus:border-[#0067AC] focus:outline-none"
-              placeholder="Alamat lengkap gedung / kota..."
+              :placeholder="l('Full building address / city...', 'Alamat lengkap gedung / kota...')"
             ></textarea>
           </div>
 
@@ -527,7 +547,7 @@ async function executeDelete() {
               class="w-4 h-4 rounded text-[#0067AC] border-gray-300 focus:ring-[#0067AC] cursor-pointer"
             />
             <label for="fac-active" class="font-bold text-gray-700 cursor-pointer">
-              Status Aktif (Tersedia untuk dirujuk pada Form Usulan Program)
+              {{ l('Active Status (Available for Program Proposal Form selection)', 'Status Aktif (Tersedia untuk dirujuk pada Formulir Usulan Program)') }}
             </label>
           </div>
 
@@ -537,7 +557,7 @@ async function executeDelete() {
               @click="showModal = false"
               class="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
             >
-              Batal
+              {{ l('Cancel', 'Batal') }}
             </button>
             <button
               type="submit"
@@ -545,7 +565,7 @@ async function executeDelete() {
               class="px-5 py-2 rounded-xl text-xs font-bold bg-[#0067AC] hover:bg-[#00558F] text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <Save class="w-3.5 h-3.5" />
-              <span>{{ isSubmitting ? 'Menyimpan...' : 'Simpan Facilitator' }}</span>
+              <span>{{ isSubmitting ? l('Saving...', 'Menyimpan...') : l('Save Facilitator', 'Simpan Fasilitator') }}</span>
             </button>
           </div>
         </form>
@@ -563,13 +583,13 @@ async function executeDelete() {
             <Trash2 class="w-6 h-6" />
           </div>
           <div>
-            <h3 class="text-base font-extrabold text-gray-900">Hapus Facilitator</h3>
-            <p class="text-xs text-gray-500">Konfirmasi Penghapusan Rekanan</p>
+            <h3 class="text-base font-extrabold text-gray-900">{{ l('Delete Facilitator', 'Hapus Fasilitator') }}</h3>
+            <p class="text-xs text-gray-500">{{ l('Confirm Partner Deletion', 'Konfirmasi Penghapusan Rekanan') }}</p>
           </div>
         </div>
 
         <div class="bg-rose-50/70 p-3.5 rounded-2xl border border-rose-100 text-xs text-rose-800 leading-relaxed">
-          Apakah Anda yakin ingin menghapus rekanan <strong>{{ itemToDelete?.name }}</strong> ({{ itemToDelete?.code }})?
+          {{ l('Are you sure you want to delete partner', 'Apakah Anda yakin ingin menghapus rekanan') }} <strong>{{ itemToDelete?.name }}</strong> ({{ itemToDelete?.code }})?
         </div>
 
         <div class="flex items-center justify-end gap-2.5 pt-2">
@@ -577,7 +597,7 @@ async function executeDelete() {
             @click="showDeleteModal = false; itemToDelete = null"
             class="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
           >
-            Batal
+            {{ l('Cancel', 'Batal') }}
           </button>
           <button
             @click="executeDelete"
@@ -585,7 +605,7 @@ async function executeDelete() {
             class="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             <Trash2 class="w-3.5 h-3.5" />
-            <span>{{ isDeleting ? 'Menghapus...' : 'Ya, Hapus Sekarang' }}</span>
+            <span>{{ isDeleting ? l('Deleting...', 'Menghapus...') : l('Yes, Delete Now', 'Ya, Hapus Sekarang') }}</span>
           </button>
         </div>
       </div>

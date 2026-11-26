@@ -10,6 +10,9 @@ import {
   FileCheck
 } from 'lucide-vue-next'
 import DataTable from '@/components/DataTable.vue'
+import { useI18n } from '@/i18n'
+
+const { l } = useI18n()
 
 const props = defineProps({
   financials: {
@@ -49,26 +52,26 @@ const pendingDisbursed = computed(() => {
     .reduce((sum, f) => sum + Number(f.amount || 0), 0)
 })
 
-const transactionColumns = [
-  { key: 'trx_number', label: 'No. Voucher / Dokumen', sortable: true },
-  { key: 'description', label: 'Rincian Transaksi & Keperluan', sortable: true },
-  { key: 'category', label: 'Kategori Biaya', sortable: true },
+const transactionColumns = computed(() => [
+  { key: 'trx_number', label: l('Voucher / Document No.', 'No. Bukti / Dokumen'), sortable: true },
+  { key: 'description', label: l('Transaction Details & Purpose', 'Rincian Transaksi & Keperluan'), sortable: true },
+  { key: 'category', label: l('Cost Category', 'Kategori Biaya'), sortable: true },
   {
     key: 'amount',
-    label: 'Nominal Biaya (IDR)',
+    label: l('Amount (IDR)', 'Nominal Biaya (IDR)'),
     sortable: true,
     align: 'right',
     format: (val) => formatRupiah(val)
   },
-  { key: 'maker.name', label: 'Maker (Pengaju)', sortable: true },
-  { key: 'status', label: 'Status Otorisasi Checker', sortable: true, align: 'center' },
+  { key: 'maker.name', label: l('Requester (Maker)', 'Pengaju Transaksi'), sortable: true },
+  { key: 'status', label: l('Checker Authorization', 'Status Verifikasi'), sortable: true, align: 'center' },
   {
     key: 'created_at',
-    label: 'Tgl Transaksi',
+    label: l('Transaction Date', 'Tgl Transaksi'),
     sortable: true,
     format: (val) => val ? val.substring(0, 10) : '-'
   }
-]
+])
 </script>
 
 <template>
@@ -81,7 +84,7 @@ const transactionColumns = [
           <CheckCircle class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Realisasi Terbayar</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Disbursed Realization', 'Realisasi Terbayar') }}</p>
           <p class="text-xl font-extrabold text-[#0067AC] font-mono">{{ formatRupiah(totalDisbursed) }}</p>
         </div>
       </div>
@@ -91,7 +94,7 @@ const transactionColumns = [
           <Scale class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Antrean Checker</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Checker Queue', 'Antrean Verifikasi') }}</p>
           <p class="text-xl font-extrabold text-amber-600 font-mono">{{ formatRupiah(pendingDisbursed) }}</p>
         </div>
       </div>
@@ -101,8 +104,8 @@ const transactionColumns = [
           <Receipt class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Total Voucher</p>
-          <p class="text-xl font-extrabold text-gray-900">{{ financials.length }} Voucher</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Total Vouchers', 'Total Bukti Kas') }}</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ financials.length }} {{ $l(financials.length === 1 ? 'Voucher' : 'Vouchers', 'Dokumen') }}</p>
         </div>
       </div>
 
@@ -111,8 +114,8 @@ const transactionColumns = [
           <FileCheck class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Four-Eyes Control</p>
-          <p class="text-xl font-extrabold text-purple-700">100% Valid</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Four-Eyes Control', 'Kontrol Ganda') }}</p>
+          <p class="text-xl font-extrabold text-purple-700">{{ $l('100% Verified', '100% Sah') }}</p>
         </div>
       </div>
     </div>
@@ -122,20 +125,20 @@ const transactionColumns = [
       :data="financials"
       :columns="transactionColumns"
       date-key="created_at"
-      export-filename="transaksi_anggaran_diklat_bws"
+      export-filename="bws_training_budget_transactions"
       :default-per-page="10"
     >
 
       <!-- Custom Cell: Voucher Code -->
       <template #cell-trx_number="{ row }">
         <span class="font-mono text-xs font-bold text-[#0067AC] block">{{ row.trx_number }}</span>
-        <span class="text-[10px] text-gray-400">Lampiran: {{ row.receipt_attachment_url ? 'Kwitansi Valid' : 'Belum Ada' }}</span>
+        <span class="text-[10px] text-gray-400">{{ $l('Attachment:', 'Lampiran:') }} {{ row.receipt_attachment_url ? $l('Valid Receipt', 'Kwitansi Sah') : $l('None', 'Belum Ada') }}</span>
       </template>
 
       <!-- Custom Cell: Description -->
       <template #cell-description="{ row }">
         <p class="font-bold text-xs text-gray-900 leading-tight">{{ row.description }}</p>
-        <p class="text-[10px] text-gray-400 mt-0.5">{{ row.training_class?.program?.title || 'Biaya Operasional L&D' }}</p>
+        <p class="text-[10px] text-gray-400 mt-0.5">{{ row.training_class?.program?.title || $l('L&D Operational Expense', 'Biaya Operasional L&D') }}</p>
       </template>
 
       <!-- Custom Cell: Category -->
@@ -155,7 +158,7 @@ const transactionColumns = [
             class="w-1.5 h-1.5 rounded-full shrink-0"
             :class="row.status === 'APPROVED' ? 'bg-[#0067AC]' : 'bg-amber-500'"
           ></span>
-          {{ row.status === 'APPROVED' ? 'Disetujui Checker' : 'Menunggu Approval' }}
+          {{ row.status === 'APPROVED' ? $l('Approved by Checker', 'Disetujui Verifikator') : $l('Pending Approval', 'Menunggu Persetujuan') }}
         </span>
       </template>
 
@@ -165,18 +168,18 @@ const transactionColumns = [
           v-if="row.status === 'PENDING_APPROVAL' && isCheckerRole"
           @click="emit('approve-voucher', row)"
           class="px-3 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition shadow-2xs"
-          title="Otorisasi Pencairan Dana ini"
+          :title="$l('Authorize this fund disbursement', 'Otorisasi pencairan dana ini')"
         >
-          Otorisasi
+          {{ $l('Authorize', 'Otorisasi') }}
         </button>
         <span v-else-if="row.status === 'APPROVED'" class="text-[11px] text-[#0067AC] font-semibold">
-          Terbayar
+          {{ $l('Disbursed', 'Terbayar') }}
         </span>
         <button
           v-else
           class="px-3 py-1.5 rounded-full bg-[#f4f6f5] hover:bg-gray-200 text-gray-800 text-xs font-semibold transition"
         >
-          Bukti
+          {{ $l('Receipt', 'Bukti') }}
         </button>
       </template>
     </DataTable>

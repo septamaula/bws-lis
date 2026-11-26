@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import apiClient from '@/api/client'
+import { useI18n } from '@/i18n'
 import {
   LayoutGrid,
   Compass,
@@ -85,6 +86,7 @@ import CertificateModal from '@/components/modals/CertificateModal.vue'
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const { l } = useI18n()
 
 // Data State fetched from Backend REST API
 const loading = ref(true)
@@ -256,72 +258,72 @@ function handleOpenClassCreateFromProgram(programId) {
   }, 100)
 }
 
-const navigationModules = [
-  { id: 'dashboard', name: 'Dashboard LIS' },
-  { id: 'tna', name: 'TNA & Plan' },
-  { id: 'program', name: 'Program Kerja' },
-  { id: 'class', name: 'Jadwal Kelas' },
-  { id: 'participants', name: 'Peserta Diklat' },
-  { id: 'eval', name: 'Evaluasi & Nilai' },
-  { id: 'task', name: 'Penugasan' },
-  { id: 'memo', name: 'Memo' },
-  { id: 'transaction', name: 'Transaksi & Reimburse' },
-  { id: 'certification', name: 'Sertifikasi Wajib' },
-  { id: 'reporting', name: 'Laporan & Audit' },
-  { id: 'rbac', name: 'Kelola User & RBAC' }
-]
+const navigationModules = computed(() => [
+  { id: 'dashboard', name: l('LIS Dashboard', 'Dasbor LIS') },
+  { id: 'tna', name: l('TNA & Plan', 'TNA & Perencanaan') },
+  { id: 'program', name: l('Training Programs', 'Program Kerja') },
+  { id: 'class', name: l('Class Schedule', 'Jadwal Kelas') },
+  { id: 'participants', name: l('Participants', 'Peserta Pelatihan') },
+  { id: 'eval', name: l('Evaluation & Scores', 'Evaluasi & Nilai') },
+  { id: 'task', name: l('Tasks', 'Penugasan') },
+  { id: 'memo', name: l('Memos', 'Memo Kedinasan') },
+  { id: 'transaction', name: l('Transactions & Claims', 'Transaksi & Klaim Biaya') },
+  { id: 'certification', name: l('Mandatory Certifications', 'Sertifikasi Wajib') },
+  { id: 'reporting', name: l('Reports & Audit', 'Laporan & Audit') },
+  { id: 'rbac', name: l('Users & RBAC', 'Pengguna & RBAC') }
+])
 
 const currentTabTitle = computed(() => {
   switch (activeTab.value) {
-    case 'dashboard': return 'Executive & Operational Dashboard'
+    case 'dashboard': return l('Executive & Operational Dashboard', 'Dasbor Eksekutif & Operasional')
     case 'tna':
-      if (tnaViewMode.value === 'categories') return 'Master Kategori Pelatihan (TNA)'
-      if (tnaViewMode.value === 'years') return 'Master Tahun Anggaran & Status TNA'
-      return 'Daftar TNA'
+      if (tnaViewMode.value === 'categories') return l('Training Categories Master (TNA)', 'Master Kategori Pelatihan (TNA)')
+      if (tnaViewMode.value === 'years') return l('Fiscal Years & TNA Status Master', 'Master Tahun Anggaran & Status TNA')
+      return l('TNA Directory', 'Daftar TNA')
     case 'program':
-      if (programViewMode.value === 'facilitator') return 'Lembaga & Facilitator'
-      if (programViewMode.value === 'bi_categories') return 'Kategori Regulasi BI / OJK'
-      return 'Daftar Program'
+      if (programViewMode.value === 'facilitator') return l('Institutions & Facilitators', 'Lembaga & Fasilitator')
+      if (programViewMode.value === 'bi_categories') return l('BI / OJK Regulatory Categories', 'Kategori Regulasi BI / OJK')
+      return l('Program Directory', 'Daftar Program')
     case 'class':
-      if (classViewMode.value === 'locations') return 'Ruangan & Lokasi Diklat'
-      return 'Daftar Class'
-    case 'participants': return 'Peserta & Activity Tracking'
-    case 'eval': return 'Evaluasi & Nilai Peserta'
-    case 'task': return 'Penugasan & Task Management'
-    case 'memo': return 'Daftar Memo'
-    case 'transaction': return 'Transaksi Keuangan & Reimbursement'
-    case 'certification': return 'Sertifikasi Wajib & Lisensi Profesi'
-    case 'reporting': return 'Reporting Center & Audit Trail'
+      if (classViewMode.value === 'locations') return l('Training Rooms & Locations', 'Ruangan & Lokasi Pelatihan')
+      return l('Class Directory', 'Daftar Kelas')
+    case 'participants': return l('Participants & Activity Tracking', 'Peserta & Pelacakan Aktivitas')
+    case 'eval': return l('Participant Evaluation & Scores', 'Evaluasi & Nilai Peserta')
+    case 'task': return l('Assignments & Task Management', 'Penugasan & Manajemen Tugas')
+    case 'memo': return l('Memo Directory', 'Daftar Memo')
+    case 'transaction': return l('Financial Transactions & Reimbursements', 'Transaksi Keuangan & Penggantian Biaya')
+    case 'certification': return l('Mandatory Certifications & Licenses', 'Sertifikasi Wajib & Lisensi Profesi')
+    case 'reporting': return l('Reporting Center & Audit Trail', 'Pusat Pelaporan & Jejak Audit')
     case 'rbac':
-      if (rbacSubTab.value === 'flowchart') return 'Bagan Alir (Flowchart) Proses Bisnis'
-      return 'Manajemen Pengguna & Matriks Hak Akses (RBAC)'
-    default: return 'Dashboard'
+      if (rbacSubTab.value === 'flowchart') return l('Business Process Flowchart', 'Bagan Alir Proses Bisnis')
+      return l('User Management & Access Control Matrix (RBAC)', 'Manajemen Pengguna & Matriks Hak Akses (RBAC)')
+    default: return l('Dashboard', 'Dasbor')
   }
 })
 
 const currentTabSubtitle = computed(() => {
   switch (activeTab.value) {
-    case 'dashboard': return 'Portal Operasional Terpadu Learning & Development — Bank Woori Saudara'
+    case 'dashboard': return l('Integrated Learning & Development Operations Portal — Bank Woori Saudara', 'Portal Operasional Terpadu Pembelajaran & Pengembangan — Bank Woori Saudara')
     case 'tna':
-      if (tnaViewMode.value === 'categories') return 'Kelola rumpun kompetensi, mata diklat, dan standar kurikulum perbankan'
-      if (tnaViewMode.value === 'years') return 'Kelola tahun buku anggaran, batas pagu regulator, dan status periode aktif'
-      return 'Perencanaan Kebutuhan Diklat & Usulan Anggaran Kompetensi Divisi Bank Woori Saudara'
+      if (tnaViewMode.value === 'categories') return l('Manage competency clusters, training subjects, and banking curriculum standards', 'Kelola rumpun kompetensi, mata pelatihan, dan standar kurikulum perbankan')
+      if (tnaViewMode.value === 'years') return l('Manage fiscal budget years, regulatory ceilings, and active cycle statuses', 'Kelola tahun buku anggaran, batas pagu regulator, dan status periode aktif')
+      return l('Division Competency Needs Analysis & Annual Training Budget Proposals — Bank Woori Saudara', 'Perencanaan Kebutuhan Pelatihan & Usulan Anggaran Kompetensi Divisi — Bank Woori Saudara')
     case 'program':
-      if (programViewMode.value === 'facilitator') return 'Kelola database rekanan lembaga diklat, vendor eksternal, institusi, dan instruktur'
-      if (programViewMode.value === 'bi_categories') return 'Kelola klasifikasi kepatuhan regulasi Bank Indonesia & Otoritas Jasa Keuangan'
-      return 'Katalog Program Kerja, Kurikulum Diklat, dan Sertifikasi Wajib Regulasi OJK / BI'
-    case 'class': return 'Katalog pelaksanaan batch kelas pelatihan perbankan BWS, instruktur/fasilitator, jadwal, dan monitoring kelas'
-    case 'participants': return 'Database Peserta Diklat, Kehadiran, dan Monitoring Progres Pelatihan LIS'
-    case 'eval': return 'Rekapitulasi Skor Pre-Test & Post-Test, Efektivitas Peningkatan Kompetensi Pegawai'
-    case 'task': return 'Monitoring Pengumpulan Action Learning Project & Penilaian Tugas Mandiri Peserta'
-    case 'memo': return 'Pencatatan nomor surat kedinasan, penugasan internal, dan korespondensi eksternal Divisi L&D'
-    case 'transaction': return 'Buku Transaksi Realisasi Anggaran, Klaim Biaya Diklat, dan Otorisasi Maker-Checker'
-    case 'certification': return 'Kepatuhan Lisensi Perbankan OJK & Bank Indonesia (Manajemen Risiko, SKSP, Tresuri)'
-    case 'reporting': return 'Pusat Unduh Laporan Realisasi Diklat, Sign-Off Berjenjang, dan Rekam Jejak Audit OJK'
+      if (programViewMode.value === 'facilitator') return l('Manage training partner institutions, external vendors, and internal instructors', 'Kelola basis data mitra lembaga pelatihan, vendor eksternal, institusi, dan instruktur')
+      if (programViewMode.value === 'bi_categories') return l('Manage Bank Indonesia & OJK regulatory compliance classifications', 'Kelola klasifikasi kepatuhan regulasi Bank Indonesia & Otoritas Jasa Keuangan')
+      return l('Work Plan Catalog, Training Curriculum, and OJK / BI Mandatory Certifications', 'Katalog Program Kerja, Kurikulum Pelatihan, dan Sertifikasi Wajib Regulasi OJK / BI')
+    case 'class': return l('Training batch execution catalog, facilitators, schedules, and operational monitoring', 'Katalog pelaksanaan angkatan kelas pelatihan BWS, fasilitator, jadwal, dan pemantauan kelas')
+    case 'participants': return l('Training participant roster, attendance records, and learning progress tracking', 'Basis data peserta pelatihan, kehadiran, dan pemantauan progres pembelajaran LIS')
+    case 'eval': return l('Pre-test & post-test score summary and employee competency improvement analytics', 'Rekapitulasi nilai pra-tes & pasca-tes serta analisis peningkatan kompetensi pegawai')
+    case 'task': return l('Action learning project submissions and independent assignment grading', 'Pemantauan pengumpulan proyek pembelajaran aksi & penilaian tugas mandiri peserta')
+    case 'memo': return l('Internal assignment letters and external L&D correspondence numbering log', 'Pencatatan nomor surat kedinasan, penugasan internal, dan korespondensi eksternal Divisi L&D')
+    case 'transaction': return l('Budget realization ledger, expense claims, and Dual-Control Maker-Checker authorizations', 'Buku transaksi realisasi anggaran, klaim biaya pelatihan, dan otorisasi kendali ganda')
+    case 'certification': return l('OJK & Bank Indonesia banking license compliance (Risk Management, Payment Systems, Treasury)', 'Kepatuhan lisensi perbankan OJK & Bank Indonesia (Manajemen Risiko, Sistem Pembayaran, Tresuri)')
+    case 'reporting': return l('Training realization report center, tiered sign-off, and OJK audit trail logs', 'Pusat unduh laporan realisasi pelatihan, pengesahan berjenjang, dan rekam jejak audit OJK')
     case 'rbac':
-      if (rbacSubTab.value === 'flowchart') return 'Dokumentasi Alur Proses Bisnis: TNA & Anggaran, Kelas, Evaluasi (Import Excel), Realisasi & Laporan'
-      return 'Konfigurasi Akun Pegawai, Tingkat Peran Jabatan, dan Matriks Kontrol Hak Akses'
-    default: return 'Portal Operasional Terpadu Learning & Development — Bank Woori Saudara'
+      if (rbacSubTab.value === 'flowchart') return l('End-to-end business process documentation: TNA, Classes, Evaluations, Realization & Reporting', 'Dokumentasi alur proses bisnis menyeluruh: TNA & Anggaran, Kelas, Evaluasi, Realisasi & Laporan')
+      return l('Employee account configuration, role hierarchy levels, and access permission matrix', 'Konfigurasi akun pegawai, tingkat peran jabatan, dan matriks kendali hak akses')
+    default: return l('Integrated Learning & Development Operations Portal — Bank Woori Saudara', 'Portal Operasional Terpadu Pembelajaran & Pengembangan — Bank Woori Saudara')
   }
 })
 
@@ -337,7 +339,7 @@ async function handleDownloadAuditCsv() {
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
   } catch (err) {
-    flashError.value = 'Gagal mengunduh file log audit trail.'
+    flashError.value = l('Failed to download audit trail log file.', 'Gagal mengunduh berkas log jejak audit.')
   }
 }
 
@@ -362,7 +364,7 @@ async function fetchDashboard() {
       }
     } catch (_) {}
   } catch (err) {
-    flashError.value = err.response?.data?.message || 'Gagal memuat data operasional.'
+    flashError.value = err.response?.data?.message || l('Failed to load operational dashboard data.', 'Gagal memuat data operasional dasbor.')
   } finally {
     loading.value = false
   }
@@ -401,7 +403,7 @@ async function handleSwitchRole(roleName) {
     flashSuccess.value = res.message
     await fetchDashboard()
   } catch (err) {
-    flashError.value = err.response?.data?.message || 'Gagal mengganti peran.'
+    flashError.value = err.response?.data?.message || l('Failed to switch user role.', 'Gagal mengganti peran pengguna.')
   }
 }
 
@@ -413,11 +415,22 @@ async function handleLogout() {
 // Notification handler
 function handleNotificationClick() {
   if (totalPendingApprovalsForUser.value > 0) {
-    flashSuccess.value = `Terdapat ${totalPendingApprovalsForUser.value} pengajuan operasional yang membutuhkan tindakan otorisasi Multi-Approval Anda.`
+    flashSuccess.value = l(
+      'You have {count} operational submissions awaiting your Multi-Approval action.',
+      'Terdapat {count} pengajuan operasional yang membutuhkan tindakan otorisasi berjenjang Anda.',
+      { count: totalPendingApprovalsForUser.value }
+    )
   } else if (kpis.value.pending_checker_approvals > 0) {
-    flashSuccess.value = `Terdapat ${kpis.value.pending_checker_approvals} total antrean approval pada sistem.`
+    flashSuccess.value = l(
+      'There are {count} pending approval items in the system queue.',
+      'Terdapat {count} total antrean persetujuan pada sistem.',
+      { count: kpis.value.pending_checker_approvals }
+    )
   } else {
-    flashSuccess.value = 'Semua antrean operasional saat ini dalam status sinkron & aman (OJK Compliant).'
+    flashSuccess.value = l(
+      'All operational queues are currently synchronized and OJK compliant.',
+      'Semua antrean operasional saat ini dalam status sinkron dan sesuai ketentuan OJK.'
+    )
   }
 }
 
@@ -453,12 +466,12 @@ async function handleApproveClass(cls) {
   try {
     const { data } = await apiClient.post(`/classes/${cls.id}/approve`, {
       decision: 'APPROVED',
-      checker_notes: 'Disetujui Checker melalui Dashboard Operasional.'
+      checker_notes: l('Approved by Checker via Operations Dashboard.', 'Disetujui oleh Pemeriksa melalui Dasbor Operasional.')
     })
     flashSuccess.value = data.message
     await fetchDashboard()
   } catch (err) {
-    flashError.value = err.response?.data?.message || 'Otorisasi batch ditolak.'
+    flashError.value = err.response?.data?.message || l('Batch authorization failed.', 'Otorisasi angkatan kelas ditolak.')
   }
 }
 
@@ -467,12 +480,12 @@ async function handleApproveVoucher(voucher) {
   try {
     const { data } = await apiClient.post(`/transactions/${voucher.id}/approve`, {
       decision: 'APPROVED',
-      checker_notes: 'Otorisasi pencairan disetujui Checker.'
+      checker_notes: l('Disbursement approved by Checker.', 'Otorisasi pencairan disetujui Pemeriksa.')
     })
     flashSuccess.value = data.message
     await fetchDashboard()
   } catch (err) {
-    flashError.value = err.response?.data?.message || 'Otorisasi voucher ditolak.'
+    flashError.value = err.response?.data?.message || l('Voucher authorization failed.', 'Otorisasi voucher ditolak.')
   }
 }
 
@@ -577,19 +590,22 @@ const totalPendingApprovalsForUser = computed(() => {
           <input
             v-model="globalSearch"
             type="text"
-            placeholder="Cari TNA, Program, Kelas, Peserta..."
+            :placeholder="$l('Search TNA, Programs, Classes, Participants...', 'Cari TNA, Program, Kelas, Peserta...')"
             class="w-full bg-[#f4f6f5] hover:bg-gray-100 focus:bg-white text-xs text-gray-800 rounded-full pl-9 pr-4 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none transition shadow-inner"
           />
         </div>
 
-        <!-- Right: Role Switcher + Notification + Profile -->
+        <!-- Right: Language Switcher + Refresh + Role Switcher + Notification + Profile -->
         <div class="flex items-center gap-2.5 shrink-0 relative z-10">
           
+          <!-- Language Switcher (EN / ID) -->
+          <LanguageSwitcher />
+
           <!-- Refresh Button -->
           <button
             @click="fetchDashboard"
             class="w-8 h-8 rounded-full bg-[#f4f6f5] hover:bg-blue-50 hover:text-[#0067AC] text-gray-500 flex items-center justify-center transition"
-            title="Segarkan Data"
+            :title="$t('common.refresh')"
           >
             <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': loading }" />
           </button>
@@ -599,10 +615,10 @@ const totalPendingApprovalsForUser = computed(() => {
             <button
               @click="showRoleDropdown = !showRoleDropdown"
               class="flex items-center gap-1.5 bg-[#f4f6f5] hover:bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200/80 transition text-xs font-semibold text-gray-700"
-              title="Ganti Peran Pengguna"
+              :title="$l('Switch User Role', 'Ganti Peran Pengguna')"
             >
               <ShieldCheck class="w-3.5 h-3.5 text-[#0067AC] shrink-0" />
-              <span class="truncate max-w-[130px]">{{ auth.user?.role_name || 'Manager L&D' }}</span>
+              <span class="truncate max-w-[130px]">{{ auth.user?.role_name || 'L&D Manager' }}</span>
               <ChevronDown class="w-3 h-3 text-gray-400" />
             </button>
 
@@ -612,7 +628,7 @@ const totalPendingApprovalsForUser = computed(() => {
               class="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-2xl shadow-xl p-2 z-50 space-y-1 animate-scaleIn"
             >
               <div class="px-3 py-1.5 border-b border-gray-100">
-                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Peran Perbankan (8 Role)</span>
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{{ $l('Banking Roles (8 Roles)', 'Peran Perbankan (8 Peran)') }}</span>
               </div>
               <button
                 v-for="r in availableRoles"
@@ -631,7 +647,7 @@ const totalPendingApprovalsForUser = computed(() => {
           <button
             @click="handleNotificationClick"
             class="w-8 h-8 rounded-full bg-[#f4f6f5] hover:bg-gray-200 flex items-center justify-center text-gray-600 transition relative"
-            title="Notifikasi"
+            :title="$l('Notifications', 'Notifikasi')"
           >
             <Bell class="w-4 h-4" />
             <span
@@ -645,7 +661,7 @@ const totalPendingApprovalsForUser = computed(() => {
             <div
               @click="showProfileDropdown = !showProfileDropdown"
               class="flex items-center gap-2 pl-1 cursor-pointer group"
-              title="Lihat Profil & Matriks Role"
+              :title="$l('View Profile & Role Matrix', 'Lihat Profil & Matriks Peran')"
             >
               <div class="w-8 h-8 rounded-full bg-[#EBF4FC] text-[#0067AC] font-bold text-xs flex items-center justify-center ring-2 ring-[#0067AC]/30">
                 {{ getInitials(auth.user?.name) }}
@@ -655,7 +671,7 @@ const totalPendingApprovalsForUser = computed(() => {
                   {{ auth.user?.name || 'Budi Santoso' }}
                 </p>
                 <p class="text-[10px] text-gray-400 font-medium">
-                  {{ auth.user?.role_name || 'Manager L&D' }}
+                  {{ auth.user?.role_name || 'L&D Manager' }}
                 </p>
               </div>
               <ChevronDown class="w-3.5 h-3.5 text-gray-400 hidden sm:block" />
@@ -676,7 +692,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 class="w-full text-left px-3 py-2 rounded-xl text-xs text-rose-600 hover:bg-rose-50 font-semibold transition flex items-center gap-2"
               >
                 <LogOut class="w-3.5 h-3.5" />
-                <span>Keluar dari Portal</span>
+                <span>{{ $l('Sign Out', 'Keluar dari Portal') }}</span>
               </button>
             </div>
           </div>
@@ -685,7 +701,7 @@ const totalPendingApprovalsForUser = computed(() => {
           <button
             @click="handleLogout"
             class="w-8 h-8 rounded-full bg-[#f4f6f5] hover:bg-rose-50 hover:text-rose-600 text-gray-500 flex items-center justify-center transition"
-            title="Keluar dari portal"
+            :title="$l('Sign out of portal', 'Keluar dari portal')"
           >
             <LogOut class="w-3.5 h-3.5" />
           </button>
@@ -725,14 +741,14 @@ const totalPendingApprovalsForUser = computed(() => {
                   id="side-dashboard"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition shadow-xs"
                   :class="activeTab === 'dashboard' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
-                  title="Executive & Operational Dashboard"
+                  :title="$l('Executive & Operational Dashboard', 'Dasbor Eksekutif & Operasional')"
                 >
                   <LayoutGrid class="w-4 h-4" />
                 </button>
                 <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-60">
                     <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">Dashboard LIS</span>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">{{ $l('LIS Dashboard', 'Dasbor LIS') }}</span>
                     </div>
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
@@ -743,7 +759,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <PieChart class="w-3.5 h-3.5" />
-                            Executive & Process Flow
+                            {{ $l('Executive & Process Flow', 'Dasbor Eksekutif & Alur Proses') }}
                           </span>
                           <ChevronRight class="w-3.5 h-3.5" />
                         </button>
@@ -754,7 +770,7 @@ const totalPendingApprovalsForUser = computed(() => {
                           class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-gray-900 transition"
                         >
                           <FileSpreadsheet class="w-3.5 h-3.5 text-gray-400" />
-                          All Training Report
+                          {{ $l('All Training Reports', 'Semua Laporan Pelatihan') }}
                         </button>
                       </li>
                     </ul>
@@ -769,15 +785,15 @@ const totalPendingApprovalsForUser = computed(() => {
                   id="side-tna"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
                   :class="activeTab === 'tna' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
-                  title="TNA / Training Plan"
+                  :title="$l('TNA & Training Plan', 'TNA & Perencanaan Pelatihan')"
                 >
                   <Compass class="w-4 h-4" />
                 </button>
                 <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
                     <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5 flex items-center justify-between">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">TNA / Training Plan</span>
-                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">Plan</span>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">{{ $l('TNA & Training Plan', 'TNA & Perencanaan') }}</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">{{ $l('Plan', 'Rencana') }}</span>
                     </div>
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
@@ -788,7 +804,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <FolderKanban class="w-3.5 h-3.5" />
-                            Daftar TNA
+                            {{ $l('TNA Directory', 'Daftar TNA') }}
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -796,7 +812,7 @@ const totalPendingApprovalsForUser = computed(() => {
 
                       <!-- Section Header: Master Data -->
                       <li class="pt-2 pb-1 px-3 border-t border-gray-100 mt-1 flex items-center justify-between">
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Master Data</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ $l('Master Data', 'Data Master') }}</span>
                         <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
                       </li>
                       <li>
@@ -807,7 +823,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <FolderTree class="w-3.5 h-3.5" />
-                            Kategori Pelatihan
+                            {{ $l('Training Categories', 'Kategori Pelatihan') }}
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -820,7 +836,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <CalendarRange class="w-3.5 h-3.5" />
-                            Tahun Anggaran
+                            {{ $l('Fiscal Years', 'Tahun Anggaran') }}
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -837,15 +853,15 @@ const totalPendingApprovalsForUser = computed(() => {
                   id="side-program"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
                   :class="activeTab === 'program' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
-                  title="Program Pelatihan"
+                  :title="$l('Training Programs', 'Program Pelatihan')"
                 >
                   <Layers class="w-4 h-4" />
                 </button>
                 <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
                     <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5 flex items-center justify-between">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">Program Pelatihan</span>
-                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">Work Plan</span>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">{{ $l('Training Programs', 'Program Pelatihan') }}</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">{{ $l('Work Plan', 'Rencana Kerja') }}</span>
                     </div>
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
@@ -856,7 +872,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <BookOpenCheck class="w-3.5 h-3.5" />
-                            Daftar Program
+                            {{ $l('Program Directory', 'Daftar Program') }}
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -864,7 +880,7 @@ const totalPendingApprovalsForUser = computed(() => {
 
                       <!-- Section Header: Master Data -->
                       <li class="pt-2 pb-1 px-3 border-t border-gray-100 mt-1 flex items-center justify-between">
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Master Data</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ $l('Master Data', 'Data Master') }}</span>
                         <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
                       </li>
                       <li>
@@ -875,7 +891,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <Users2 class="w-3.5 h-3.5" />
-                            Facilitator
+                            {{ $l('Facilitators & Partners', 'Fasilitator & Lembaga') }}
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -888,7 +904,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <Scale class="w-3.5 h-3.5" />
-                            Category BI
+                            {{ $l('BI Categories', 'Kategori Regulasi BI') }}
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -905,15 +921,15 @@ const totalPendingApprovalsForUser = computed(() => {
                   id="side-class"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
                   :class="activeTab === 'class' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
-                  title="Class & Implementation"
+                  :title="$l('Class & Implementation', 'Kelas & Pelaksanaan')"
                 >
                   <Presentation class="w-4 h-4" />
                 </button>
                 <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
                     <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5 flex items-center justify-between">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">Class & Implementation</span>
-                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">Batch</span>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">{{ $l('Class & Implementation', 'Kelas & Pelaksanaan') }}</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">{{ $l('Batch', 'Angkatan') }}</span>
                     </div>
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
@@ -924,7 +940,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <Presentation class="w-3.5 h-3.5" />
-                            Daftar Class
+                            {{ $l('Class Directory', 'Daftar Kelas') }}
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -937,7 +953,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <Plus class="w-3.5 h-3.5" />
-                            Buat Kelas Baru
+                            {{ $l('Create New Class', 'Buat Kelas Baru') }}
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -945,7 +961,7 @@ const totalPendingApprovalsForUser = computed(() => {
 
                       <!-- Section Header: Master Data -->
                       <li class="pt-2 pb-1 px-3 border-t border-gray-100 mt-1 flex items-center justify-between">
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Master Data</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">{{ $l('Master Data', 'Data Master') }}</span>
                         <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
                       </li>
                       <li>
@@ -956,7 +972,7 @@ const totalPendingApprovalsForUser = computed(() => {
                         >
                           <span class="flex items-center gap-2">
                             <MapPin class="w-3.5 h-3.5" />
-                            Ruangan / Lokasi
+                            {{ $l('Rooms & Locations', 'Ruangan & Lokasi') }}
                           </span>
                           <ChevronRight class="w-3.5 h-3.5 text-gray-400" />
                         </button>
@@ -973,14 +989,14 @@ const totalPendingApprovalsForUser = computed(() => {
                   id="side-participants"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
                   :class="(activeTab === 'participants' || activeTab === 'eval') ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
-                  title="Participants & Evaluation"
+                  :title="$l('Participants & Evaluation', 'Peserta & Evaluasi')"
                 >
                   <Users class="w-4 h-4" />
                 </button>
                 <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
                     <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">Participants & Eval</span>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">{{ $l('Participants & Evaluation', 'Peserta & Evaluasi') }}</span>
                     </div>
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
@@ -990,7 +1006,7 @@ const totalPendingApprovalsForUser = computed(() => {
                           :class="activeTab === 'participants' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <UserCheck class="w-3.5 h-3.5 text-gray-400" />
-                          Peserta, Pre/Post Test & Eval
+                          {{ $l('Participants & Assessments', 'Peserta & Ujian Pelatihan') }}
                         </button>
                       </li>
                       <li>
@@ -1000,7 +1016,7 @@ const totalPendingApprovalsForUser = computed(() => {
                           :class="activeTab === 'eval' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <Activity class="w-3.5 h-3.5 text-gray-400" />
-                          Activity Review & Evaluasi Nilai
+                          {{ $l('Evaluation & Score Analytics', 'Evaluasi & Rekap Nilai') }}
                         </button>
                       </li>
                     </ul>
@@ -1020,14 +1036,14 @@ const totalPendingApprovalsForUser = computed(() => {
                   id="side-task"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
                   :class="activeTab === 'task' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
-                  title="Task (Class/Independent)"
+                  :title="$l('Task Management', 'Manajemen Penugasan')"
                 >
                   <ClipboardCheck class="w-4 h-4" />
                 </button>
                 <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
                     <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">Task (Class/Indep.)</span>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">{{ $l('Tasks & Assignments', 'Penugasan Peserta') }}</span>
                     </div>
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
@@ -1037,7 +1053,7 @@ const totalPendingApprovalsForUser = computed(() => {
                           :class="activeTab === 'task' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <ListTodo class="w-3.5 h-3.5 text-gray-400" />
-                          Monitoring & Approval Task
+                          {{ $l('Task Monitoring & Approval', 'Pemantauan & Persetujuan Tugas') }}
                         </button>
                       </li>
                       <li>
@@ -1046,7 +1062,7 @@ const totalPendingApprovalsForUser = computed(() => {
                           class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#0067AC] transition"
                         >
                           <UploadCloud class="w-3.5 h-3.5 text-gray-400" />
-                          Buat Task / Upload Tugas Peserta
+                          {{ $l('Create Task / Submit Work', 'Buat Tugas / Unggah Hasil') }}
                         </button>
                       </li>
                     </ul>
@@ -1054,22 +1070,22 @@ const totalPendingApprovalsForUser = computed(() => {
                 </div>
               </div>
 
-              <!-- Memo (Internal & Eksternal) SS2 -->
+              <!-- Memo (Internal & Eksternal) -->
               <div class="relative group">
                 <button
                   @click="activeTab = 'memo'"
                   id="side-memo"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
                   :class="activeTab === 'memo' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
-                  title="Memo (Internal/Eksternal)"
+                  :title="$l('Official Memos (Internal / External)', 'Memo Kedinasan (Internal / Eksternal)')"
                 >
                   <FileText class="w-4 h-4" />
                 </button>
                 <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
                     <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5 flex items-center justify-between">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">Memo Kedinasan</span>
-                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">SS2</span>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">{{ $l('Official Memos', 'Memo Kedinasan') }}</span>
+                      <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">{{ $l('Correspondence', 'Surat') }}</span>
                     </div>
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
@@ -1079,7 +1095,7 @@ const totalPendingApprovalsForUser = computed(() => {
                           :class="activeTab === 'memo' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <FileSpreadsheet class="w-3.5 h-3.5 text-gray-400" />
-                          Daftar Memo (Internal & Eksternal)
+                          {{ $l('Memo Directory (Internal & External)', 'Daftar Memo (Internal & Eksternal)') }}
                         </button>
                       </li>
                     </ul>
@@ -1094,7 +1110,7 @@ const totalPendingApprovalsForUser = computed(() => {
                   id="side-transaction"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition relative"
                   :class="activeTab === 'transaction' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
-                  title="Transaction & Reimbursement"
+                  :title="$l('Transactions & Reimbursements', 'Transaksi & Penggantian Biaya')"
                 >
                   <Wallet class="w-4 h-4" />
                   <span
@@ -1105,7 +1121,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
                     <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">Transaction & Payment</span>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">{{ $l('Transactions & Payments', 'Transaksi & Pembayaran') }}</span>
                     </div>
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
@@ -1115,7 +1131,7 @@ const totalPendingApprovalsForUser = computed(() => {
                           :class="activeTab === 'transaction' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <Receipt class="w-3.5 h-3.5 text-gray-400" />
-                          Reimburse & Vendor Payment
+                          {{ $l('Claims & Vendor Payments', 'Klaim & Pembayaran Vendor') }}
                         </button>
                       </li>
                       <li>
@@ -1124,7 +1140,7 @@ const totalPendingApprovalsForUser = computed(() => {
                           class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#0067AC] transition"
                         >
                           <FilePlus2 class="w-3.5 h-3.5 text-gray-400" />
-                          Ajukan Klaim / Reimburse Baru
+                          {{ $l('Submit Expense Claim', 'Ajukan Klaim Biaya Baru') }}
                         </button>
                       </li>
                     </ul>
@@ -1132,21 +1148,21 @@ const totalPendingApprovalsForUser = computed(() => {
                 </div>
               </div>
 
-              <!-- Certification (Risk, SKSP, Tresuri) -->
+              <!-- Certification (Risk, SKSP, Treasury) -->
               <div class="relative group">
                 <button
                   @click="activeTab = 'certification'"
                   id="side-certification"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
                   :class="activeTab === 'certification' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
-                  title="Certification & Mandatory Exam"
+                  :title="$l('Certifications & Mandatory Exams', 'Sertifikasi & Ujian Wajib')"
                 >
                   <Award class="w-4 h-4" />
                 </button>
                 <div class="absolute left-full top-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
                     <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">Certification & Exam</span>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">{{ $l('Certifications & Exams', 'Sertifikasi & Ujian') }}</span>
                     </div>
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
@@ -1156,7 +1172,7 @@ const totalPendingApprovalsForUser = computed(() => {
                           :class="activeTab === 'certification' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <ShieldAlert class="w-3.5 h-3.5 text-gray-400" />
-                          Target vs Realisasi (Risk, SKSP, Tresuri)
+                          {{ $l('Target vs. Realization (Risk, SKSP, Treasury)', 'Target vs Realisasi (Risiko, SKSP, Tresuri)') }}
                         </button>
                       </li>
                       <li>
@@ -1165,7 +1181,7 @@ const totalPendingApprovalsForUser = computed(() => {
                           class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#0067AC] transition"
                         >
                           <CalendarPlus class="w-3.5 h-3.5 text-gray-400" />
-                          Update Realisasi Bulanan & Ujian
+                          {{ $l('Monthly Fulfillment & Exam Updates', 'Pembaruan Realisasi & Ujian') }}
                         </button>
                       </li>
                     </ul>
@@ -1180,14 +1196,14 @@ const totalPendingApprovalsForUser = computed(() => {
                   id="side-reporting"
                   class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
                   :class="activeTab === 'reporting' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
-                  title="Reporting Center & Sign-Off"
+                  :title="$l('Reporting Center & Sign-Off', 'Pusat Pelaporan & Pengesahan')"
                 >
                   <BarChart3 class="w-4 h-4" />
                 </button>
                 <div class="absolute left-full bottom-0 pl-3 hidden group-hover:block z-50">
                   <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
                     <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5">
-                      <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">Reporting Center</span>
+                      <span class="text-[11px] font-bold uppercase tracking-wider text-gray-800">{{ $l('Reporting Center', 'Pusat Pelaporan') }}</span>
                     </div>
                     <ul class="space-y-1 text-xs font-medium text-gray-600">
                       <li>
@@ -1197,7 +1213,7 @@ const totalPendingApprovalsForUser = computed(() => {
                           :class="activeTab === 'reporting' ? 'bg-[#0067AC]/10 text-[#0067AC] font-semibold' : 'hover:bg-[#f4f6f5] hover:text-[#0067AC]'"
                         >
                           <FileCheck2 class="w-3.5 h-3.5 text-gray-400" />
-                          All Training Info (Class/Yearly/Overall)
+                          {{ $l('All Training Reports (Class / Annual)', 'Semua Laporan Pelatihan (Kelas / Tahunan)') }}
                         </button>
                       </li>
                       <li>
@@ -1206,7 +1222,7 @@ const totalPendingApprovalsForUser = computed(() => {
                           class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[#f4f6f5] hover:text-[#0067AC] transition"
                         >
                           <Stamp class="w-3.5 h-3.5 text-gray-400" />
-                          Sign-Off Approved (1) & (2)
+                          {{ $l('Tiered Sign-Off Approvals', 'Pengesahan Berjenjang') }}
                         </button>
                       </li>
                     </ul>
@@ -1226,14 +1242,14 @@ const totalPendingApprovalsForUser = computed(() => {
                 id="side-rbac"
                 class="side-btn w-10 h-10 rounded-full flex items-center justify-center transition"
                 :class="activeTab === 'rbac' ? 'bg-[#0067AC] text-white shadow-sm' : 'text-gray-500 group-hover:bg-[#0067AC] group-hover:text-white'"
-                title="Kelola Pengguna & Matriks RBAC"
+                :title="$l('User & RBAC Matrix Management', 'Kelola Pengguna & Matriks RBAC')"
               >
                 <KeyRound class="w-4 h-4" />
               </button>
               <div class="absolute left-full bottom-0 pl-3 hidden group-hover:block z-50">
                 <div class="bg-white rounded-2xl p-2.5 shadow-xl border border-gray-100 w-64">
                   <div class="px-3 py-1.5 border-b border-gray-100 mb-1.5 flex items-center justify-between">
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">Kelola User & RBAC</span>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-[#0067AC]">{{ $l('Users & RBAC', 'Pengguna & RBAC') }}</span>
                     <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC]">LDMS</span>
                   </div>
                   <ul class="space-y-1 text-xs font-medium text-gray-600">
@@ -1245,7 +1261,7 @@ const totalPendingApprovalsForUser = computed(() => {
                       >
                         <span class="flex items-center gap-2">
                           <Users class="w-3.5 h-3.5" />
-                          Daftar Pengguna (User)
+                          {{ $l('User Directory', 'Daftar Pengguna') }}
                         </span>
                         <ChevronRight class="w-3.5 h-3.5" />
                       </button>
@@ -1258,7 +1274,7 @@ const totalPendingApprovalsForUser = computed(() => {
                       >
                         <span class="flex items-center gap-2">
                           <UserCheck class="w-3.5 h-3.5" />
-                          Master Karyawan (SDM)
+                          {{ $l('Employee Master (HR)', 'Master Karyawan (SDM)') }}
                         </span>
                         <ChevronRight class="w-3.5 h-3.5" />
                       </button>
@@ -1271,7 +1287,7 @@ const totalPendingApprovalsForUser = computed(() => {
                       >
                         <span class="flex items-center gap-2">
                           <Sliders class="w-3.5 h-3.5" />
-                          Setting Multi-Approval
+                          {{ $l('Multi-Approval Settings', 'Pengaturan Multi-Persetujuan') }}
                         </span>
                         <ChevronRight class="w-3.5 h-3.5" />
                       </button>
@@ -1284,7 +1300,7 @@ const totalPendingApprovalsForUser = computed(() => {
                       >
                         <span class="flex items-center gap-2">
                           <Workflow class="w-3.5 h-3.5 text-[#0067AC]" />
-                          Bagan Proses Bisnis
+                          {{ $l('Business Process Flowchart', 'Bagan Alir Proses Bisnis') }}
                         </span>
                         <ChevronRight class="w-3.5 h-3.5" />
                       </button>
@@ -1319,10 +1335,10 @@ const totalPendingApprovalsForUser = computed(() => {
               <button
                 @click="activeTab = 'tna'; tnaViewMode = 'years'"
                 class="bg-white px-3.5 py-2 rounded-full text-xs font-semibold text-gray-700 flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-100 transition"
-                title="Klik untuk Kelola Master Tahun Anggaran"
+                :title="$l('Click to manage Fiscal Year master settings', 'Klik untuk mengelola Master Tahun Anggaran')"
               >
                 <Calendar class="w-3.5 h-3.5 text-[#0067AC]" />
-                <span>Tahun Buku: {{ activeFiscalYear }}</span>
+                <span>{{ $l('Fiscal Year:', 'Tahun Buku:') }} {{ activeFiscalYear }}</span>
               </button>
               <button
                 v-if="canCreateClass"
@@ -1330,14 +1346,14 @@ const totalPendingApprovalsForUser = computed(() => {
                 class="bg-white px-3.5 py-2 rounded-full text-xs font-semibold text-gray-800 flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-100 transition"
               >
                 <Send class="w-3.5 h-3.5 text-[#0067AC]" />
-                <span>Send Class Invitation</span>
+                <span>{{ $l('Send Class Invitation', 'Kirim Undangan Kelas') }}</span>
               </button>
               <button
                 @click="showVoucherModal = true"
                 class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition"
               >
                 <Receipt class="w-3.5 h-3.5" />
-                <span>Klaim / Reimburse</span>
+                <span>{{ $l('Submit Expense Claim', 'Klaim Biaya') }}</span>
               </button>
             </div>
 
@@ -1349,11 +1365,11 @@ const totalPendingApprovalsForUser = computed(() => {
                 class="bg-[#0067AC] hover:bg-[#00528c] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
               >
                 <Plus class="w-3.5 h-3.5" />
-                <span>Usulan TNA Baru</span>
+                <span>{{ $l('New TNA Proposal', 'Usulan TNA Baru') }}</span>
               </button>
             </div>
 
-            <!-- 3. Program Kerja -->
+            <!-- 3. Training Programs -->
             <div v-else-if="activeTab === 'program'" class="flex items-center gap-2">
               <button
                 v-if="programViewMode === 'list'"
@@ -1361,7 +1377,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition cursor-pointer"
               >
                 <Plus class="w-3.5 h-3.5" />
-                <span>Buat Program Baru</span>
+                <span>{{ $l('Create New Program', 'Buat Program Baru') }}</span>
               </button>
             </div>
 
@@ -1373,7 +1389,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 class="bg-[#0067AC] hover:bg-[#00528c] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
               >
                 <Plus class="w-3.5 h-3.5" />
-                <span>Buat Kelas Baru</span>
+                <span>{{ $l('Create New Class', 'Buat Kelas Baru') }}</span>
               </button>
             </div>
 
@@ -1385,18 +1401,18 @@ const totalPendingApprovalsForUser = computed(() => {
                 class="bg-[#0067AC] hover:bg-[#00528c] text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
               >
                 <Plus class="w-3.5 h-3.5" />
-                <span>Buat Memo Baru</span>
+                <span>{{ $l('Create New Memo', 'Buat Memo Baru') }}</span>
               </button>
             </div>
 
-            <!-- 5. Transaksi Keuangan -->
+            <!-- 5. Financial Transactions -->
             <div v-else-if="activeTab === 'transaction'" class="flex items-center gap-2">
               <button
                 @click="showVoucherModal = true"
                 class="bg-[#0067AC] text-white px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm hover:bg-[#00528c] transition"
               >
                 <Receipt class="w-3.5 h-3.5" />
-                <span>Buat Voucher / Klaim</span>
+                <span>{{ $l('Create Voucher / Claim', 'Buat Voucher / Klaim') }}</span>
               </button>
             </div>
 
@@ -1407,7 +1423,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 class="bg-white px-3.5 py-2 rounded-full text-xs font-semibold text-gray-800 flex items-center gap-1.5 shadow-sm hover:bg-gray-50 border border-gray-100 transition"
               >
                 <Download class="w-3.5 h-3.5 text-[#0067AC]" />
-                <span>Unduh Audit CSV</span>
+                <span>{{ $l('Download Audit CSV', 'Unduh Log Audit CSV') }}</span>
               </button>
             </div>
 
@@ -1419,7 +1435,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 :class="rbacSubTab === 'users' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
               >
                 <Users class="w-3.5 h-3.5" />
-                <span>Kelola Pengguna</span>
+                <span>{{ $l('Manage Users', 'Kelola Pengguna') }}</span>
               </button>
 
               <button
@@ -1428,7 +1444,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 :class="rbacSubTab === 'karyawan' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
               >
                 <UserCheck class="w-3.5 h-3.5" />
-                <span>Master Karyawan</span>
+                <span>{{ $l('Employee Master', 'Master Karyawan') }}</span>
               </button>
 
               <button
@@ -1437,7 +1453,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 :class="rbacSubTab === 'levels' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
               >
                 <ShieldCheck class="w-3.5 h-3.5" />
-                <span>Tingkat Peran</span>
+                <span>{{ $l('Role Levels', 'Tingkat Peran') }}</span>
               </button>
 
               <button
@@ -1446,7 +1462,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 :class="rbacSubTab === 'matrix' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
               >
                 <Sliders class="w-3.5 h-3.5" />
-                <span>Matriks Hak Akses (RBAC)</span>
+                <span>{{ $l('Access Matrix (RBAC)', 'Matriks Hak Akses (RBAC)') }}</span>
               </button>
 
               <button
@@ -1455,7 +1471,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 :class="rbacSubTab === 'approvals' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
               >
                 <FileCheck2 class="w-3.5 h-3.5" />
-                <span>Setting Multi-Approval</span>
+                <span>{{ $l('Multi-Approval Rules', 'Pengaturan Persetujuan') }}</span>
               </button>
 
               <button
@@ -1464,7 +1480,7 @@ const totalPendingApprovalsForUser = computed(() => {
                 :class="rbacSubTab === 'flowchart' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'"
               >
                 <Workflow class="w-3.5 h-3.5" />
-                <span>Bagan Proses Bisnis</span>
+                <span>{{ $l('Process Flowchart', 'Bagan Proses Bisnis') }}</span>
               </button>
             </div>
           </div>
@@ -1490,7 +1506,7 @@ const totalPendingApprovalsForUser = computed(() => {
             </div>
           </div>
 
-          <!-- Pusat Otorisasi & Multi-Approval Priority Banner (ONLY ON DASHBOARD/ANALYTIC TAB) -->
+          <!-- Multi-Approval & Authorization Priority Banner -->
           <div
             v-if="activeTab === 'dashboard' && totalPendingApprovalsForUser > 0"
             class="w-full"
@@ -1502,13 +1518,13 @@ const totalPendingApprovalsForUser = computed(() => {
                 </div>
                 <div>
                   <div class="flex items-center gap-2 flex-wrap">
-                    <span class="font-bold text-sm tracking-wide uppercase text-white">Antrean Multi-Approval & Task Otorisasi</span>
+                    <span class="font-bold text-sm tracking-wide uppercase text-white">{{ $l('Multi-Approval & Authorization Queue', 'Antrean Multi-Persetujuan & Otorisasi') }}</span>
                     <span class="text-[10px] bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                      {{ totalPendingApprovalsForUser }} Menunggu Tindakan
+                      {{ $l('{count} Pending Action', '{count} Menunggu Tindakan', { count: totalPendingApprovalsForUser }) }}
                     </span>
                   </div>
                   <p class="text-blue-100/90 text-xs mt-0.5">
-                    Terdapat berkas yang membutuhkan otorisasi Anda berdasarkan matriks kewenangan peran <span class="font-semibold text-amber-300">[{{ auth.user?.role_name }}]</span>.
+                    {{ $l('Submissions are awaiting your authorization based on the authority matrix for', 'Terdapat berkas yang membutuhkan otorisasi Anda berdasarkan matriks kewenangan peran') }} <span class="font-semibold text-amber-300">[{{ auth.user?.role_name }}]</span>.
                   </p>
                   
                   <!-- Breakdown Pills per Module -->
@@ -1519,7 +1535,7 @@ const totalPendingApprovalsForUser = computed(() => {
                       class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white text-[11px] font-semibold border border-white/20 transition cursor-pointer"
                     >
                       <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                      {{ pendingTnaForUser.length }} Usulan TNA
+                      {{ $l('{count} TNA Proposals', '{count} Usulan TNA', { count: pendingTnaForUser.length }) }}
                     </button>
                     <button
                       v-if="pendingClassesForUser.length > 0"
@@ -1527,7 +1543,7 @@ const totalPendingApprovalsForUser = computed(() => {
                       class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white text-[11px] font-semibold border border-white/20 transition cursor-pointer"
                     >
                       <span class="w-2 h-2 rounded-full bg-sky-300"></span>
-                      {{ pendingClassesForUser.length }} Batch Kelas
+                      {{ $l('{count} Class Batches', '{count} Angkatan Kelas', { count: pendingClassesForUser.length }) }}
                     </button>
                     <button
                       v-if="pendingFinancialsForUser.length > 0"
@@ -1535,7 +1551,7 @@ const totalPendingApprovalsForUser = computed(() => {
                       class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white text-[11px] font-semibold border border-white/20 transition cursor-pointer"
                     >
                       <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                      {{ pendingFinancialsForUser.length }} Transaksi Keuangan
+                      {{ $l('{count} Financial Transactions', '{count} Transaksi Keuangan', { count: pendingFinancialsForUser.length }) }}
                     </button>
                   </div>
                 </div>
@@ -1547,16 +1563,16 @@ const totalPendingApprovalsForUser = computed(() => {
                   v-if="auth.user?.role_name === 'Super Admin'"
                   @click="activeTab = 'rbac'; rbacSubTab = 'approval_settings'"
                   class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-xs transition border border-white/20 flex items-center gap-1.5 cursor-pointer"
-                  title="Konfigurasi Alur Multi-Approval"
+                  :title="$l('Configure Multi-Approval Workflows', 'Konfigurasi Alur Persetujuan Berjenjang')"
                 >
                   <Sliders class="w-3.5 h-3.5 text-blue-200" />
-                  <span>Setting Alur</span>
+                  <span>{{ $l('Workflow Settings', 'Pengaturan Alur') }}</span>
                 </button>
                 <button
                   @click="pendingTnaForUser.length > 0 ? (activeTab = 'tna', tnaViewMode = 'list') : (pendingClassesForUser.length > 0 ? activeTab = 'class' : activeTab = 'transaction')"
                   class="px-4 py-2 rounded-xl bg-white hover:bg-blue-50 text-[#002855] font-bold text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
                 >
-                  <span>Tinjau Antrean Approval</span>
+                  <span>{{ $l('Review Approval Queue', 'Tinjau Antrean Persetujuan') }}</span>
                   <ChevronRight class="w-3.5 h-3.5" />
                 </button>
               </div>

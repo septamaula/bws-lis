@@ -9,6 +9,9 @@ import {
   FileCheck
 } from 'lucide-vue-next'
 import DataTable from '@/components/DataTable.vue'
+import { useI18n } from '@/i18n'
+
+const { l } = useI18n()
 
 const props = defineProps({
   trainingClasses: {
@@ -25,11 +28,11 @@ const taskData = computed(() => {
     {
       id: 1,
       code: '#TSK-2026-041',
-      title: 'Action Learning Project: Credit Analyst Batch IV',
-      classTitle: 'Commercial Credit Analysis IV',
+      title: l('Action Learning Project: Credit Analyst Batch IV', 'Proyek Pembelajaran Aksi: Analis Kredit Angkatan IV'),
+      classTitle: l('Commercial Credit Analysis IV', 'Analisis Kredit Komersial IV'),
       participant: 'Andi Saputra',
       nik: 'NIK-10291',
-      file: 'Analisis_Kelayakan_Kredit_PT_Maju.pdf',
+      file: l('Credit_Feasibility_Analysis_PT_Maju.pdf', 'Analisis_Kelayakan_Kredit_PT_Maju.pdf'),
       grade: 92,
       status: 'GRADED',
       deadline: '2026-05-18',
@@ -38,11 +41,11 @@ const taskData = computed(() => {
     {
       id: 2,
       code: '#TSK-2026-042',
-      title: 'Studi Kasus: Mitigasi Risiko Kredit Macet NPL',
-      classTitle: 'Risk Management Sertifikasi SMR 2',
+      title: l('Case Study: Non-Performing Loan (NPL) Risk Mitigation', 'Studi Kasus: Mitigasi Risiko Kredit Macet (NPL)'),
+      classTitle: l('Risk Management Certification SMR 2', 'Sertifikasi Manajemen Risiko SMR 2'),
       participant: 'Budi Santoso',
       nik: 'NIK-10344',
-      file: 'Kajian_Restrukturisasi_Debitur_Retail.xlsx',
+      file: l('Retail_Debtor_Restructuring_Study.xlsx', 'Kajian_Restrukturisasi_Debitur_Retail.xlsx'),
       grade: 88,
       status: 'GRADED',
       deadline: '2026-05-20',
@@ -51,11 +54,11 @@ const taskData = computed(() => {
     {
       id: 3,
       code: '#TSK-2026-043',
-      title: 'Audit Kepatuhan APU-PPT di Kantor Cabang',
-      classTitle: 'Anti-Money Laundering (APU-PPT)',
+      title: l('AML-CFT Compliance Audit at Branch Office', 'Audit Kepatuhan APU-PPT di Kantor Cabang'),
+      classTitle: l('Anti-Money Laundering & CFT (AML-CFT)', 'Anti Pencucian Uang & PPT (APU-PPT)'),
       participant: 'Citra Lestari',
       nik: 'NIK-10411',
-      file: 'Checklist_Audit_Cabang_Bandung.pdf',
+      file: l('Bandung_Branch_Audit_Checklist.pdf', 'Daftar_Periksa_Audit_Cabang_Bandung.pdf'),
       grade: null,
       status: 'SUBMITTED',
       deadline: '2026-05-25',
@@ -64,11 +67,11 @@ const taskData = computed(() => {
     {
       id: 4,
       code: '#TSK-2026-044',
-      title: 'Perumusan Strategi Akuisisi Nasabah Payroll',
-      classTitle: 'Branch Manager Leadership Bootcamp',
+      title: l('Corporate Payroll Acquisition Strategy Formulation', 'Perumusan Strategi Akuisisi Nasabah Penggajian Korporasi'),
+      classTitle: l('Branch Manager Leadership Bootcamp', 'Pelatihan Kepemimpinan Kepala Cabang'),
       participant: 'Dedi Kurniawan',
       nik: 'NIK-10115',
-      file: 'Proposal_Inovasi_Payroll_Corporate.pptx',
+      file: l('Corporate_Payroll_Innovation_Proposal.pptx', 'Proposal_Inovasi_Penggajian_Korporasi.pptx'),
       grade: null,
       status: 'PENDING',
       deadline: '2026-05-28',
@@ -77,15 +80,15 @@ const taskData = computed(() => {
   ]
 })
 
-const taskColumns = [
-  { key: 'code', label: 'ID Tugas', sortable: true },
-  { key: 'title', label: 'Judul Penugasan / Action Plan', sortable: true },
-  { key: 'participant', label: 'Peserta & NIK', sortable: true },
-  { key: 'file', label: 'Dokumen Terlampir', sortable: true },
-  { key: 'grade', label: 'Nilai / Grade', sortable: true, align: 'center', format: (val) => val ? `${val} / 100` : '-' },
-  { key: 'status', label: 'Status Penilaian', sortable: true, align: 'center' },
-  { key: 'deadline', label: 'Batas Pengumpulan', sortable: true, format: (val) => val ? val.substring(0, 10) : '-' }
-]
+const taskColumns = computed(() => [
+  { key: 'code', label: l('Task ID', 'ID Tugas'), sortable: true },
+  { key: 'title', label: l('Assignment / Action Plan Title', 'Judul Penugasan / Rencana Aksi'), sortable: true },
+  { key: 'participant', label: l('Participant & NIK', 'Peserta & NIK'), sortable: true },
+  { key: 'file', label: l('Attached Document', 'Dokumen Terlampir'), sortable: true },
+  { key: 'grade', label: l('Score / Grade', 'Nilai'), sortable: true, align: 'center', format: (val) => val ? `${val} / 100` : '-' },
+  { key: 'status', label: l('Grading Status', 'Status Penilaian'), sortable: true, align: 'center' },
+  { key: 'deadline', label: l('Submission Deadline', 'Batas Pengumpulan'), sortable: true, format: (val) => val ? val.substring(0, 10) : '-' }
+])
 </script>
 
 <template>
@@ -98,8 +101,8 @@ const taskColumns = [
           <FileText class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Terkumpul</p>
-          <p class="text-xl font-extrabold text-gray-900">42 Dokumen</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Submitted', 'Terkumpul') }}</p>
+          <p class="text-xl font-extrabold text-gray-900">42 {{ $l('Documents', 'Dokumen') }}</p>
         </div>
       </div>
 
@@ -108,8 +111,8 @@ const taskColumns = [
           <CheckCircle class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Sudah Dinilai</p>
-          <p class="text-xl font-extrabold text-[#0067AC]">35 Tugas</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Graded', 'Sudah Dinilai') }}</p>
+          <p class="text-xl font-extrabold text-[#0067AC]">35 {{ $l('Tasks', 'Tugas') }}</p>
         </div>
       </div>
 
@@ -118,8 +121,8 @@ const taskColumns = [
           <Clock class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Menunggu Review</p>
-          <p class="text-xl font-extrabold text-amber-600">7 Dokumen</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Pending Grading', 'Menunggu Penilaian') }}</p>
+          <p class="text-xl font-extrabold text-amber-600">7 {{ $l('Documents', 'Dokumen') }}</p>
         </div>
       </div>
 
@@ -128,7 +131,7 @@ const taskColumns = [
           <FileCheck class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Rata-rata Nilai</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Average Score', 'Rata-rata Nilai') }}</p>
           <p class="text-xl font-extrabold text-purple-700 font-mono">89.4 <span class="text-xs text-gray-400 font-normal">/ 100</span></p>
         </div>
       </div>
@@ -139,7 +142,7 @@ const taskColumns = [
       :data="taskData"
       :columns="taskColumns"
       date-key="date"
-      export-filename="daftar_penugasan_peserta_bws"
+      export-filename="bws_participant_assignments"
       :default-per-page="10"
     >
       <!-- Custom Cell: Code -->
@@ -185,7 +188,7 @@ const taskColumns = [
             class="w-1.5 h-1.5 rounded-full shrink-0"
             :class="row.status === 'GRADED' ? 'bg-[#0067AC]' : row.status === 'SUBMITTED' ? 'bg-blue-600' : 'bg-gray-400'"
           ></span>
-          {{ row.status === 'GRADED' ? 'Selesai Dinilai' : row.status === 'SUBMITTED' ? 'Menunggu Penilaian' : 'Belum Upload' }}
+          {{ row.status === 'GRADED' ? $l('Graded', 'Selesai Dinilai') : row.status === 'SUBMITTED' ? $l('Pending Grading', 'Menunggu Penilaian') : $l('Not Uploaded', 'Belum Diunggah') }}
         </span>
       </template>
 
@@ -195,15 +198,15 @@ const taskColumns = [
           v-if="row.status === 'SUBMITTED'"
           @click="emit('grade-task', row)"
           class="px-3 py-1.5 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-semibold transition"
-          title="Beri Nilai Tugas Ini"
+          :title="$l('Grade This Assignment', 'Beri Nilai Tugas Ini')"
         >
-          Nilai
+          {{ $l('Grade', 'Beri Nilai') }}
         </button>
         <button
           v-else
           class="px-3 py-1.5 rounded-full bg-[#f4f6f5] hover:bg-gray-200 text-gray-800 text-xs font-semibold transition"
         >
-          Review
+          {{ $l('Review', 'Tinjau') }}
         </button>
       </template>
     </DataTable>

@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LoginPage from '@/pages/LoginPage';
 import LearnerDashboard from '@/pages/LearnerDashboard';
 import { LearnerUser } from '@/types/learner';
+import { I18nProvider } from '@/i18n';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,23 +31,25 @@ export default function App() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {user ? (
-        <LearnerDashboard
-          user={user}
-          onLogout={() => {
-            queryClient.clear();
-            setUser(null);
-          }}
-        />
-      ) : (
-        <LoginPage
-          onLoginSuccess={(loggedUser) => {
-            setUser(loggedUser);
-          }}
-        />
-      )}
-    </QueryClientProvider>
+    <I18nProvider>
+      <QueryClientProvider client={queryClient}>
+        {user ? (
+          <LearnerDashboard
+            user={user}
+            onLogout={() => {
+              queryClient.clear();
+              setUser(null);
+            }}
+          />
+        ) : (
+          <LoginPage
+            onLoginSuccess={(loggedUser) => {
+              setUser(loggedUser);
+            }}
+          />
+        )}
+      </QueryClientProvider>
+    </I18nProvider>
   );
 }
 

@@ -34,6 +34,9 @@ import {
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import SubpageHeader from '@/components/SubpageHeader.vue'
+import { useI18n } from '@/i18n'
+
+const { l, t } = useI18n()
 
 const props = defineProps({
   initialProgramId: {
@@ -109,16 +112,58 @@ const form = ref({
     { id: 3, category: 'Materi', question: 'Tampilan presentasi modul dapat dimengerti', rating: 4 },
     { id: 4, category: 'Pengajar', question: 'Kemampuan menjelaskan materi dengan bahasa yang mudah dipahami', rating: 4 },
     { id: 5, category: 'Pengajar', question: 'Menguasai isi materi yang dibawakan', rating: 4 },
-    { id: 6, category: 'Pengajar', question: 'Kemampuan menciptakan suasana belajar yang efektif baik dari sisi Metode dan Waktu', rating: 4 },
-    { id: 7, category: 'Kepanitiaan', question: 'Support panitia terhadap kelancaran proses training', rating: 4 },
-    { id: 8, category: 'Kepanitiaan', question: 'Support panitia terhadap pemenuhan kebutuhan peserta training', rating: 4 },
-    { id: 9, category: 'Kepanitiaan', question: 'Etika panitia dalam berinteraksi dengan peserta training', rating: 4 }
+    { id: 6, category: 'Pengajar', question: 'Kemampuan menciptakan suasana belajar yang efektif baik dari sisi metode dan waktu', rating: 4 },
+    { id: 7, category: 'Kepanitiaan', question: 'Dukungan panitia terhadap kelancaran proses pelatihan', rating: 4 },
+    { id: 8, category: 'Kepanitiaan', question: 'Dukungan panitia terhadap pemenuhan kebutuhan peserta pelatihan', rating: 4 },
+    { id: 9, category: 'Kepanitiaan', question: 'Etika panitia dalam berinteraksi dengan peserta pelatihan', rating: 4 }
   ],
 
   enrolled_participants: []
 })
 
-const evalCategoryOptions = ['Materi', 'Pengajar', 'Kepanitiaan']
+const evalCategoryOptions = computed(() => [
+  { value: 'Materi', label: l('Material', 'Materi') },
+  { value: 'Pengajar', label: l('Trainer', 'Pengajar') },
+  { value: 'Kepanitiaan', label: l('Committee', 'Kepanitiaan') }
+])
+
+const defaultEvalQuestionsEn = {
+  1: 'Beneficial for expanding knowledge and insights',
+  2: 'Helpful in supporting daily job performance',
+  3: 'Module presentation slides are clear and easy to understand',
+  4: 'Ability to explain material in clear and understandable language',
+  5: 'Demonstrates mastery of the subject matter delivered',
+  6: 'Ability to create an effective learning environment in terms of method and time management',
+  7: 'Committee support for smooth training delivery',
+  8: 'Committee responsiveness in fulfilling participant training needs',
+  9: 'Committee professionalism and etiquette when interacting with participants'
+}
+
+const defaultEvalQuestionsId = {
+  1: 'Memberikan manfaat dalam meningkatkan wawasan pengetahuan',
+  2: 'Memberikan manfaat dalam menunjang kinerja pekerjaan',
+  3: 'Tampilan presentasi modul dapat dimengerti',
+  4: 'Kemampuan menjelaskan materi dengan bahasa yang mudah dipahami',
+  5: 'Menguasai isi materi yang dibawakan',
+  6: 'Kemampuan menciptakan suasana belajar yang efektif baik dari sisi metode dan waktu',
+  7: 'Dukungan panitia terhadap kelancaran proses pelatihan',
+  8: 'Dukungan panitia terhadap pemenuhan kebutuhan peserta pelatihan',
+  9: 'Etika panitia dalam berinteraksi dengan peserta pelatihan'
+}
+
+function getEvalCategoryLabel(cat) {
+  if (cat === 'Materi') return l('Material', 'Materi')
+  if (cat === 'Pengajar') return l('Trainer', 'Pengajar')
+  if (cat === 'Kepanitiaan') return l('Committee', 'Kepanitiaan')
+  return cat
+}
+
+function getEvalQuestionDisplay(item) {
+  if (!item.is_custom && defaultEvalQuestionsEn[item.id]) {
+    return l(defaultEvalQuestionsEn[item.id], defaultEvalQuestionsId[item.id])
+  }
+  return item.question
+}
 
 function addEvaluationItem() {
   const nextId = form.value.evaluation_config.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1
@@ -249,19 +294,19 @@ function onProgramSelected() {
 // Generate default sessions / agenda from dates
 function generateDefaultSessions() {
   const topics = [
-    'Materi 1: Pengenalan Regulasi & Tata Kelola Risiko Perbankan',
-    'Materi 2: Kerangka Kerja Operasional & Pengendalian Internal',
-    'Materi 3: Studi Kasus, Simulasi Praktik & Problem Solving',
-    'Materi 4: Ujian Evaluasi Kompetensi & Action Plan'
+    l('Session 1: Introduction to Banking Regulation & Risk Governance', 'Materi 1: Pengenalan Regulasi & Tata Kelola Risiko Perbankan'),
+    l('Session 2: Operational Framework & Internal Control', 'Materi 2: Kerangka Kerja Operasional & Pengendalian Internal'),
+    l('Session 3: Case Studies, Practical Simulation & Problem Solving', 'Materi 3: Studi Kasus, Simulasi Praktik & Pemecahan Masalah'),
+    l('Session 4: Competency Evaluation Exam & Action Plan', 'Materi 4: Ujian Evaluasi Kompetensi & Rencana Aksi')
   ]
 
   const list = []
-  topics.forEach((t, i) => {
+  topics.forEach((topic, i) => {
     list.push({
       session_number: i + 1,
-      topic: t,
+      topic,
       duration_hours: 2,
-      trainer_name: form.value.trainer_name || 'Tim Fasilitator BWS',
+      trainer_name: form.value.trainer_name || l('BWS Facilitator Team', 'Tim Fasilitator BWS'),
       material_file_name: '',
       material_file_path: ''
     })
@@ -274,9 +319,9 @@ function addAgendaRow() {
   const nextNum = form.value.sessions.length + 1
   form.value.sessions.push({
     session_number: nextNum,
-    topic: `Materi ${nextNum}: Modul Pelatihan Lanjutan`,
+    topic: l(`Module ${nextNum}: Advanced Training Module`, `Materi ${nextNum}: Modul Pelatihan Lanjutan`),
     duration_hours: 2,
-    trainer_name: form.value.trainer_name || 'Instruktur',
+    trainer_name: form.value.trainer_name || l('Instructor', 'Pengajar'),
     material_file_name: '',
     material_file_path: ''
   })
@@ -294,8 +339,12 @@ function addDocumentRow() {
   const nextNum = form.value.documents.length + 1
   form.value.documents.push({
     id: Date.now() + Math.random(),
-    label: `File ${nextNum}`,
-    name: nextNum === 1 ? 'Surat Undangan Pelatihan Resmi' : nextNum === 2 ? 'Kerangka Acuan Kerja (TOR)' : `Dokumen Pendukung ${nextNum}`,
+    label: `${l('File', 'Berkas')} ${nextNum}`,
+    name: nextNum === 1
+      ? l('Official Training Invitation Letter', 'Surat Undangan Pelatihan Resmi')
+      : nextNum === 2
+      ? l('Terms of Reference (TOR)', 'Kerangka Acuan Kerja (TOR)')
+      : l(`Supporting Document ${nextNum}`, `Dokumen Pendukung ${nextNum}`),
     file_name: '',
     file_path: '',
     file_size: null
@@ -415,7 +464,7 @@ const locationOptions = computed(() => {
   return masterLocations.value.map(loc => ({
     value: loc.name,
     label: loc.name,
-    subLabel: `[${loc.code}] ${loc.building || '-'} (${loc.floor || '-'}) • Kapasitas: ${loc.capacity || '-'} orang`
+    subLabel: `[${loc.code}] ${loc.building || '-'} (${loc.floor || '-'}) • ${l('Capacity:', 'Kapasitas:')} ${loc.capacity || '-'} ${l('seats', 'orang')}`
   }))
 })
 
@@ -429,40 +478,40 @@ const facilitatorOptions = computed(() => {
 })
 
 const tnaSelectOptions = computed(() => [
-  { value: null, label: '-- Seluruh Dokumen TNA --' },
+  { value: null, label: l('-- All TNA Documents --', '-- Seluruh Dokumen TNA --') },
   ...displayedTnaList.value.map(tna => ({
     value: tna.id,
-    label: `${tna.proposal_code || 'TNA-' + tna.year} (Tahun ${tna.year}) • ${tna.tna_status || 'Aktif'}`
+    label: `${tna.proposal_code || 'TNA-' + tna.year} (${l('Year', 'Tahun')} ${tna.year}) • ${tna.tna_status === 'Closed' ? l('Closed', 'Ditutup') : l('Active', 'Aktif')}`
   }))
 ])
 
 const programSelectOptions = computed(() => [
-  { value: '', label: '-- Pilih Program Pelatihan --' },
+  { value: '', label: l('-- Select Training Program --', '-- Pilih Program Pelatihan --') },
   ...filteredPrograms.value.map(p => ({
     value: p.id,
     label: `[${p.program_code}] ${p.title}`,
-    subLabel: `Pagu: ${formatRupiah(p.total_budget)} • Target: ${p.target_participants_count || 0} Peserta`
+    subLabel: `${l('Budget:', 'Pagu:')} ${formatRupiah(p.total_budget)} • ${l('Target:', 'Target:')} ${p.target_participants_count || 0} ${l('Participants', 'Peserta')}`
   }))
 ])
 
-const methodSelectOptions = [
-  { value: 'In-Classroom', label: 'Tatap Muka (In-Classroom)' },
-  { value: 'Virtual', label: 'Virtual Classroom (Zoom/Teams)' },
-  { value: 'Hybrid', label: 'Hybrid Learning' },
-  { value: 'E-Learning', label: 'ELAPSE E-Learning LMS' }
-]
+const methodSelectOptions = computed(() => [
+  { value: 'In-Classroom', label: l('In-Classroom', 'Tatap Muka (Kelas)') },
+  { value: 'Virtual', label: l('Virtual Classroom (Zoom/Teams)', 'Kelas Virtual (Zoom/Teams)') },
+  { value: 'Hybrid', label: l('Hybrid Learning', 'Pembelajaran Hibrida') },
+  { value: 'E-Learning', label: l('ELAPSE E-Learning LMS', 'Pembelajaran Daring ELAPSE') }
+])
 
 const quickKaryawanOptions = computed(() => [
-  { value: '', label: '-- Pilih Pegawai dari Master Data Karyawan BWS --' },
+  { value: '', label: l('-- Select Employee from BWS Employee Master --', '-- Pilih Pegawai dari Master Data Karyawan BWS --') },
   ...masterPegawai.value.map(k => ({
     value: k.karyawan_id,
     label: `[${k.nik}] ${k.nama}`,
-    subLabel: `${k.departemen || '-'} (${k.jabatan || '-'}) ${isPegawaiEnrolled(k) ? '• (Sudah Terdaftar)' : ''}`
+    subLabel: `${k.departemen || '-'} (${k.jabatan || '-'}) ${isPegawaiEnrolled(k) ? l('• (Already Enrolled)', '• (Sudah Terdaftar)') : ''}`
   }))
 ])
 
 const deptFilterOptions = computed(() => [
-  { value: '', label: '-- Seluruh Unit Kerja --' },
+  { value: '', label: l('-- All Work Units --', '-- Seluruh Unit Kerja --') },
   ...uniquePegawaiDepts.value.map(d => ({ value: d, label: d }))
 ])
 
@@ -674,12 +723,12 @@ async function loadData() {
 
       // Default 2 documents
       form.value.documents = [
-        { id: 1, label: 'File 1', name: 'Surat Undangan Pelatihan Resmi', file_name: '', file_path: '' },
-        { id: 2, label: 'File 2', name: 'Kerangka Acuan Kerja (TOR)', file_name: '', file_path: '' }
+        { id: 1, label: `${l('File', 'Berkas')} 1`, name: l('Official Training Invitation Letter', 'Surat Undangan Pelatihan Resmi'), file_name: '', file_path: '' },
+        { id: 2, label: `${l('File', 'Berkas')} 2`, name: l('Terms of Reference (TOR)', 'Kerangka Acuan Kerja (TOR)'), file_name: '', file_path: '' }
       ]
     }
   } catch (err) {
-    feedback.value = { type: 'error', message: 'Gagal memuat data formulir kelas.' }
+    feedback.value = { type: 'error', message: l('Failed to load class form data.', 'Gagal memuat data formulir kelas.') }
   } finally {
     loadingInit.value = false
   }
@@ -692,32 +741,32 @@ onMounted(() => {
 // Submit Form
 async function submitForm() {
   if (!form.value.program_id) {
-    feedback.value = { type: 'error', message: 'Silakan pilih Program Pelatihan induk terlebih dahulu.' }
+    feedback.value = { type: 'error', message: l('Please select a parent Training Program first.', 'Silakan pilih Program Pelatihan induk terlebih dahulu.') }
     window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
   if (!form.value.batch_name) {
-    feedback.value = { type: 'error', message: 'Nama batch kelas wajib diisi (e.g. Batch 1).' }
+    feedback.value = { type: 'error', message: l('Class batch name is required (e.g. Batch 1).', 'Nama angkatan kelas wajib diisi (mis. Angkatan 1).') }
     window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
   if (!form.value.pic_name) {
-    feedback.value = { type: 'error', message: 'PIC Koordinator Kelas wajib dipilih dari Master Pegawai.' }
+    feedback.value = { type: 'error', message: l('Class Coordinator PIC must be selected from Employee Master.', 'Penanggung Jawab Kelas wajib dipilih dari Master Pegawai.') }
     window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
   if (!form.value.start_date || !form.value.end_date) {
-    feedback.value = { type: 'error', message: 'Tanggal mulai dan selesai kelas wajib diisi.' }
+    feedback.value = { type: 'error', message: l('Class start date and end date are required.', 'Tanggal mulai dan selesai kelas wajib diisi.') }
     window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
   if (!form.value.location_or_url) {
-    feedback.value = { type: 'error', message: 'Location / Ruang kelas wajib dipilih dari Master Ruangan.' }
+    feedback.value = { type: 'error', message: l('Location / Room must be selected from Room Master.', 'Lokasi / Ruangan kelas wajib dipilih dari Master Ruangan.') }
     window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
   if (!form.value.trainer_name) {
-    feedback.value = { type: 'error', message: 'Facilitator / Lembaga pelatihan wajib dipilih dari Master Facilitator.' }
+    feedback.value = { type: 'error', message: l('Facilitator / Institution must be selected from Facilitator Master.', 'Fasilitator / Lembaga pelatihan wajib dipilih dari Master Fasilitator.') }
     window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
@@ -756,17 +805,17 @@ async function submitForm() {
     }
 
     if (isEditMode.value) {
-      const { data } = await apiClient.put(`/classes/${props.editClassId}`, payload)
-      feedback.value = { type: 'success', message: data.message || 'Data kelas berhasil disimpan.' }
+      await apiClient.put(`/classes/${props.editClassId}`, payload)
+      feedback.value = { type: 'success', message: l('Class batch data has been saved.', 'Data kelas berhasil disimpan.') }
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
-      const { data } = await apiClient.post('/classes', payload)
-      emit('created', data.message || 'Batch Kelas berhasil dibuka!')
+      await apiClient.post('/classes', payload)
+      emit('created', l('Class batch has been opened!', 'Angkatan kelas berhasil dibuka!'))
     }
   } catch (err) {
     feedback.value = {
       type: 'error',
-      message: err.response?.data?.message || 'Gagal menyimpan data kelas. Periksa kembali inputan Anda.'
+      message: err.response?.data?.message || l('Failed to save class data. Please check your entries.', 'Gagal menyimpan data kelas. Periksa kembali isian Anda.')
     }
     window.scrollTo({ top: 0, behavior: 'smooth' })
   } finally {
@@ -780,10 +829,10 @@ async function submitForm() {
 
     <!-- Subpage Navigation Header -->
     <SubpageHeader
-      back-label="Kembali ke Daftar Class"
-      :title="isEditMode ? `Edit Batch Kelas: ${form.class_code}` : 'Form Buat Kelas Pelatihan Baru'"
-      subtitle="Pengaturan kelas diklat perbankan, pemilihan TNA & program, agenda materi, dokumen, foto dokumentasi, dan evaluasi"
-      :badge="isEditMode ? 'Mode Edit Kelas' : 'Create Class Batch'"
+      :back-label="$l('Back to Class List', 'Kembali ke Daftar Kelas')"
+      :title="isEditMode ? $l(`Edit Class Batch: ${form.class_code}`, `Ubah Angkatan Kelas: ${form.class_code}`) : $l('Create New Training Class Form', 'Formulir Buat Kelas Pelatihan Baru')"
+      :subtitle="$l('Banking training class configuration, TNA & program selection, session agenda, documents, photos, and evaluation', 'Pengaturan kelas diklat perbankan, pemilihan TNA & program, agenda materi, dokumen, dokumentasi foto, dan evaluasi')"
+      :badge="isEditMode ? $l('Edit Class Mode', 'Mode Ubah Kelas') : $l('Create Class Batch', 'Buat Angkatan Kelas')"
       @back="emit('back')"
     />
 
@@ -816,14 +865,14 @@ async function submitForm() {
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <span class="text-xs font-extrabold text-gray-900 uppercase tracking-wider">Pilih TNA Aktif</span>
+                <span class="text-xs font-extrabold text-gray-900 uppercase tracking-wider">{{ $l('Select Active TNA', 'Pilih TNA Aktif') }}</span>
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span>TNA Aktif</span>
+                  <span>{{ $l('Active TNA', 'TNA Aktif') }}</span>
                 </span>
               </div>
               <p class="text-[11px] text-gray-600 mt-0.5">
-                Pilih usulan TNA aktif untuk memfilter program kerja diklat yang tersedia.
+                {{ $l('Select an active TNA proposal to filter available training work programs.', 'Pilih usulan TNA aktif untuk memfilter program kerja diklat yang tersedia.') }}
               </p>
             </div>
           </div>
@@ -832,8 +881,8 @@ async function submitForm() {
             <AppSearchableSelect
               v-model="form.tna_id"
               :options="tnaSelectOptions"
-              placeholder="-- Seluruh Dokumen TNA --"
-              search-placeholder="Cari nomor atau tahun TNA..."
+              :placeholder="$l('-- All TNA Documents --', '-- Seluruh Dokumen TNA --')"
+              :search-placeholder="$l('Search TNA number or year...', 'Cari nomor atau tahun TNA...')"
               input-class="bg-white text-xs font-bold text-gray-900 py-2.5 border-2 border-blue-300 shadow-2xs"
               @change="onTnaChange"
             />
@@ -844,10 +893,10 @@ async function submitForm() {
         <div class="flex flex-col gap-3">
           <div class="flex items-center justify-between flex-wrap gap-2">
             <label class="block text-xs font-bold text-gray-800 uppercase tracking-wider">
-              Program Pelatihan Induk (Work Plan) <span class="text-rose-500">*</span>
+              {{ $l('Parent Training Program (Work Plan)', 'Program Pelatihan Induk (Rencana Kerja)') }} <span class="text-rose-500">*</span>
             </label>
             <span class="text-[11px] text-[#0067AC] font-bold bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
-              1 Program Bisa Untuk Beberapa Batch Kelas
+              {{ $l('1 Program Supports Multiple Class Batches', '1 Program Dapat Memiliki Banyak Angkatan Kelas') }}
             </span>
           </div>
 
@@ -855,8 +904,8 @@ async function submitForm() {
             <AppSearchableSelect
               v-model="form.program_id"
               :options="programSelectOptions"
-              placeholder="-- Pilih Program Pelatihan --"
-              search-placeholder="Cari kode atau judul program pelatihan..."
+              :placeholder="$l('-- Select Training Program --', '-- Pilih Program Pelatihan --')"
+              :search-placeholder="$l('Search program code or title...', 'Cari kode atau judul program pelatihan...')"
               input-class="bg-white text-xs font-bold text-gray-900 py-3 border-gray-300 shadow-2xs"
               @change="onProgramSelected"
             />
@@ -875,24 +924,24 @@ async function submitForm() {
                 <span class="text-gray-400">•</span>
                 <span class="font-bold text-gray-800">{{ selectedProgram.category }}</span>
                 <span class="text-gray-400">•</span>
-                <span class="text-gray-600 font-semibold">Tahun {{ selectedProgram.year }}</span>
+                <span class="text-gray-600 font-semibold">{{ $l('Year', 'Tahun') }} {{ selectedProgram.year }}</span>
               </div>
               <h4 class="font-extrabold text-sm text-gray-900">{{ selectedProgram.title }}</h4>
               <p class="text-[11px] text-gray-500 line-clamp-1">
-                Unit Pengusul: {{ selectedProgram.unit_initiator || selectedProgram.department }} &bull; Lokasi Rujukan: {{ selectedProgram.location || '-' }}
+                {{ $l('Initiating Unit:', 'Unit Pengusul:') }} {{ selectedProgram.unit_initiator || selectedProgram.department }} &bull; {{ $l('Reference Location:', 'Lokasi Rujukan:') }} {{ selectedProgram.location || '-' }}
               </p>
             </div>
 
             <div class="flex items-center gap-4 bg-white p-3 rounded-xl border border-gray-200 shrink-0">
               <div class="text-center px-2">
-                <span class="text-[10px] text-gray-400 block font-bold uppercase">Batch Terdaftar</span>
+                <span class="text-[10px] text-gray-400 block font-bold uppercase">{{ $l('Registered Batches', 'Angkatan Terdaftar') }}</span>
                 <span class="text-sm font-black text-[#0067AC]">
-                  {{ selectedProgram.classes_count || selectedProgram.classes?.length || 1 }} Batch
+                  {{ selectedProgram.classes_count || selectedProgram.classes?.length || 1 }} {{ $l('Batch', 'Angkatan') }}
                 </span>
               </div>
               <div class="h-6 w-px bg-gray-200"></div>
               <div class="text-center px-2">
-                <span class="text-[10px] text-gray-400 block font-bold uppercase">Passing Grade</span>
+                <span class="text-[10px] text-gray-400 block font-bold uppercase">{{ $l('Passing Grade', 'Nilai Lulus') }}</span>
                 <span class="text-sm font-black text-emerald-600">
                   {{ selectedProgram.passing_grade || 75 }} / 100
                 </span>
@@ -912,8 +961,8 @@ async function submitForm() {
             <Presentation class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="text-sm font-extrabold text-gray-900">Informasi Pokok Kelas</h3>
-            <p class="text-[11px] text-gray-500">Parameter batch, penanggung jawab PIC, jadwal, lokasi, dan instruktur</p>
+            <h3 class="text-sm font-extrabold text-gray-900">{{ $l('Core Class Information', 'Informasi Pokok Kelas') }}</h3>
+            <p class="text-[11px] text-gray-500">{{ $l('Batch parameters, coordinator PIC, schedule, location, and instructor', 'Parameter angkatan, penanggung jawab, jadwal, lokasi, dan pengajar') }}</p>
           </div>
         </div>
 
@@ -922,8 +971,8 @@ async function submitForm() {
           <!-- Class ID (e.g. C26_001 / C24_001) -->
           <div>
             <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>Class ID</span>
-              <span class="text-[10px] text-[#0067AC] font-mono font-bold">Kode Unik</span>
+              <span>{{ $l('Class ID', 'Kode Kelas') }}</span>
+              <span class="text-[10px] text-[#0067AC] font-mono font-bold">{{ $l('Unique Code', 'Kode Unik') }}</span>
             </label>
             <input
               v-model="form.class_code"
@@ -937,14 +986,14 @@ async function submitForm() {
           <!-- PIC Name (Koordinator Kelas - Master Pegawai) -->
           <div>
             <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>PIC Name (Koordinator Kelas) <span class="text-rose-500">*</span></span>
-              <span class="text-[10px] text-[#0067AC] font-medium font-mono">Master Pegawai</span>
+              <span>{{ $l('Coordinator PIC Name', 'Nama Penanggung Jawab') }} <span class="text-rose-500">*</span></span>
+              <span class="text-[10px] text-[#0067AC] font-medium font-mono">{{ $l('Employee Master', 'Master Pegawai') }}</span>
             </label>
             <AppSearchableSelect
               v-model="form.pic_name"
               :options="picOptions"
-              placeholder="-- Pilih PIC Koordinator dari Master Pegawai --"
-              search-placeholder="Cari nama, NIK, unit, atau jabatan..."
+              :placeholder="$l('-- Select Coordinator PIC from Employee Master --', '-- Pilih Penanggung Jawab dari Master Pegawai --')"
+              :search-placeholder="$l('Search name, NIK, unit, or position...', 'Cari nama, NIK, unit, atau jabatan...')"
               input-class="bg-white font-bold text-gray-900 py-2.5 border-gray-300 shadow-2xs"
             />
           </div>
@@ -952,13 +1001,13 @@ async function submitForm() {
           <!-- Batch (e.g. Batch 1 / Batch 2) -->
           <div>
             <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              Batch Pelaksanaan <span class="text-rose-500">*</span>
+              {{ $l('Execution Batch', 'Angkatan Pelaksanaan') }} <span class="text-rose-500">*</span>
             </label>
             <input
               v-model="form.batch_name"
               type="text"
               required
-              placeholder="e.g. Batch 1"
+              :placeholder="$l('e.g. Batch 1', 'mis. Angkatan 1')"
               class="w-full bg-white text-xs font-bold text-gray-900 rounded-xl px-3.5 py-2.5 border border-gray-300 focus:border-[#0067AC] focus:outline-none transition shadow-2xs"
             />
           </div>
@@ -966,7 +1015,7 @@ async function submitForm() {
           <!-- Start Date -->
           <div>
             <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              Start Date <span class="text-rose-500">*</span>
+              {{ $l('Start Date', 'Tanggal Mulai') }} <span class="text-rose-500">*</span>
             </label>
             <input
               v-model="form.start_date"
@@ -979,7 +1028,7 @@ async function submitForm() {
           <!-- End Date -->
           <div>
             <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              End Date <span class="text-rose-500">*</span>
+              {{ $l('End Date', 'Tanggal Selesai') }} <span class="text-rose-500">*</span>
             </label>
             <input
               v-model="form.end_date"
@@ -992,14 +1041,14 @@ async function submitForm() {
           <!-- Location / Ruang (Master Ruangan) -->
           <div>
             <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>Location / Ruang <span class="text-rose-500">*</span></span>
-              <span class="text-[10px] text-[#0067AC] font-medium font-mono">Master Ruangan</span>
+              <span>{{ $l('Location / Room', 'Lokasi / Ruangan') }} <span class="text-rose-500">*</span></span>
+              <span class="text-[10px] text-[#0067AC] font-medium font-mono">{{ $l('Room Master', 'Master Ruangan') }}</span>
             </label>
             <AppSearchableSelect
               v-model="form.location_or_url"
               :options="locationOptions"
-              placeholder="-- Pilih Ruangan / Lokasi dari Master Data --"
-              search-placeholder="Cari nama ruang, kode, gedung, atau tipe..."
+              :placeholder="$l('-- Select Room / Location from Master --', '-- Pilih Ruangan / Lokasi dari Data Master --')"
+              :search-placeholder="$l('Search room name, code, building, or type...', 'Cari nama ruang, kode, gedung, atau tipe...')"
               input-class="bg-white font-bold text-gray-900 py-2.5 border-gray-300 shadow-2xs"
             />
           </div>
@@ -1007,33 +1056,33 @@ async function submitForm() {
           <!-- Facilitator / Lembaga (Master Facilitator) -->
           <div>
             <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span>Facilitator / Lembaga <span class="text-rose-500">*</span></span>
-              <span class="text-[10px] text-[#0067AC] font-medium font-mono">Master Facilitator</span>
+              <span>{{ $l('Facilitator / Institution', 'Fasilitator / Lembaga') }} <span class="text-rose-500">*</span></span>
+              <span class="text-[10px] text-[#0067AC] font-medium font-mono">{{ $l('Facilitator Master', 'Master Fasilitator') }}</span>
             </label>
             <AppSearchableSelect
               v-model="form.trainer_name"
               :options="facilitatorOptions"
-              placeholder="-- Pilih Facilitator dari Master Data --"
-              search-placeholder="Cari nama, kode, tipe, atau spesialisasi..."
+              :placeholder="$l('-- Select Facilitator from Master --', '-- Pilih Fasilitator dari Data Master --')"
+              :search-placeholder="$l('Search name, code, type, or specialization...', 'Cari nama, kode, tipe, atau spesialisasi...')"
               input-class="bg-white font-bold text-gray-900 py-2.5 border-gray-300 shadow-2xs"
             />
           </div>
 
           <!-- Metode Diklat -->
           <div>
-            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">Metode Diklat</label>
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">{{ $l('Training Method', 'Metode Pelatihan') }}</label>
             <AppSearchableSelect
               v-model="form.method"
               :options="methodSelectOptions"
-              placeholder="-- Pilih Metode Diklat --"
-              search-placeholder="Cari metode diklat..."
+              :placeholder="$l('-- Select Training Method --', '-- Pilih Metode Pelatihan --')"
+              :search-placeholder="$l('Search training method...', 'Cari metode pelatihan...')"
               input-class="bg-white font-semibold text-gray-900 py-2.5 border-gray-300 shadow-2xs"
             />
           </div>
 
           <!-- Kuota Peserta -->
           <div>
-            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">Kapasitas Kuota Kelas</label>
+            <label class="block font-bold text-gray-700 uppercase tracking-wider mb-1.5">{{ $l('Class Quota Capacity', 'Kapasitas Kuota Kelas') }}</label>
             <input
               v-model.number="form.max_quota"
               type="number"
@@ -1056,8 +1105,8 @@ async function submitForm() {
               <Clock class="w-5 h-5" />
             </div>
             <div>
-              <h3 class="text-sm font-extrabold text-gray-900">Agenda</h3>
-              <p class="text-[11px] text-gray-500">Materi, durasi jam, pengajar/facilitator, dan file modul diklat</p>
+              <h3 class="text-sm font-extrabold text-gray-900">{{ $l('Session Agenda', 'Agenda Pelatihan') }}</h3>
+              <p class="text-[11px] text-gray-500">{{ $l('Materials, duration hours, trainer/facilitator, and training module files', 'Materi, durasi jam, pengajar/fasilitator, dan berkas modul diklat') }}</p>
             </div>
           </div>
 
@@ -1067,7 +1116,7 @@ async function submitForm() {
             class="px-3.5 py-2 bg-[#0067AC] hover:bg-[#00558F] text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
           >
             <Plus class="w-3.5 h-3.5" />
-            <span>Add Agenda [+]</span>
+            <span>{{ $l('Add Agenda', 'Tambah Agenda') }}</span>
           </button>
         </div>
 
@@ -1077,17 +1126,17 @@ async function submitForm() {
             <thead>
               <tr class="bg-gray-50 text-[11px] font-extrabold text-gray-600 uppercase tracking-wider border-b border-gray-200">
                 <th class="py-3 px-3 w-14 text-center">No</th>
-                <th class="py-3 px-4">Material (Topik Materi)</th>
-                <th class="py-3 px-4 w-32 text-center">Duration (Jam)</th>
-                <th class="py-3 px-4 w-60 min-w-[240px]">Facilitator</th>
-                <th class="py-3 px-4 w-64">Upload Materi</th>
-                <th class="py-3 px-3 w-16 text-center">Aksi</th>
+                <th class="py-3 px-4">{{ $l('Material (Topic)', 'Materi (Topik)') }}</th>
+                <th class="py-3 px-4 w-32 text-center">{{ $l('Duration (Hours)', 'Durasi (Jam)') }}</th>
+                <th class="py-3 px-4 w-60 min-w-[240px]">{{ $l('Facilitator', 'Fasilitator') }}</th>
+                <th class="py-3 px-4 w-64">{{ $l('Upload Material', 'Unggah Materi') }}</th>
+                <th class="py-3 px-3 w-16 text-center">{{ $l('Action', 'Aksi') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
               <tr v-if="form.sessions.length === 0">
                 <td colspan="6" class="py-8 text-center text-gray-400 font-semibold">
-                  Belum ada sesi agenda. Klik "Add Agenda [+]" di atas untuk menambahkan sesi materi.
+                  {{ $l('No agenda sessions yet. Click "Add Agenda" above to add material sessions.', 'Belum ada sesi agenda. Klik "Tambah Agenda" di atas untuk menambahkan sesi materi.') }}
                 </td>
               </tr>
               <tr
@@ -1106,7 +1155,7 @@ async function submitForm() {
                     v-model="session.topic"
                     type="text"
                     required
-                    placeholder="e.g. Materi 1: Modul Dasar"
+                    :placeholder="$l('e.g. Session 1: Foundation Module', 'mis. Materi 1: Modul Dasar')"
                     class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-300 font-semibold text-gray-900 focus:border-[#0067AC] focus:outline-none"
                   />
                 </td>
@@ -1120,7 +1169,7 @@ async function submitForm() {
                       min="1"
                       class="w-16 bg-white rounded-xl px-2 py-1.5 border border-gray-300 font-mono font-bold text-center text-gray-900 focus:border-[#0067AC] focus:outline-none"
                     />
-                    <span class="text-gray-500 font-medium text-[11px]">Jam</span>
+                    <span class="text-gray-500 font-medium text-[11px]">{{ $l('Hrs', 'Jam') }}</span>
                   </div>
                 </td>
 
@@ -1129,8 +1178,8 @@ async function submitForm() {
                   <AppSearchableSelect
                     v-model="session.trainer_name"
                     :options="facilitatorOptions"
-                    placeholder="-- Pilih Facilitator --"
-                    search-placeholder="Cari facilitator..."
+                    :placeholder="$l('-- Select Facilitator --', '-- Pilih Fasilitator --')"
+                    :search-placeholder="$l('Search facilitator...', 'Cari fasilitator...')"
                     input-class="bg-white rounded-xl px-3 py-1.5 border-gray-300 font-semibold text-gray-800"
                   />
                 </td>
@@ -1140,7 +1189,7 @@ async function submitForm() {
                   <div class="flex items-center gap-2">
                     <label class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-[11px] font-bold cursor-pointer transition shrink-0 flex items-center gap-1">
                       <Upload class="w-3 h-3" />
-                      <span>Browse</span>
+                      <span>{{ $l('Browse', 'Pilih') }}</span>
                       <input
                         type="file"
                         class="hidden"
@@ -1149,9 +1198,9 @@ async function submitForm() {
                     </label>
                     <span
                       class="text-[11px] truncate text-gray-600 font-medium"
-                      :title="session.material_file_name || 'Belum ada file modul'"
+                      :title="session.material_file_name || $l('No module file yet', 'Belum ada berkas modul')"
                     >
-                      {{ session.material_file_name || 'Pilih modul PPT/PDF...' }}
+                      {{ session.material_file_name || $l('Select PPT/PDF module...', 'Pilih modul PPT/PDF...') }}
                     </span>
                   </div>
                 </td>
@@ -1162,7 +1211,7 @@ async function submitForm() {
                     type="button"
                     @click="removeAgendaRow(idx)"
                     class="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg transition cursor-pointer"
-                    title="Hapus Agenda"
+                    :title="$l('Delete Agenda', 'Hapus Agenda')"
                   >
                     <Trash2 class="w-4 h-4" />
                   </button>
@@ -1183,8 +1232,8 @@ async function submitForm() {
               <FileText class="w-5 h-5" />
             </div>
             <div>
-              <h3 class="text-sm font-extrabold text-gray-900">Document</h3>
-              <p class="text-[11px] text-gray-500">Unggah dokumen resmi pelaksanaan (Surat Undangan, TOR, Rundown, Absensi)</p>
+              <h3 class="text-sm font-extrabold text-gray-900">{{ $l('Documents', 'Dokumen') }}</h3>
+              <p class="text-[11px] text-gray-500">{{ $l('Upload official delivery documents (Invitation Letter, TOR, Rundown, Attendance Sheet)', 'Unggah dokumen resmi pelaksanaan (Surat Undangan, KAK/TOR, Susunan Acara, Presensi)') }}</p>
             </div>
           </div>
 
@@ -1194,7 +1243,7 @@ async function submitForm() {
             class="px-3.5 py-2 bg-[#0067AC] hover:bg-[#00558F] text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
           >
             <Plus class="w-3.5 h-3.5" />
-            <span>Add Document [+]</span>
+            <span>{{ $l('Add Document', 'Tambah Dokumen') }}</span>
           </button>
         </div>
 
@@ -1203,16 +1252,16 @@ async function submitForm() {
           <table class="w-full text-left border-collapse text-xs">
             <thead>
               <tr class="bg-gray-50 text-[11px] font-extrabold text-gray-600 uppercase tracking-wider border-b border-gray-200">
-                <th class="py-3 px-4 w-28">File</th>
-                <th class="py-3 px-4">File Name / Deskripsi Dokumen</th>
-                <th class="py-3 px-4 w-72">Action / File Attachment</th>
-                <th class="py-3 px-3 w-16 text-center">Hapus</th>
+                <th class="py-3 px-4 w-28">{{ $l('File', 'Berkas') }}</th>
+                <th class="py-3 px-4">{{ $l('File Name / Document Description', 'Nama Berkas / Deskripsi Dokumen') }}</th>
+                <th class="py-3 px-4 w-72">{{ $l('Action / File Attachment', 'Aksi / Lampiran Berkas') }}</th>
+                <th class="py-3 px-3 w-16 text-center">{{ $l('Delete', 'Hapus') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
               <tr v-if="form.documents.length === 0">
                 <td colspan="4" class="py-8 text-center text-gray-400 font-semibold">
-                  Belum ada dokumen. Klik "Add Document [+]" untuk menambahkan.
+                  {{ $l('No documents yet. Click "Add Document" to add one.', 'Belum ada dokumen. Klik "Tambah Dokumen" untuk menambahkan.') }}
                 </td>
               </tr>
               <tr
@@ -1223,7 +1272,7 @@ async function submitForm() {
                 <!-- File Label (File 1, File 2) -->
                 <td class="py-3 px-4 font-mono font-bold text-gray-700">
                   <span class="px-2.5 py-1 bg-gray-100 rounded-md border border-gray-200 text-[11px]">
-                    {{ doc.label || `File ${idx + 1}` }}
+                    {{ doc.label || `${$l('File', 'Berkas')} ${idx + 1}` }}
                   </span>
                 </td>
 
@@ -1233,7 +1282,7 @@ async function submitForm() {
                     v-model="doc.name"
                     type="text"
                     required
-                    placeholder="e.g. Surat Undangan Resmi Diklat"
+                    :placeholder="$l('e.g. Official Training Invitation Letter', 'mis. Surat Undangan Resmi Diklat')"
                     class="w-full bg-white rounded-xl px-3 py-1.5 border border-gray-300 font-semibold text-gray-900 focus:border-[#0067AC] focus:outline-none"
                   />
                 </td>
@@ -1243,7 +1292,7 @@ async function submitForm() {
                   <div class="flex items-center gap-2">
                     <label class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-[#0067AC] rounded-lg text-[11px] font-bold cursor-pointer transition shrink-0 flex items-center gap-1 border border-blue-200">
                       <Upload class="w-3 h-3" />
-                      <span>Browse / Replace</span>
+                      <span>{{ $l('Browse / Replace', 'Pilih / Ganti') }}</span>
                       <input
                         type="file"
                         class="hidden"
@@ -1252,9 +1301,9 @@ async function submitForm() {
                     </label>
                     <span
                       class="text-[11px] truncate text-gray-600 font-semibold"
-                      :title="doc.file_name || 'Belum ada file terpilih'"
+                      :title="doc.file_name || $l('No file selected yet', 'Belum ada berkas terpilih')"
                     >
-                      {{ doc.file_name || 'Belum ada file diunggah' }}
+                      {{ doc.file_name || $l('No file uploaded yet', 'Belum ada berkas diunggah') }}
                     </span>
                   </div>
                 </td>
@@ -1265,7 +1314,7 @@ async function submitForm() {
                     type="button"
                     @click="removeDocumentRow(idx)"
                     class="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg transition cursor-pointer"
-                    title="Hapus Dokumen"
+                    :title="$l('Delete Document', 'Hapus Dokumen')"
                   >
                     <Trash2 class="w-4 h-4" />
                   </button>
@@ -1286,12 +1335,12 @@ async function submitForm() {
               <Image class="w-5 h-5" />
             </div>
             <div>
-              <h3 class="text-sm font-extrabold text-gray-900">Upload Documentation</h3>
-              <p class="text-[11px] text-gray-500">Unggah foto dokumentasi kegiatan pelatihan perbankan (Foto 1 s/d Foto 10)</p>
+              <h3 class="text-sm font-extrabold text-gray-900">{{ $l('Upload Documentation', 'Unggah Dokumentasi') }}</h3>
+              <p class="text-[11px] text-gray-500">{{ $l('Upload banking training activity documentation photos (Photo 1 to Photo 10)', 'Unggah foto dokumentasi kegiatan pelatihan perbankan (Foto 1 s/d Foto 10)') }}</p>
             </div>
           </div>
           <span class="text-xs font-mono font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-            Class ID: {{ form.class_code || 'C26_001' }}
+            {{ $l('Class ID:', 'Kode Kelas:') }} {{ form.class_code || 'C26_001' }}
           </span>
         </div>
 
@@ -1301,19 +1350,19 @@ async function submitForm() {
             :key="photo.photo_number"
             class="bg-gray-50/80 rounded-2xl border border-gray-200 p-3 flex flex-col items-center justify-between text-center gap-2 transition hover:border-blue-300 hover:bg-blue-50/20 group"
           >
-            <span class="text-[11px] font-bold text-gray-700 uppercase">{{ photo.name }}</span>
+            <span class="text-[11px] font-bold text-gray-700 uppercase">{{ $l('Photo', 'Foto') }} {{ photo.photo_number }}</span>
             
             <!-- Thumbnail or Placeholder -->
             <div class="w-full h-20 rounded-xl bg-white border border-dashed border-gray-300 flex items-center justify-center overflow-hidden relative">
               <img
                 v-if="photo.preview_url || photo.file_path"
                 :src="photo.preview_url || `/storage/${photo.file_path}`"
-                alt="Foto Dokumentasi"
+                :alt="$l('Documentation Photo', 'Foto Dokumentasi')"
                 class="w-full h-full object-cover"
               />
               <div v-else class="flex flex-col items-center justify-center text-gray-400">
                 <Image class="w-6 h-6 stroke-1 mb-1" />
-                <span class="text-[9px] font-semibold">Kosong</span>
+                <span class="text-[9px] font-semibold">{{ $l('Empty', 'Kosong') }}</span>
               </div>
             </div>
 
@@ -1321,7 +1370,7 @@ async function submitForm() {
             <div class="flex items-center gap-1 w-full justify-center">
               <label class="px-2 py-1 bg-white hover:bg-gray-100 border border-gray-300 rounded-lg text-[10px] font-bold text-gray-700 cursor-pointer shadow-2xs transition flex items-center gap-1">
                 <Upload class="w-2.5 h-2.5" />
-                <span>Browse</span>
+                <span>{{ $l('Browse', 'Pilih') }}</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -1334,7 +1383,7 @@ async function submitForm() {
                 type="button"
                 @click="clearPhoto(photo)"
                 class="p-1 text-gray-400 hover:text-rose-600 rounded-lg cursor-pointer"
-                title="Hapus Foto"
+                :title="$l('Delete Photo', 'Hapus Foto')"
               >
                 <Trash2 class="w-3 h-3" />
               </button>
@@ -1357,20 +1406,20 @@ async function submitForm() {
               <Award class="w-5 h-5" />
             </div>
             <div>
-              <h3 class="text-sm font-extrabold text-gray-900">Evaluation</h3>
-              <p class="text-[11px] text-gray-500">Standar kuesioner evaluasi Level 1 Kirkpatrick (skala kepuasan 1 s/d 4)</p>
+              <h3 class="text-sm font-extrabold text-gray-900">{{ $l('Evaluation', 'Evaluasi') }}</h3>
+              <p class="text-[11px] text-gray-500">{{ $l('Standard Kirkpatrick Level 1 evaluation questionnaire (satisfaction scale 1 to 4)', 'Standar kuesioner evaluasi Tingkat 1 Kirkpatrick (skala kepuasan 1 s/d 4)') }}</p>
             </div>
           </div>
 
           <div class="flex items-center gap-3 flex-wrap">
-            <span class="text-[11px] font-bold text-gray-500">Skala Penilaian: 1 (Kurang) &bull; 2 (Cukup) &bull; 3 (Baik) &bull; 4 (Sangat Baik)</span>
+            <span class="text-[11px] font-bold text-gray-500">{{ $l('Rating Scale: 1 (Poor) • 2 (Fair) • 3 (Good) • 4 (Excellent)', 'Skala Penilaian: 1 (Kurang) • 2 (Cukup) • 3 (Baik) • 4 (Sangat Baik)') }}</span>
             <button
               type="button"
               @click="addEvaluationItem"
               class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#0067AC] hover:bg-[#00558F] text-white text-xs font-bold shadow-xs transition cursor-pointer"
             >
               <Plus class="w-3.5 h-3.5" />
-              <span>Tambah Evaluasi</span>
+              <span>{{ $l('Add Evaluation', 'Tambah Evaluasi') }}</span>
             </button>
           </div>
         </div>
@@ -1386,15 +1435,15 @@ async function submitForm() {
                 <AppSearchableSelect
                   v-model="item.category"
                   :options="evalCategoryOptions"
-                  placeholder="Kategori..."
-                  search-placeholder="Cari kategori..."
+                  :placeholder="$l('Category...', 'Kategori...')"
+                  :search-placeholder="$l('Search category...', 'Cari kategori...')"
                   input-class="bg-[#f8fafc] border-gray-200 rounded-xl px-2.5 py-1.5 font-bold text-gray-800"
                 />
               </div>
               <input
                 v-model="item.question"
                 type="text"
-                placeholder="Tulis pertanyaan evaluasi..."
+                :placeholder="$l('Write evaluation question...', 'Tulis pertanyaan evaluasi...')"
                 class="flex-1 bg-[#f8fafc] focus:bg-white border border-gray-200 rounded-xl px-3 py-1.5 font-semibold text-gray-800 focus:border-[#0067AC] focus:outline-none"
               />
             </div>
@@ -1404,9 +1453,9 @@ async function submitForm() {
                 class="px-2 py-0.5 rounded-md font-bold text-[10px] uppercase border shrink-0"
                 :class="item.category === 'Materi' ? 'bg-blue-50 text-[#0067AC] border-blue-200' : item.category === 'Pengajar' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-purple-50 text-purple-700 border-purple-200'"
               >
-                {{ item.category }}
+                {{ getEvalCategoryLabel(item.category) }}
               </span>
-              <span class="font-bold text-gray-800">{{ item.question }}</span>
+              <span class="font-bold text-gray-800">{{ getEvalQuestionDisplay(item) }}</span>
             </div>
 
             <!-- Radio 1 - 2 - 3 - 4 matching SS2 + Delete -->
@@ -1433,7 +1482,7 @@ async function submitForm() {
                 type="button"
                 @click="removeEvaluationItem(idx)"
                 class="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                title="Hapus pertanyaan evaluasi"
+                :title="$l('Delete evaluation question', 'Hapus pertanyaan evaluasi')"
               >
                 <Trash2 class="w-3.5 h-3.5" />
               </button>
@@ -1452,9 +1501,9 @@ async function submitForm() {
               <Users class="w-5 h-5" />
             </div>
             <div>
-              <h3 class="text-sm font-extrabold text-gray-900">Peserta Terdaftar di Batch Kelas Ini</h3>
+              <h3 class="text-sm font-extrabold text-gray-900">{{ $l('Enrolled Participants in This Class Batch', 'Peserta Terdaftar di Angkatan Kelas Ini') }}</h3>
               <p class="text-[11px] text-gray-500">
-                Total terdaftar: <strong>{{ form.enrolled_participants.length }}</strong> dari kuota <strong>{{ form.max_quota }}</strong> peserta
+                {{ $l('Total enrolled:', 'Total terdaftar:') }} <strong>{{ form.enrolled_participants.length }}</strong> {{ $l('of quota', 'dari kuota') }} <strong>{{ form.max_quota }}</strong> {{ $l('participants', 'peserta') }}
               </p>
             </div>
           </div>
@@ -1466,7 +1515,7 @@ async function submitForm() {
               @click="selectAllNominations"
               class="px-3 py-2 bg-blue-50 text-[#0067AC] rounded-xl text-xs font-bold hover:bg-blue-100 transition cursor-pointer"
             >
-              Pilih Semua Nominasi ({{ availableNominations.length }})
+              {{ $l('Select All Nominations', 'Pilih Semua Nominasi') }} ({{ availableNominations.length }})
             </button>
             <button
               v-if="form.enrolled_participants.length > 0"
@@ -1474,7 +1523,7 @@ async function submitForm() {
               @click="clearAllParticipants"
               class="px-3 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-200 transition cursor-pointer"
             >
-              Kosongkan
+              {{ $l('Clear All', 'Kosongkan') }}
             </button>
           </div>
         </div>
@@ -1483,14 +1532,14 @@ async function submitForm() {
         <div class="bg-blue-50/50 p-3 rounded-2xl border border-blue-100 flex flex-col sm:flex-row items-center gap-2.5 text-xs">
           <span class="text-gray-700 font-bold shrink-0 flex items-center gap-1.5">
             <UserCheck class="w-4 h-4 text-[#0067AC]" />
-            <span>Pilih Cepat Pegawai:</span>
+            <span>{{ $l('Quick Select Employee:', 'Pilih Cepat Pegawai:') }}</span>
           </span>
           <div class="flex-1 w-full">
             <AppSearchableSelect
               v-model="selectedQuickKaryawanId"
               :options="quickKaryawanOptions"
-              placeholder="-- Pilih Pegawai dari Master Data Karyawan BWS --"
-              search-placeholder="Cari NIK, nama, departemen, atau jabatan..."
+              :placeholder="$l('-- Select Employee from BWS Employee Master --', '-- Pilih Pegawai dari Master Data Karyawan BWS --')"
+              :search-placeholder="$l('Search NIK, name, department, or position...', 'Cari NIK, nama, departemen, atau jabatan...')"
               input-class="bg-white border-gray-300 font-medium text-gray-800"
               @change="onQuickKaryawanSelected"
             />
@@ -1502,7 +1551,7 @@ async function submitForm() {
             class="bg-[#0067AC] hover:bg-[#00528c] text-white font-bold rounded-xl py-2 px-4 shadow-xs transition flex items-center justify-center gap-1 cursor-pointer shrink-0 disabled:opacity-40"
           >
             <Plus class="w-4 h-4" />
-            <span>Tambahkan</span>
+            <span>{{ $l('Add', 'Tambahkan') }}</span>
           </button>
         </div>
 
@@ -1513,16 +1562,16 @@ async function submitForm() {
               <tr class="bg-gray-50 text-[11px] font-extrabold text-gray-600 uppercase tracking-wider border-b border-gray-200">
                 <th class="py-3 px-3 w-12 text-center">No</th>
                 <th class="py-3 px-4 w-32">NIK</th>
-                <th class="py-3 px-4">Nama Peserta</th>
-                <th class="py-3 px-4">Divisi / Unit Kerja</th>
-                <th class="py-3 px-4 w-40">Jabatan</th>
-                <th class="py-3 px-3 w-16 text-center">Aksi</th>
+                <th class="py-3 px-4">{{ $l('Participant Name', 'Nama Peserta') }}</th>
+                <th class="py-3 px-4">{{ $l('Division / Work Unit', 'Divisi / Unit Kerja') }}</th>
+                <th class="py-3 px-4 w-40">{{ $l('Position', 'Jabatan') }}</th>
+                <th class="py-3 px-3 w-16 text-center">{{ $l('Action', 'Aksi') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
               <tr v-if="form.enrolled_participants.length === 0">
                 <td colspan="6" class="py-8 text-center text-gray-400 font-semibold">
-                  Belum ada peserta terdaftar. Tambahkan manual atau klik "Pilih Semua Nominasi".
+                  {{ $l('No participants enrolled yet. Add manually or click "Select All Nominations".', 'Belum ada peserta terdaftar. Tambahkan manual atau klik "Pilih Semua Nominasi".') }}
                 </td>
               </tr>
               <tr
@@ -1540,7 +1589,7 @@ async function submitForm() {
                     type="button"
                     @click="removeParticipant(idx)"
                     class="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg transition cursor-pointer"
-                    title="Hapus Peserta"
+                    :title="$l('Remove Participant', 'Hapus Peserta')"
                   >
                     <Trash2 class="w-4 h-4" />
                   </button>
@@ -1560,7 +1609,7 @@ async function submitForm() {
           @click="emit('back')"
           class="px-6 py-3 rounded-2xl text-xs font-bold text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 transition cursor-pointer"
         >
-          Cancel (Batal)
+          {{ $t('common.cancel') }}
         </button>
         <button
           type="submit"
@@ -1568,7 +1617,7 @@ async function submitForm() {
           class="px-8 py-3 rounded-2xl text-xs font-bold bg-[#0067AC] hover:bg-[#00558F] text-white shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
         >
           <Save class="w-4 h-4" />
-          <span>{{ isSubmitting ? 'Menyimpan...' : (isEditMode ? 'SUBMIT (Simpan Perubahan Kelas)' : 'SUBMIT (Buka Batch Kelas Baru)') }}</span>
+          <span>{{ isSubmitting ? $l('Saving...', 'Menyimpan...') : (isEditMode ? $l('Save Class Changes', 'Simpan Perubahan Kelas') : $l('Open New Class Batch', 'Buka Angkatan Kelas Baru')) }}</span>
         </button>
       </div>
 
@@ -1588,9 +1637,9 @@ async function submitForm() {
               <Users class="w-5 h-5" />
             </div>
             <div>
-              <h3 class="font-extrabold text-base text-gray-900">Pilih Peserta dari Master Pegawai</h3>
+              <h3 class="font-extrabold text-base text-gray-900">{{ $l('Select Participants from Employee Master', 'Pilih Peserta dari Master Pegawai') }}</h3>
               <p class="text-xs text-gray-500">
-                Pilih pegawai aktif Bank Woori Saudara untuk didaftarkan ke batch kelas ini
+                {{ $l('Select active Bank Woori Saudara employees to enroll in this class batch', 'Pilih pegawai aktif Bank Woori Saudara untuk didaftarkan ke angkatan kelas ini') }}
               </p>
             </div>
           </div>
@@ -1609,7 +1658,7 @@ async function submitForm() {
             <input
               v-model="searchPegawai"
               type="text"
-              placeholder="Cari NIK, Nama Pegawai, Jabatan, atau Cabang..."
+              :placeholder="$l('Search NIK, Employee Name, Position, or Branch...', 'Cari NIK, Nama Pegawai, Jabatan, atau Cabang...')"
               class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#0067AC]"
             />
             <Search class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
@@ -1619,8 +1668,8 @@ async function submitForm() {
             <AppSearchableSelect
               v-model="filterPegawaiDept"
               :options="deptFilterOptions"
-              placeholder="-- Seluruh Unit Kerja --"
-              search-placeholder="Cari unit kerja..."
+              :placeholder="$l('-- All Work Units --', '-- Seluruh Unit Kerja --')"
+              :search-placeholder="$l('Search work unit...', 'Cari unit kerja...')"
               input-class="bg-gray-50 border-gray-200 text-gray-700 py-2"
             />
           </div>
@@ -1640,16 +1689,16 @@ async function submitForm() {
                   />
                 </th>
                 <th class="py-3 px-3">NIK</th>
-                <th class="py-3 px-3">Nama Pegawai</th>
-                <th class="py-3 px-3">Departemen & Jabatan</th>
-                <th class="py-3 px-3">Kantor Cabang</th>
-                <th class="py-3 px-3 text-center">Status</th>
+                <th class="py-3 px-3">{{ $l('Employee Name', 'Nama Pegawai') }}</th>
+                <th class="py-3 px-3">{{ $l('Department & Position', 'Departemen & Jabatan') }}</th>
+                <th class="py-3 px-3">{{ $l('Branch Office', 'Kantor Cabang') }}</th>
+                <th class="py-3 px-3 text-center">{{ $l('Status', 'Status') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
               <tr v-if="filteredMasterPegawai.length === 0">
                 <td colspan="6" class="py-8 text-center text-gray-400">
-                  Tidak ada data pegawai yang sesuai dengan pencarian.
+                  {{ $l('No employees match the search criteria.', 'Tidak ada data pegawai yang sesuai dengan pencarian.') }}
                 </td>
               </tr>
               <tr
@@ -1675,19 +1724,19 @@ async function submitForm() {
                   <p class="font-medium text-gray-800">{{ k.departemen }}</p>
                   <p class="text-[10px] text-gray-400">{{ k.jabatan }}</p>
                 </td>
-                <td class="py-2.5 px-3 text-gray-600">{{ k.kantor_cabang || 'Kantor Pusat Sudirman' }}</td>
+                <td class="py-2.5 px-3 text-gray-600">{{ k.kantor_cabang || $l('Sudirman Head Office', 'Kantor Pusat Sudirman') }}</td>
                 <td class="py-2.5 px-3 text-center">
                   <span
                     v-if="isPegawaiEnrolled(k)"
                     class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-200"
                   >
-                    Terdaftar
+                    {{ $l('Enrolled', 'Terdaftar') }}
                   </span>
                   <span
                     v-else
                     class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100"
                   >
-                    {{ k.st_kerja || 'Aktif' }}
+                    {{ k.st_kerja === 'Aktif' || !k.st_kerja ? $l('Active', 'Aktif') : k.st_kerja }}
                   </span>
                 </td>
               </tr>
@@ -1698,7 +1747,7 @@ async function submitForm() {
         <!-- Footer Actions -->
         <div class="flex items-center justify-between pt-3 border-t border-gray-100">
           <p class="text-xs text-gray-500">
-            Terpilih: <strong class="text-[#0067AC]">{{ selectedPegawaiIds.length }} Pegawai</strong>
+            {{ $l('Selected:', 'Terpilih:') }} <strong class="text-[#0067AC]">{{ selectedPegawaiIds.length }} {{ $l('Employees', 'Pegawai') }}</strong>
           </p>
           <div class="flex items-center gap-2">
             <button
@@ -1706,7 +1755,7 @@ async function submitForm() {
               @click="showPegawaiModal = false; selectedPegawaiIds = []"
               class="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
             >
-              Batal
+              {{ $t('common.cancel') }}
             </button>
             <button
               type="button"
@@ -1714,7 +1763,7 @@ async function submitForm() {
               :disabled="selectedPegawaiIds.length === 0"
               class="px-5 py-2 rounded-xl bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold transition cursor-pointer disabled:opacity-40"
             >
-              Tambahkan ke Kelas ({{ selectedPegawaiIds.length }})
+              {{ $l('Add to Class', 'Tambahkan ke Kelas') }} ({{ selectedPegawaiIds.length }})
             </button>
           </div>
         </div>

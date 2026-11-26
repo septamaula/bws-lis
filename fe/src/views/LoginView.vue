@@ -3,6 +3,9 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import apiClient from '@/api/client'
+import { useI18n } from '@/i18n'
+
+const { l } = useI18n()
 import {
   Lock,
   Mail,
@@ -68,7 +71,7 @@ async function submit() {
     errorMessage.value =
       err.response?.data?.errors?.email?.[0] ||
       err.response?.data?.message ||
-      'Email atau password tidak sesuai. Silakan coba lagi.'
+      l('Invalid email or password. Please try again.', 'Email atau kata sandi tidak sesuai. Silakan coba lagi.')
   } finally {
     processing.value = false
   }
@@ -76,8 +79,13 @@ async function submit() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white text-slate-800 flex items-center justify-center p-6 sm:p-10 lg:p-12 font-sans selection:bg-[#00A0E9] selection:text-white">
+  <div class="min-h-screen bg-white text-slate-800 flex items-center justify-center p-6 sm:p-10 lg:p-12 font-sans selection:bg-[#00A0E9] selection:text-white relative">
     
+    <!-- Top-Right Language Switcher -->
+    <div class="fixed top-4 right-5 z-50">
+      <LanguageSwitcher />
+    </div>
+
     <!-- Clean Havenix Split Layout (Unboxed Canvas) -->
     <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
       
@@ -103,10 +111,10 @@ async function submit() {
         <!-- Heading & Subtitle (Havenix Style) -->
         <div class="space-y-1 pb-2">
           <h1 class="text-3xl sm:text-4xl font-extrabold text-[#002855] tracking-tight">
-            Welcome Back
+            {{ $l('Welcome Back', 'Selamat Datang') }}
           </h1>
           <p class="text-xs sm:text-sm text-slate-500">
-            Silakan masuk untuk mengakses portal diklat & sertifikasi terpadu.
+            {{ $l('Sign in to access the integrated corporate training & certification portal.', 'Silakan masuk untuk mengakses portal pelatihan & sertifikasi terpadu.') }}
           </p>
         </div>
 
@@ -120,14 +128,14 @@ async function submit() {
         <form @submit.prevent="submit" class="space-y-4">
           <!-- Email / NIK Input -->
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">Email Korporat / NIK</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">{{ $l('Corporate Email / NIK', 'Email Korporat / NIK') }}</label>
             <div class="relative">
               <input
                 v-model="email"
                 type="text"
                 autocomplete="username"
                 required
-                placeholder="nama.pegawai@bws.co.id atau NIK (misal: BWS-ADM-001)"
+                :placeholder="$l('employee.name@bws.co.id or NIK (e.g. BWS-ADM-001)', 'nama.pegawai@bws.co.id atau NIK (misal: BWS-ADM-001)')"
                 class="w-full px-4 py-3.5 rounded-2xl bg-[#F8FAFC] border border-slate-200 text-slate-900 placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:border-[#0067AC] focus:ring-2 focus:ring-[#00A0E9]/20 focus:bg-white transition"
               />
               <Mail class="w-4 h-4 text-slate-400 absolute right-4 top-4 pointer-events-none" />
@@ -137,8 +145,8 @@ async function submit() {
           <!-- Password Input -->
           <div>
             <div class="flex items-center justify-between mb-1.5">
-              <label class="block text-xs font-bold text-slate-700">Password</label>
-              <span class="text-[11px] font-mono text-[#0067AC] bg-[#EBF4FC] px-2 py-0.5 rounded-md">Default: password123</span>
+              <label class="block text-xs font-bold text-slate-700">{{ $l('Password', 'Kata Sandi') }}</label>
+              <span class="text-[11px] font-mono text-[#0067AC] bg-[#EBF4FC] px-2 py-0.5 rounded-md">{{ $l('Default: password123', 'Standar: password123') }}</span>
             </div>
             <div class="relative">
               <input
@@ -166,10 +174,10 @@ async function submit() {
                 type="checkbox"
                 class="w-4 h-4 rounded border-slate-300 text-[#0067AC] focus:ring-[#00A0E9]"
               />
-              <span>Remember me</span>
+              <span>{{ $l('Remember me', 'Ingat saya') }}</span>
             </label>
             <a href="#" class="text-[#0067AC] hover:text-[#002855] font-semibold transition" @click.prevent>
-              Forgot Password?
+              {{ $l('Forgot Password?', 'Lupa Kata Sandi?') }}
             </a>
           </div>
 
@@ -179,16 +187,16 @@ async function submit() {
             :disabled="processing"
             class="w-full py-4 rounded-2xl bg-gradient-to-r from-[#002855] via-[#003876] to-[#0067AC] hover:from-[#001D40] hover:to-[#0055A5] text-white font-bold text-sm shadow-lg shadow-[#003876]/25 transition transform active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
-            <span v-if="!processing">Login</span>
-            <span v-else>Memverifikasi Kredensial...</span>
+            <span v-if="!processing">{{ $l('Sign In', 'Masuk') }}</span>
+            <span v-else>{{ $l('Authenticating...', 'Memverifikasi Kredensial...') }}</span>
             <ArrowRight v-if="!processing" class="w-4 h-4" />
           </button>
         </form>
 
         <!-- Footer Sign Up / Helpdesk Link -->
         <div class="text-center text-xs text-slate-500 pt-1">
-          <span>Belum terdaftar di sistem? </span>
-          <a href="#" class="text-[#0067AC] font-bold hover:underline" @click.prevent>Hubungi HC BWS</a>
+          <span>{{ $l('Not registered in the system yet? ', 'Belum terdaftar di sistem? ') }}</span>
+          <a href="#" class="text-[#0067AC] font-bold hover:underline" @click.prevent>{{ $l('Contact HC Support', 'Hubungi Tim HC BWS') }}</a>
         </div>
 
       </div>
@@ -223,13 +231,13 @@ async function submit() {
           <!-- Center Havenix Statement Text -->
           <div class="relative z-10 space-y-4 max-w-md my-auto pt-10">
             <div class="inline-block px-3 py-1 rounded-xl bg-[#00A0E9]/25 border border-[#00A0E9]/40 text-[#00A0E9] text-[11px] font-extrabold uppercase tracking-widest">
-              Human Capital Excellence
+              {{ $l('Human Capital Excellence', 'Keunggulan Sumber Daya Manusia') }}
             </div>
             <h2 class="text-2xl sm:text-3xl font-extrabold text-white leading-tight">
-              Akselerasi Kompetensi & Integritas Perbankan Insan BWS.
+              {{ $l('Accelerating Banking Competency & Integrity Across BWS.', 'Akselerasi Kompetensi & Integritas Perbankan Insan BWS.') }}
             </h2>
             <p class="text-xs sm:text-sm text-slate-200/90 leading-relaxed">
-              Platform diklat terintegrasi dengan validasi Dual-Control (Four-Eyes Principle), monitoring progres pembelajaran terpadu, dan rekam jejak audit sesuai standar OJK & Bank Indonesia.
+              {{ $l('An integrated corporate learning platform powered by Dual-Control (Four-Eyes Principle) authorization, end-to-end learning tracking, and OJK & Bank Indonesia compliant audit trails.', 'Platform pelatihan terintegrasi dengan validasi kendali ganda (prinsip empat mata), pemantauan progres pembelajaran menyeluruh, serta rekam jejak audit sesuai ketentuan OJK & Bank Indonesia.') }}
             </p>
           </div>
 
@@ -241,12 +249,12 @@ async function submit() {
               </div>
               <div>
                 <p class="text-xs font-extrabold text-white">Bank Woori Saudara</p>
-                <p class="text-[11px] text-slate-300">Standar Kepatuhan OJK & Bank Indonesia</p>
+                <p class="text-[11px] text-slate-300">{{ $l('OJK & Bank Indonesia Regulatory Compliance', 'Standar Kepatuhan OJK & Bank Indonesia') }}</p>
               </div>
             </div>
             <div class="border-l border-white/20 pl-4 text-right">
               <span class="text-xs font-mono font-extrabold text-[#00A0E9] block">100%</span>
-              <span class="text-[10px] text-slate-300">Audit Ready</span>
+              <span class="text-[10px] text-slate-300">{{ $l('Audit Ready', 'Siap Audit') }}</span>
             </div>
           </div>
 

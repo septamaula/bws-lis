@@ -2,6 +2,9 @@
 import { reactive, ref, computed } from 'vue'
 import { X, Calendar, Scale } from 'lucide-vue-next'
 import apiClient from '@/api/client'
+import { useI18n } from '@/i18n'
+
+const { l, t } = useI18n()
 
 const props = defineProps({
   show: Boolean,
@@ -26,12 +29,12 @@ const form = reactive({
   facilitator_id: null
 })
 
-const methodOptions = [
-  { value: 'Hybrid', label: 'Hybrid' },
-  { value: 'In-Classroom', label: 'In-Classroom' },
-  { value: 'Virtual Classroom', label: 'Virtual Classroom' },
-  { value: 'LIS E-Learning', label: 'LIS E-Learning' }
-]
+const methodOptions = computed(() => [
+  { value: 'Hybrid', label: l('Hybrid', 'Kombinasi (Hybrid)') },
+  { value: 'In-Classroom', label: l('In-Classroom', 'Tatap Muka (Kelas)') },
+  { value: 'Virtual Classroom', label: l('Virtual Classroom', 'Kelas Virtual') },
+  { value: 'LIS E-Learning', label: l('LIS E-Learning', 'Pembelajaran Daring LIS') }
+])
 
 const programOptions = computed(() => {
   return props.programs.map(prog => ({
@@ -44,11 +47,11 @@ async function submit() {
   loading.value = true
   errorMessage.value = ''
   try {
-    const { data } = await apiClient.post('/classes', form)
-    emit('submitted', data.message)
+    await apiClient.post('/classes', form)
+    emit('submitted', l('Training class batch has been submitted to Checker.', 'Angkatan kelas pelatihan berhasil diajukan ke Verifikator.'))
     emit('close')
   } catch (err) {
-    errorMessage.value = err.response?.data?.message || 'Gagal membuka batch kelas.'
+    errorMessage.value = err.response?.data?.message || l('Failed to open class batch.', 'Gagal membuka angkatan kelas.')
   } finally {
     loading.value = false
   }
@@ -66,8 +69,8 @@ async function submit() {
             <Calendar class="w-4 h-4" />
           </div>
           <div>
-            <h3 class="font-bold text-base text-gray-900">Buka Batch Kelas Pelatihan (Maker)</h3>
-            <p class="text-xs text-gray-400">Pengajuan Batch Diklat dengan Otorisasi Dual-Control Checker</p>
+            <h3 class="font-bold text-base text-gray-900">{{ $l('Open Training Class Batch (Maker)', 'Buka Angkatan Kelas Pelatihan (Pembuat)') }}</h3>
+            <p class="text-xs text-gray-400">{{ $l('Training batch submission with Dual-Control Checker Authorization', 'Pengajuan Angkatan Diklat dengan Otorisasi Verifikator Kontrol Ganda') }}</p>
           </div>
         </div>
         <button @click="emit('close')" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition">
@@ -81,66 +84,71 @@ async function submit() {
 
       <form @submit.prevent="submit" class="space-y-4 text-xs">
         <div>
-          <label class="block font-semibold text-gray-700 mb-1">Pilih Program Pelatihan</label>
+          <label class="block font-semibold text-gray-700 mb-1">{{ $l('Select Training Program', 'Pilih Program Pelatihan') }}</label>
           <AppSearchableSelect
             v-model="form.program_id"
             :options="programOptions"
-            placeholder="-- Pilih Program Pelatihan --"
-            search-placeholder="Cari kode atau judul program..."
+            :placeholder="$l('-- Select Training Program --', '-- Pilih Program Pelatihan --')"
+            :search-placeholder="$l('Search program code or title...', 'Cari kode atau judul program...')"
             input-class="bg-[#f4f6f5] border-transparent"
           />
         </div>
 
         <div class="grid grid-cols-3 gap-3">
           <div class="col-span-2">
-            <label class="block font-semibold text-gray-700 mb-1">Nama Batch</label>
+            <label class="block font-semibold text-gray-700 mb-1">{{ $l('Batch Name', 'Nama Angkatan') }}</label>
             <input type="text" v-model="form.batch_name" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required />
           </div>
           <div>
-            <label class="block font-semibold text-gray-700 mb-1">Kuota</label>
-            <AppNumberInput v-model="form.max_quota" suffix="Peserta" :min="5" :max="100" placeholder="30" required />
+            <label class="block font-semibold text-gray-700 mb-1">{{ $l('Quota', 'Kuota') }}</label>
+            <AppNumberInput v-model="form.max_quota" :suffix="$l('Seats', 'Peserta')" :min="5" :max="100" placeholder="30" required />
           </div>
         </div>
 
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="block font-semibold text-gray-700 mb-1">Metode</label>
+            <label class="block font-semibold text-gray-700 mb-1">{{ $l('Method', 'Metode') }}</label>
             <AppSearchableSelect
               v-model="form.method"
               :options="methodOptions"
-              placeholder="Pilih Metode"
-              search-placeholder="Cari metode..."
+              :placeholder="$l('Select Method', 'Pilih Metode')"
+              :search-placeholder="$l('Search method...', 'Cari metode...')"
               input-class="bg-[#f4f6f5] border-transparent"
             />
           </div>
           <div>
-            <label class="block font-semibold text-gray-700 mb-1">Tgl Mulai</label>
+            <label class="block font-semibold text-gray-700 mb-1">{{ $l('Start Date', 'Tgl Mulai') }}</label>
             <input type="date" v-model="form.start_date" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required />
           </div>
           <div>
-            <label class="block font-semibold text-gray-700 mb-1">Tgl Selesai</label>
+            <label class="block font-semibold text-gray-700 mb-1">{{ $l('End Date', 'Tgl Selesai') }}</label>
             <input type="date" v-model="form.end_date" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required />
           </div>
         </div>
 
         <div>
-          <label class="block font-semibold text-gray-700 mb-1">Ruangan / URL Pembelajaran</label>
+          <label class="block font-semibold text-gray-700 mb-1">{{ $l('Room / Learning URL', 'Ruangan / Tautan Pembelajaran') }}</label>
           <input type="text" v-model="form.location_or_url" class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none" required />
         </div>
 
         <div class="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-amber-800 flex items-start gap-2.5">
           <Scale class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <p class="text-[11px] leading-tight">
-            <strong>Peringatan Dual-Control Perbankan:</strong> Batch akan berstatus PENDING_CHECKER dan membutuhkan otorisasi dari HC Learning Head (Checker).
+            <template v-if="$locale === 'en'">
+              <strong>Banking Dual-Control Notice:</strong> This batch will start in PENDING CHECKER status and requires authorization from the HC Learning Head (Checker).
+            </template>
+            <template v-else>
+              <strong>Peringatan Kontrol Ganda Perbankan:</strong> Angkatan kelas ini akan berstatus MENUNGGU VERIFIKATOR dan membutuhkan otorisasi dari Kepala Pembelajaran HC.
+            </template>
           </p>
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
           <button type="button" @click="emit('close')" class="px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold transition">
-            Batal
+            {{ $t('common.cancel') }}
           </button>
           <button type="submit" :disabled="loading" class="px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition shadow-sm disabled:opacity-50">
-            {{ loading ? 'Menyimpan...' : 'Kirim Pengajuan ke Checker' }}
+            {{ loading ? $l('Saving...', 'Menyimpan...') : $l('Submit to Checker', 'Kirim Pengajuan ke Verifikator') }}
           </button>
         </div>
       </form>

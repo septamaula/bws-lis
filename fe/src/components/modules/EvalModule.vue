@@ -23,6 +23,9 @@ import {
 } from 'lucide-vue-next'
 import DataTable from '@/components/DataTable.vue'
 import apiClient from '@/api/client'
+import { useI18n } from '@/i18n'
+
+const { l, t } = useI18n()
 
 const props = defineProps({
   enrollments: {
@@ -87,7 +90,7 @@ const filteredClasses = computed(() => {
 })
 
 const programFilterOptions = computed(() => [
-  { value: '', label: '-- Seluruh Program Pelatihan --' },
+  { value: '', label: l('-- All Training Programs --', '-- Seluruh Program Pelatihan --') },
   ...programs.value.map(p => ({
     value: p.id,
     label: `[${p.program_code}] ${p.title}`
@@ -95,27 +98,27 @@ const programFilterOptions = computed(() => [
 ])
 
 const classFilterOptions = computed(() => [
-  { value: '', label: '-- Seluruh Batch Kelas --' },
+  { value: '', label: l('-- All Class Batches --', '-- Seluruh Angkatan Kelas --') },
   ...filteredClasses.value.map(c => ({
     value: c.id,
     label: `[${c.class_code}] ${c.batch_name}`
   }))
 ])
 
-const statusFilterOptions = [
-  { value: '', label: '-- Seluruh Status Kelulusan --' },
-  { value: 'PASSED', label: 'LULUS (Passed)' },
-  { value: 'FAILED', label: 'TIDAK LULUS (Failed)' },
-  { value: 'IN_PROGRESS', label: 'Dalam Proses / Belum Ujian' }
-]
+const statusFilterOptions = computed(() => [
+  { value: '', label: l('-- All Completion Statuses --', '-- Seluruh Status Kelulusan --') },
+  { value: 'PASSED', label: l('Passed', 'Lulus') },
+  { value: 'FAILED', label: l('Failed', 'Tidak Lulus') },
+  { value: 'IN_PROGRESS', label: l('In Progress / Pending Exam', 'Dalam Proses / Belum Ujian') }
+])
 
-const evalColumns = [
-  { key: 'name', label: 'Peserta & NIK', sortable: true },
-  { key: 'program_title', label: 'Program & Batch Kelas', sortable: true },
-  { key: 'department', label: 'Unit / Divisi', sortable: true, width: '150px' },
+const evalColumns = computed(() => [
+  { key: 'name', label: l('Participant & NIK', 'Peserta & NIK'), sortable: true },
+  { key: 'program_title', label: l('Program & Class Batch', 'Program & Angkatan Kelas'), sortable: true },
+  { key: 'department', label: l('Unit / Division', 'Unit / Divisi'), sortable: true, width: '150px' },
   {
     key: 'attendance_pct',
-    label: 'Presensi',
+    label: l('Attendance', 'Presensi'),
     sortable: true,
     align: 'center',
     width: '90px',
@@ -123,7 +126,7 @@ const evalColumns = [
   },
   {
     key: 'pre_score',
-    label: 'Pre-Test',
+    label: l('Pre-Test', 'Tes Awal'),
     sortable: true,
     align: 'center',
     width: '95px',
@@ -131,7 +134,7 @@ const evalColumns = [
   },
   {
     key: 'post_score',
-    label: 'Post-Test',
+    label: l('Post-Test', 'Tes Akhir'),
     sortable: true,
     align: 'center',
     width: '95px',
@@ -139,16 +142,16 @@ const evalColumns = [
   },
   {
     key: 'delta_pct',
-    label: 'Gain (Δ%)',
+    label: l('Gain (Δ%)', 'Peningkatan (Δ%)'),
     sortable: true,
     align: 'center',
     width: '100px'
   },
-  { key: 'status', label: 'Hasil Kelulusan', sortable: true, align: 'center', width: '130px' },
-  { key: 'instructor_rating', label: 'Rating Trainer', sortable: true, align: 'center', width: '120px' },
-  { key: 'certificate_number', label: 'E-Sertifikat', sortable: true, width: '160px' },
-  { key: 'actions', label: 'Aksi', sortable: false, align: 'center', width: '90px' }
-]
+  { key: 'status', label: l('Completion Result', 'Hasil Kelulusan'), sortable: true, align: 'center', width: '130px' },
+  { key: 'instructor_rating', label: l('Trainer Rating', 'Nilai Pengajar'), sortable: true, align: 'center', width: '120px' },
+  { key: 'certificate_number', label: l('E-Certificate', 'E-Sertifikat'), sortable: true, width: '160px' },
+  { key: 'actions', label: l('Action', 'Aksi'), sortable: false, align: 'center', width: '90px' }
+])
 
 const modalClassOptions = computed(() =>
   classes.value.map(c => {
@@ -228,7 +231,7 @@ async function loadClassEvaluation(classId) {
     })
     scoreRecords.value = map
   } catch (err) {
-    modalError.value = err.response?.data?.message || 'Gagal memuat daftar peserta evaluasi kelas.'
+    modalError.value = err.response?.data?.message || l('Failed to load class evaluation participants.', 'Gagal memuat daftar peserta evaluasi kelas.')
   } finally {
     modalLoading.value = false
   }
@@ -249,14 +252,14 @@ async function saveEvaluationScores() {
       eval_facility_rating: Number(r.eval_facility_rating || 5),
       eval_notes: r.eval_notes || null
     }))
-    const { data } = await apiClient.post(`/classes/${modalClassId.value}/evaluation/scores`, {
+    await apiClient.post(`/classes/${modalClassId.value}/evaluation/scores`, {
       scores: scoresPayload
     })
-    flashSuccess.value = data.message || 'Nilai dan evaluasi peserta berhasil disimpan.'
+    flashSuccess.value = l('Participant scores and evaluations have been saved.', 'Nilai dan evaluasi peserta berhasil disimpan.')
     showEvalModal.value = false
     await fetchEvaluations()
   } catch (err) {
-    modalError.value = err.response?.data?.message || 'Gagal menyimpan data evaluasi peserta.'
+    modalError.value = err.response?.data?.message || l('Failed to save participant evaluation data.', 'Gagal menyimpan data evaluasi peserta.')
   } finally {
     modalSaving.value = false
   }
@@ -277,7 +280,7 @@ onMounted(() => {
           <HelpCircle class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Rata-rata Pre-Test</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Average Pre-Test', 'Rata-rata Tes Awal') }}</p>
           <p class="text-xl font-extrabold text-gray-900 font-mono">{{ stats.avg_pre_test }} <span class="text-xs text-gray-400 font-normal">/ 100</span></p>
         </div>
       </div>
@@ -287,7 +290,7 @@ onMounted(() => {
           <CheckCircle2 class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Rata-rata Post-Test</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Average Post-Test', 'Rata-rata Tes Akhir') }}</p>
           <p class="text-xl font-extrabold text-emerald-700 font-mono">{{ stats.avg_post_test }} <span class="text-xs text-gray-400 font-normal">/ 100</span></p>
         </div>
       </div>
@@ -297,7 +300,7 @@ onMounted(() => {
           <TrendingUp class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Peningkatan Kompetensi</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Competency Gain', 'Peningkatan Kompetensi') }}</p>
           <p class="text-xl font-extrabold text-[#0067AC] font-mono">+{{ stats.competency_gain_pct }}%</p>
         </div>
       </div>
@@ -307,7 +310,7 @@ onMounted(() => {
           <Award class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Tingkat Kelulusan</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Pass Rate', 'Tingkat Kelulusan') }}</p>
           <p class="text-xl font-extrabold text-teal-800 font-mono">{{ stats.pass_rate_pct }}%</p>
         </div>
       </div>
@@ -317,7 +320,7 @@ onMounted(() => {
           <Star class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Rating Instruktur</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Instructor Rating', 'Penilaian Pengajar') }}</p>
           <p class="text-xl font-extrabold text-purple-700 font-mono">{{ stats.avg_instructor_rating }} <span class="text-xs text-gray-400 font-normal">/ 5.0</span></p>
         </div>
       </div>
@@ -343,15 +346,15 @@ onMounted(() => {
         <div>
           <div class="flex items-center gap-2">
             <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC] uppercase tracking-wider">
-              Learning Assessment &amp; Growth Analytics
+              {{ $l('Learning Assessment & Growth Analytics', 'Evaluasi Pembelajaran & Analisis Kompetensi') }}
             </span>
-            <span class="text-xs text-gray-400">• BWS LIS Competency Matrix</span>
+            <span class="text-xs text-gray-400">• {{ $l('BWS LIS Competency Matrix', 'Matriks Kompetensi BWS LIS') }}</span>
           </div>
           <h2 class="text-lg font-extrabold text-[#002855] mt-1">
-            Rekapitulasi Nilai Pre-Test, Post-Test &amp; Evaluasi Penyelenggaraan
+            {{ $l('Pre-Test, Post-Test & Delivery Evaluation Summary', 'Rekapitulasi Nilai Tes Awal, Tes Akhir & Evaluasi Penyelenggaraan') }}
           </h2>
           <p class="text-xs text-gray-500 mt-0.5">
-            Monitoring efektivitas pelatihan perbankan berdasarkan model evaluasi Kirkpatrick Level 1 (Reaction/Rating) &amp; Level 2 (Learning Gain).
+            {{ $l('Monitoring banking training effectiveness under Kirkpatrick Level 1 (Reaction/Rating) & Level 2 (Learning Gain).', 'Pemantauan efektivitas pelatihan perbankan berdasarkan model evaluasi Kirkpatrick Tingkat 1 (Reaksi/Penilaian) & Tingkat 2 (Peningkatan Kompetensi).') }}
           </p>
         </div>
 
@@ -361,13 +364,13 @@ onMounted(() => {
             class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#0067AC] hover:bg-[#00558F] text-white text-xs font-bold shadow-xs transition cursor-pointer"
           >
             <Plus class="w-3.5 h-3.5" />
-            <span>Tambah Evaluasi</span>
+            <span>{{ $l('Add Evaluation', 'Tambah Evaluasi') }}</span>
           </button>
 
           <button
             @click="fetchEvaluations"
             class="w-9 h-9 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-600 flex items-center justify-center transition border border-gray-200 cursor-pointer"
-            title="Segarkan Data"
+            :title="$l('Refresh Data', 'Segarkan Data')"
           >
             <RotateCcw class="w-4 h-4" />
           </button>
@@ -377,36 +380,36 @@ onMounted(() => {
       <!-- Filters -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-gray-100 text-xs">
         <div>
-          <label class="block text-[11px] font-bold text-gray-500 mb-1">Filter Program Pelatihan</label>
+          <label class="block text-[11px] font-bold text-gray-500 mb-1">{{ $l('Training Program Filter', 'Filter Program Pelatihan') }}</label>
           <AppSearchableSelect
             v-model="filterProgramId"
             :options="programFilterOptions"
-            placeholder="-- Seluruh Program Pelatihan --"
-            search-placeholder="Cari kode atau judul program..."
+            :placeholder="$l('-- All Training Programs --', '-- Seluruh Program Pelatihan --')"
+            :search-placeholder="$l('Search program code or title...', 'Cari kode atau judul program...')"
             input-class="bg-[#f8fafc] border-gray-200 text-gray-700"
             @change="filterClassId = ''; fetchEvaluations()"
           />
         </div>
 
         <div>
-          <label class="block text-[11px] font-bold text-gray-500 mb-1">Filter Batch Kelas</label>
+          <label class="block text-[11px] font-bold text-gray-500 mb-1">{{ $l('Class Batch Filter', 'Filter Angkatan Kelas') }}</label>
           <AppSearchableSelect
             v-model="filterClassId"
             :options="classFilterOptions"
-            placeholder="-- Seluruh Batch Kelas --"
-            search-placeholder="Cari kode kelas atau batch..."
+            :placeholder="$l('-- All Class Batches --', '-- Seluruh Angkatan Kelas --')"
+            :search-placeholder="$l('Search class code or batch...', 'Cari kode kelas atau angkatan...')"
             input-class="bg-[#f8fafc] border-gray-200 text-gray-700"
             @change="fetchEvaluations"
           />
         </div>
 
         <div>
-          <label class="block text-[11px] font-bold text-gray-500 mb-1">Status Kelulusan</label>
+          <label class="block text-[11px] font-bold text-gray-500 mb-1">{{ $l('Completion Status', 'Status Kelulusan') }}</label>
           <AppSearchableSelect
             v-model="filterStatus"
             :options="statusFilterOptions"
-            placeholder="-- Seluruh Status Kelulusan --"
-            search-placeholder="Cari status kelulusan..."
+            :placeholder="$l('-- All Completion Statuses --', '-- Seluruh Status Kelulusan --')"
+            :search-placeholder="$l('Search completion status...', 'Cari status kelulusan...')"
             input-class="bg-[#f8fafc] border-gray-200 text-gray-700"
             @change="fetchEvaluations"
           />
@@ -419,7 +422,7 @@ onMounted(() => {
       :data="evaluationRecords"
       :columns="evalColumns"
       date-key="date"
-      export-filename="rekapitulasi_evaluasi_ujian_diklat_bws_2026"
+      export-filename="bws_training_evaluations_summary"
       :default-per-page="10"
     >
       <!-- Custom Cell: Name & NIK -->
@@ -466,7 +469,7 @@ onMounted(() => {
           class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold whitespace-nowrap"
           :class="row.status === 'PASSED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : row.status === 'FAILED' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-gray-100 text-gray-600'"
         >
-          {{ row.status === 'PASSED' ? 'LULUS (' + (row.grade || 'B') + ')' : row.status === 'FAILED' ? 'TIDAK LULUS' : 'Dalam Proses' }}
+          {{ row.status === 'PASSED' ? $l('PASSED', 'LULUS') + ' (' + (row.grade || 'B') + ')' : row.status === 'FAILED' ? $l('FAILED', 'TIDAK LULUS') : $l('In Progress', 'Dalam Proses') }}
         </span>
       </template>
 
@@ -484,7 +487,7 @@ onMounted(() => {
           <FileCheck class="w-3.5 h-3.5 shrink-0" />
           <span class="truncate" :title="row.certificate_number">{{ row.certificate_number }}</span>
         </div>
-        <span v-else class="text-[10px] text-gray-400 italic">Belum terbit</span>
+        <span v-else class="text-[10px] text-gray-400 italic">{{ $l('Not issued yet', 'Belum terbit') }}</span>
       </template>
 
       <!-- Custom Cell: Aksi -->
@@ -492,10 +495,10 @@ onMounted(() => {
         <button
           @click="openAddEvalModal(row.class_id, row.nik !== '-' ? row.nik : row.name)"
           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#EBF4FC] hover:bg-[#0067AC] text-[#0067AC] hover:text-white text-[11px] font-bold transition cursor-pointer"
-          title="Input / Edit Nilai Evaluasi"
+          :title="$l('Enter / Edit Evaluation Scores', 'Isi / Ubah Nilai Evaluasi')"
         >
           <Edit2 class="w-3 h-3" />
-          <span>Nilai</span>
+          <span>{{ $l('Score', 'Nilai') }}</span>
         </button>
       </template>
     </DataTable>
@@ -515,8 +518,8 @@ onMounted(() => {
               <Star class="w-4 h-4" />
             </div>
             <div>
-              <h3 class="font-extrabold text-sm text-[#002855]">Input &amp; Pembaruan Nilai Evaluasi Diklat</h3>
-              <p class="text-[11px] text-gray-500">Pilih batch kelas lalu isi nilai Pre-Test, Post-Test, Tugas, dan Rating Evaluasi (Skala 1–5).</p>
+              <h3 class="font-extrabold text-sm text-[#002855]">{{ $l('Enter & Update Training Evaluation Scores', 'Pengisian & Pembaruan Nilai Evaluasi Pelatihan') }}</h3>
+              <p class="text-[11px] text-gray-500">{{ $l('Select a class batch then enter Pre-Test, Post-Test, Assignment scores, and Evaluation Ratings (1–5 scale).', 'Pilih angkatan kelas lalu isi nilai Tes Awal, Tes Akhir, Tugas, dan Penilaian Evaluasi (Skala 1–5).') }}</p>
             </div>
           </div>
           <button
@@ -530,25 +533,25 @@ onMounted(() => {
         <!-- Class Selector & Search Bar -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-[#f8fafc] p-3.5 rounded-2xl border border-gray-200 text-xs shrink-0">
           <div>
-            <label class="block text-[11px] font-bold text-gray-600 mb-1">Pilih Batch Kelas *</label>
+            <label class="block text-[11px] font-bold text-gray-600 mb-1">{{ $l('Select Class Batch *', 'Pilih Angkatan Kelas *') }}</label>
             <AppSearchableSelect
               v-model="modalClassId"
               :options="modalClassOptions"
-              placeholder="-- Pilih Batch Kelas --"
-              search-placeholder="Cari kode kelas, batch, atau program..."
+              :placeholder="$l('-- Select Class Batch --', '-- Pilih Angkatan Kelas --')"
+              :search-placeholder="$l('Search class code, batch, or program...', 'Cari kode kelas, angkatan, atau program...')"
               input-class="bg-white border-gray-200 text-gray-800 font-semibold"
               @change="loadClassEvaluation"
             />
           </div>
 
           <div>
-            <label class="block text-[11px] font-bold text-gray-600 mb-1">Cari Peserta di Kelas Ini</label>
+            <label class="block text-[11px] font-bold text-gray-600 mb-1">{{ $l('Search Participant in This Class', 'Cari Peserta di Kelas Ini') }}</label>
             <div class="relative">
               <Search class="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5 pointer-events-none" />
               <input
                 v-model="modalSearchParticipant"
                 type="text"
-                placeholder="Ketik nama, NIK, atau divisi peserta..."
+                :placeholder="$l('Type participant name, NIK, or division...', 'Ketik nama, NIK, atau divisi peserta...')"
                 class="w-full bg-white border border-gray-200 rounded-xl pl-8 pr-3 py-2 text-xs text-gray-800 focus:outline-none focus:border-[#0067AC]"
               />
             </div>
@@ -564,10 +567,10 @@ onMounted(() => {
           </div>
           <div class="flex items-center gap-2">
             <span class="px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold">
-              Passing Grade: {{ modalClassInfo.passing_grade }}
+              {{ $l('Passing Grade:', 'Nilai Minimum Lulus:') }} {{ modalClassInfo.passing_grade }}
             </span>
             <span class="text-[11px] text-gray-500 font-medium">
-              {{ modalParticipants.length }} Peserta Terdaftar
+              {{ modalParticipants.length }} {{ $l('Registered Participants', 'Peserta Terdaftar') }}
             </span>
           </div>
         </div>
@@ -581,25 +584,25 @@ onMounted(() => {
         <!-- Participants Evaluation Table -->
         <div class="overflow-auto flex-1 border border-gray-200 rounded-2xl">
           <div v-if="modalLoading" class="py-12 text-center text-xs text-gray-400">
-            Memuat daftar peserta kelas...
+            {{ $l('Loading class participants...', 'Memuat daftar peserta kelas...') }}
           </div>
           <div v-else-if="!modalClassId" class="py-12 text-center text-xs text-gray-400">
-            Silakan pilih batch kelas terlebih dahulu.
+            {{ $l('Please select a class batch first.', 'Silakan pilih angkatan kelas terlebih dahulu.') }}
           </div>
           <div v-else-if="filteredModalParticipants.length === 0" class="py-12 text-center text-xs text-gray-400">
-            Belum ada peserta terdaftar di batch kelas ini (tambahkan peserta melalui menu Jadwal Kelas / Peserta).
+            {{ $l('No participants enrolled in this class batch yet (enroll participants via Class Schedule / Participants menu).', 'Belum ada peserta terdaftar di angkatan kelas ini (tambahkan peserta melalui menu Jadwal Kelas / Peserta).') }}
           </div>
           <table v-else class="w-full text-left text-xs border-collapse">
             <thead class="bg-[#f8fafc] text-gray-600 font-bold border-b border-gray-200 sticky top-0 z-10">
               <tr>
-                <th class="py-2.5 px-3">Peserta &amp; NIK</th>
-                <th class="py-2.5 px-2 text-center w-22">Pre-Test</th>
-                <th class="py-2.5 px-2 text-center w-22">Post-Test</th>
-                <th class="py-2.5 px-2 text-center w-22">Tugas</th>
-                <th class="py-2.5 px-2 text-center w-28">Rating Trainer</th>
-                <th class="py-2.5 px-2 text-center w-28">Rating Materi</th>
-                <th class="py-2.5 px-2 text-center w-28">Rating Panitia</th>
-                <th class="py-2.5 px-3 min-w-[160px]">Catatan Evaluasi</th>
+                <th class="py-2.5 px-3">{{ $l('Participant & NIK', 'Peserta & NIK') }}</th>
+                <th class="py-2.5 px-2 text-center w-22">{{ $l('Pre-Test', 'Tes Awal') }}</th>
+                <th class="py-2.5 px-2 text-center w-22">{{ $l('Post-Test', 'Tes Akhir') }}</th>
+                <th class="py-2.5 px-2 text-center w-22">{{ $l('Assignment', 'Tugas') }}</th>
+                <th class="py-2.5 px-2 text-center w-28">{{ $l('Trainer Rating', 'Nilai Pengajar') }}</th>
+                <th class="py-2.5 px-2 text-center w-28">{{ $l('Material Rating', 'Nilai Materi') }}</th>
+                <th class="py-2.5 px-2 text-center w-28">{{ $l('Committee Rating', 'Nilai Panitia') }}</th>
+                <th class="py-2.5 px-3 min-w-[160px]">{{ $l('Evaluation Notes', 'Catatan Evaluasi') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -646,7 +649,7 @@ onMounted(() => {
                     v-model="scoreRecords[p.id].eval_instructor_rating"
                     :options="ratingSelectOptions"
                     placeholder="5 ★"
-                    search-placeholder="Cari..."
+                    :search-placeholder="$t('common.search')"
                     input-class="bg-white border-gray-200 rounded-lg px-2 py-1.5 text-amber-600 font-bold"
                   />
                 </td>
@@ -655,7 +658,7 @@ onMounted(() => {
                     v-model="scoreRecords[p.id].eval_material_rating"
                     :options="ratingSelectOptions"
                     placeholder="5 ★"
-                    search-placeholder="Cari..."
+                    :search-placeholder="$t('common.search')"
                     input-class="bg-white border-gray-200 rounded-lg px-2 py-1.5 text-amber-600 font-bold"
                   />
                 </td>
@@ -664,7 +667,7 @@ onMounted(() => {
                     v-model="scoreRecords[p.id].eval_facility_rating"
                     :options="ratingSelectOptions"
                     placeholder="5 ★"
-                    search-placeholder="Cari..."
+                    :search-placeholder="$t('common.search')"
                     input-class="bg-white border-gray-200 rounded-lg px-2 py-1.5 text-amber-600 font-bold"
                   />
                 </td>
@@ -672,7 +675,7 @@ onMounted(() => {
                   <input
                     v-model="scoreRecords[p.id].eval_notes"
                     type="text"
-                    placeholder="Catatan singkat..."
+                    :placeholder="$l('Brief notes...', 'Catatan singkat...')"
                     class="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 focus:border-[#0067AC] focus:outline-none"
                   />
                 </td>
@@ -688,7 +691,7 @@ onMounted(() => {
             @click="showEvalModal = false"
             class="px-4 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold transition cursor-pointer"
           >
-            Batal
+            {{ $t('common.cancel') }}
           </button>
           <button
             type="button"
@@ -697,7 +700,7 @@ onMounted(() => {
             class="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-[#0067AC] hover:bg-[#00558F] text-white text-xs font-bold shadow-xs transition disabled:opacity-50 cursor-pointer"
           >
             <Save class="w-3.5 h-3.5" />
-            <span>{{ modalSaving ? 'Menyimpan...' : 'Simpan Evaluasi' }}</span>
+            <span>{{ modalSaving ? $l('Saving...', 'Menyimpan...') : $l('Save Evaluation', 'Simpan Evaluasi') }}</span>
           </button>
         </div>
       </div>

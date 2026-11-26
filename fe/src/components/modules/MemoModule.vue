@@ -28,6 +28,9 @@ import {
 } from 'lucide-vue-next'
 import DataTable from '@/components/DataTable.vue'
 import SubpageHeader from '@/components/SubpageHeader.vue'
+import { useI18n } from '@/i18n'
+
+const { l, t, locale } = useI18n()
 
 const emit = defineEmits(['back'])
 
@@ -70,7 +73,7 @@ async function fetchMemos() {
     const res = await apiClient.get('/memos')
     memos.value = res.data?.data || []
   } catch (err) {
-    showNotice('error', err.response?.data?.message || 'Gagal memuat data memo.')
+    showNotice('error', err.response?.data?.message || l('Failed to load memo data.', 'Gagal memuat data memo.'))
   } finally {
     loading.value = false
   }
@@ -88,7 +91,7 @@ const totalEksternal = computed(() => memos.value.filter(m => m.category === 'EK
 const formattedMemos = computed(() => {
   let list = memos.value.map(m => ({
     ...m,
-    receiver_display: m.category === 'EKSTERNAL' ? (m.receiver || '-') : 'Unit Internal Divisi L&D'
+    receiver_display: m.category === 'EKSTERNAL' ? (m.receiver || '-') : l('L&D Division Internal Unit', 'Unit Internal Divisi L&D')
   }))
 
   if (filterCategory.value) {
@@ -99,15 +102,15 @@ const formattedMemos = computed(() => {
 })
 
 // Columns matching SS2 Excel Wireframe for Single Unified Grid
-const memoColumns = [
-  { key: 'memo_date', label: 'Tanggal', sortable: true, width: '120px', align: 'center' },
-  { key: 'category', label: 'Kategori', sortable: true, width: '110px', align: 'center' },
-  { key: 'memo_number', label: 'Nomor Memo', sortable: true, width: '190px' },
-  { key: 'pic', label: 'PIC', sortable: true, width: '140px' },
-  { key: 'receiver_display', label: 'Penerima / Vendor', sortable: true, width: '180px' },
-  { key: 'subject', label: 'Perihal / Subject', sortable: true },
-  { key: 'document_name', label: 'Dokumen', width: '130px', align: 'center' }
-]
+const memoColumns = computed(() => [
+  { key: 'memo_date', label: l('Date', 'Tanggal'), sortable: true, width: '120px', align: 'center' },
+  { key: 'category', label: l('Category', 'Kategori'), sortable: true, width: '110px', align: 'center' },
+  { key: 'memo_number', label: l('Memo Number', 'Nomor Memo'), sortable: true, width: '190px' },
+  { key: 'pic', label: l('PIC', 'Penanggung Jawab'), sortable: true, width: '140px' },
+  { key: 'receiver_display', label: l('Recipient / Vendor', 'Penerima / Vendor'), sortable: true, width: '180px' },
+  { key: 'subject', label: l('Subject', 'Perihal'), sortable: true },
+  { key: 'document_name', label: l('Document', 'Dokumen'), width: '130px', align: 'center' }
+])
 
 function formatDateShort(val) {
   if (!val) return '-'
@@ -115,7 +118,9 @@ function formatDateShort(val) {
     const d = new Date(val)
     if (isNaN(d.getTime())) return val
     const day = String(d.getDate()).padStart(2, '0')
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+    const months = locale.value === 'en'
+      ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      : ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
     const month = months[d.getMonth()]
     const year = d.getFullYear()
     return `${day}-${month}-${year}`
@@ -135,7 +140,7 @@ function openCreateMemo(category = 'INTERNAL') {
   } else {
     form.value.memo_number = `${randNum}/BWS-L&D/LSPP/II/2026`
     form.value.pic = 'Maya Wulandari (HC Learning Head)'
-    form.value.receiver = 'LSPP (Lembaga Sertifikasi Profesi Perbankan)'
+    form.value.receiver = l('LSPP (Banking Professional Certification Body)', 'LSPP (Lembaga Sertifikasi Profesi Perbankan)')
   }
   feedback.value = { type: '', message: '' }
   viewMode.value = 'create'
@@ -174,12 +179,12 @@ function removeFile() {
 // Submit Form (Create / Update)
 async function submitMemoForm() {
   if (!form.value.memo_number || !form.value.pic || !form.value.subject) {
-    showNotice('error', 'Mohon lengkapi Nomor Memo, PIC, dan Perihal/Subject.')
+    showNotice('error', l('Please complete Memo Number, PIC, and Subject.', 'Mohon lengkapi Nomor Memo, Penanggung Jawab, dan Perihal.'))
     return
   }
 
   if (form.value.category === 'EKSTERNAL' && !form.value.receiver) {
-    showNotice('error', 'Receiver (Penerima Eksternal) wajib diisi untuk Memo Eksternal.')
+    showNotice('error', l('External Recipient is required for External Memos.', 'Penerima Eksternal wajib diisi untuk Memo Eksternal.'))
     return
   }
 
@@ -197,26 +202,25 @@ async function submitMemoForm() {
     if (form.value.description) formData.append('description', form.value.description)
     if (form.value.document_file) formData.append('document', form.value.document_file)
 
-    let res
     if (isEditMode.value) {
       formData.append('_method', 'PUT')
-      res = await apiClient.post(`/memos/${form.value.id}`, formData, {
+      await apiClient.post(`/memos/${form.value.id}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      showNotice('success', res.data?.message || 'Dokumen Memo berhasil diperbarui.')
+      showNotice('success', l('Memo document has been updated.', 'Dokumen Memo berhasil diperbarui.'))
       await fetchMemos()
       // Tetap di halaman edit sesuai pola form BWS
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
-      res = await apiClient.post('/memos', formData, {
+      await apiClient.post('/memos', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      showNotice('success', res.data?.message || 'Dokumen Memo berhasil dibuat.')
+      showNotice('success', l('Memo document has been created.', 'Dokumen Memo berhasil dibuat.'))
       await fetchMemos()
       viewMode.value = 'list'
     }
   } catch (err) {
-    showNotice('error', err.response?.data?.message || 'Gagal menyimpan dokumen memo.')
+    showNotice('error', err.response?.data?.message || l('Failed to save memo document.', 'Gagal menyimpan dokumen memo.'))
   } finally {
     isSubmitting.value = false
   }
@@ -234,12 +238,12 @@ async function executeDelete() {
 
   try {
     await apiClient.delete(`/memos/${memoToDelete.value.id}`)
-    showNotice('success', `Memo ${memoToDelete.value.memo_number} berhasil dihapus.`)
+    showNotice('success', l(`Memo ${memoToDelete.value.memo_number} has been deleted.`, `Memo ${memoToDelete.value.memo_number} berhasil dihapus.`))
     showDeleteModal.value = false
     memoToDelete.value = null
     await fetchMemos()
   } catch (err) {
-    showNotice('error', err.response?.data?.message || 'Gagal menghapus memo.')
+    showNotice('error', err.response?.data?.message || l('Failed to delete memo.', 'Gagal menghapus memo.'))
   } finally {
     isDeleting.value = false
   }
@@ -248,7 +252,10 @@ async function executeDelete() {
 // Download or Preview document
 function downloadMemoDocument(memo) {
   if (!memo.document_path) {
-    alert(`Berkas contoh: ${memo.document_name || 'Memo.pdf'}\nSilakan gunakan form edit untuk mengunggah berkas PDF/Word asli.`)
+    alert(l(
+      `Sample file: ${memo.document_name || 'Memo.pdf'}\nPlease use the edit form to upload the actual PDF/Word file.`,
+      `Berkas contoh: ${memo.document_name || 'Memo.pdf'}\nSilakan gunakan formulir ubah untuk mengunggah berkas PDF/Word asli.`
+    ))
     return
   }
   const url = `${apiClient.defaults.baseURL}/memos/${memo.id}/document`
@@ -299,9 +306,9 @@ defineExpose({
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-2xs flex items-center justify-between">
           <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Total Arsip Memo</span>
-            <div class="text-2xl font-extrabold text-gray-900 mt-1">{{ memos.length }} Surat</div>
-            <span class="text-[10px] text-gray-500">Internal & Eksternal</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400">{{ $l('Total Memo Archive', 'Total Arsip Memo') }}</span>
+            <div class="text-2xl font-extrabold text-gray-900 mt-1">{{ memos.length }} {{ $l(memos.length === 1 ? 'Document' : 'Documents', 'Surat') }}</div>
+            <span class="text-[10px] text-gray-500">{{ $l('Internal & External', 'Internal & Eksternal') }}</span>
           </div>
           <div class="w-10 h-10 rounded-xl bg-[#EBF4FC] text-[#0067AC] flex items-center justify-center font-bold">
             <FileText class="w-5 h-5" />
@@ -310,8 +317,8 @@ defineExpose({
 
         <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-2xs flex items-center justify-between">
           <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Memo Internal</span>
-            <div class="text-2xl font-extrabold text-blue-700 mt-1">{{ totalInternal }} Surat</div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400">{{ $l('Internal Memos', 'Memo Internal') }}</span>
+            <div class="text-2xl font-extrabold text-blue-700 mt-1">{{ totalInternal }} {{ $l(totalInternal === 1 ? 'Document' : 'Documents', 'Surat') }}</div>
             <span class="text-[10px] text-gray-500">Format: MEMO-LD.DIV</span>
           </div>
           <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
@@ -321,9 +328,9 @@ defineExpose({
 
         <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-2xs flex items-center justify-between">
           <div>
-            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Memo Eksternal</span>
-            <div class="text-2xl font-extrabold text-emerald-700 mt-1">{{ totalEksternal }} Surat</div>
-            <span class="text-[10px] text-gray-500">Vendor / Lembaga Sertifikasi</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400">{{ $l('External Memos', 'Memo Eksternal') }}</span>
+            <div class="text-2xl font-extrabold text-emerald-700 mt-1">{{ totalEksternal }} {{ $l(totalEksternal === 1 ? 'Document' : 'Documents', 'Surat') }}</div>
+            <span class="text-[10px] text-gray-500">{{ $l('Vendor / Certification Body', 'Vendor / Lembaga Sertifikasi') }}</span>
           </div>
           <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
             <ExternalLink class="w-5 h-5" />
@@ -340,7 +347,7 @@ defineExpose({
             class="px-4 py-1.5 rounded-xl transition cursor-pointer"
             :class="filterCategory === '' ? 'bg-white text-[#0067AC] shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'"
           >
-            Semua Memo ({{ memos.length }})
+            {{ $l('All Memos', 'Semua Memo') }} ({{ memos.length }})
           </button>
           <button
             type="button"
@@ -349,7 +356,7 @@ defineExpose({
             :class="filterCategory === 'INTERNAL' ? 'bg-white text-[#0067AC] shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'"
           >
             <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-            <span>Memo Internal ({{ totalInternal }})</span>
+            <span>{{ $l('Internal Memos', 'Memo Internal') }} ({{ totalInternal }})</span>
           </button>
           <button
             type="button"
@@ -358,7 +365,7 @@ defineExpose({
             :class="filterCategory === 'EKSTERNAL' ? 'bg-white text-emerald-700 shadow-xs font-bold' : 'text-gray-600 hover:text-gray-900'"
           >
             <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>Memo Eksternal ({{ totalEksternal }})</span>
+            <span>{{ $l('External Memos', 'Memo Eksternal') }} ({{ totalEksternal }})</span>
           </button>
         </div>
 
@@ -369,7 +376,7 @@ defineExpose({
             class="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0067AC] text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
           >
             <Plus class="w-3.5 h-3.5" />
-            <span>+ Memo Internal</span>
+            <span>{{ $l('Internal Memo', 'Memo Internal') }}</span>
           </button>
           <button
             type="button"
@@ -377,7 +384,7 @@ defineExpose({
             class="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
           >
             <Plus class="w-3.5 h-3.5" />
-            <span>+ Memo Eksternal</span>
+            <span>{{ $l('External Memo', 'Memo Eksternal') }}</span>
           </button>
         </div>
       </div>
@@ -387,7 +394,7 @@ defineExpose({
         :data="formattedMemos"
         :columns="memoColumns"
         date-key="memo_date"
-        export-filename="daftar_memo_kedinasan_bws_2026"
+        export-filename="bws_official_memos"
         :default-per-page="10"
       >
         <!-- Tanggal -->
@@ -403,7 +410,7 @@ defineExpose({
             class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
             :class="row.category === 'INTERNAL' ? 'bg-blue-50 text-[#0067AC] border border-blue-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'"
           >
-            {{ row.category }}
+            {{ row.category === 'INTERNAL' ? $l('INTERNAL', 'INTERNAL') : $l('EXTERNAL', 'EKSTERNAL') }}
           </span>
         </template>
 
@@ -447,10 +454,10 @@ defineExpose({
             type="button"
             @click="downloadMemoDocument(row)"
             class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 text-gray-700 hover:text-[#0067AC] transition cursor-pointer text-xs"
-            :title="`Unduh Berkas: ${row.document_name || 'Memo.pdf'}`"
+            :title="$l(`Download File: ${row.document_name || 'Memo.pdf'}`, `Unduh Berkas: ${row.document_name || 'Memo.pdf'}`)"
           >
             <Paperclip class="w-3.5 h-3.5 text-blue-500" />
-            <span class="truncate max-w-[90px] text-[11px] font-medium">{{ row.document_name || 'Unduh' }}</span>
+            <span class="truncate max-w-[90px] text-[11px] font-medium">{{ row.document_name || $l('Download', 'Unduh') }}</span>
           </button>
           <span v-else class="text-gray-300 text-xs italic">-</span>
         </template>
@@ -462,19 +469,19 @@ defineExpose({
               type="button"
               @click="openEditMemo(row)"
               class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
-              title="Edit Memo"
+              :title="$l('Edit Memo', 'Ubah Memo')"
             >
               <Edit3 class="w-3.5 h-3.5" />
-              <span>Edit</span>
+              <span>{{ $t('common.edit') }}</span>
             </button>
             <button
               type="button"
               @click="confirmDelete(row)"
               class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
-              title="Hapus Memo"
+              :title="$l('Delete Memo', 'Hapus Memo')"
             >
               <Trash2 class="w-3.5 h-3.5" />
-              <span>Hapus</span>
+              <span>{{ $t('common.delete') }}</span>
             </button>
           </div>
         </template>
@@ -488,10 +495,10 @@ defineExpose({
     <template v-else-if="viewMode === 'create' || viewMode === 'edit'">
 
       <SubpageHeader
-        back-label="Kembali ke Daftar Memo"
-        :title="isEditMode ? `Edit Memo: ${form.memo_number}` : 'Form Buat Dokumen Memo Baru'"
-        subtitle="Pencatatan nomor surat kedinasan, memo penugasan internal, dan korespondensi eksternal Divisi L&D"
-        :badge="form.category === 'INTERNAL' ? 'Memo Internal' : 'Memo Eksternal'"
+        :back-label="$l('Back to Memo List', 'Kembali ke Daftar Memo')"
+        :title="isEditMode ? $l(`Edit Memo: ${form.memo_number}`, `Ubah Memo: ${form.memo_number}`) : $l('Create New Memo Document', 'Buat Dokumen Memo Baru')"
+        :subtitle="$l('Official correspondence numbering, internal assignment memos, and L&D Division external communications', 'Pencatatan nomor surat kedinasan, memo penugasan internal, dan korespondensi eksternal Divisi L&D')"
+        :badge="form.category === 'INTERNAL' ? $l('Internal Memo', 'Memo Internal') : $l('External Memo', 'Memo Eksternal')"
         @back="viewMode = 'list'"
       />
 
@@ -500,8 +507,8 @@ defineExpose({
         <!-- Section 1: Kategori Surat Memo -->
         <div class="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h4 class="font-extrabold text-sm text-[#0067AC]">Kategori Surat Kedinasan Memo</h4>
-            <p class="text-xs text-gray-500">Pilih jenis korespondensi yang akan dicatat</p>
+            <h4 class="font-extrabold text-sm text-[#0067AC]">{{ $l('Official Memo Correspondence Category', 'Kategori Surat Kedinasan Memo') }}</h4>
+            <p class="text-xs text-gray-500">{{ $l('Select the type of correspondence to record', 'Pilih jenis korespondensi yang akan dicatat') }}</p>
           </div>
           <div class="flex items-center gap-2">
             <button
@@ -510,7 +517,7 @@ defineExpose({
               class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
               :class="form.category === 'INTERNAL' ? 'bg-[#0067AC] text-white shadow-xs' : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'"
             >
-              Memo Internal
+              {{ $l('Internal Memo', 'Memo Internal') }}
             </button>
             <button
               type="button"
@@ -518,7 +525,7 @@ defineExpose({
               class="px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
               :class="form.category === 'EKSTERNAL' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'"
             >
-              Memo Eksternal
+              {{ $l('External Memo', 'Memo Eksternal') }}
             </button>
           </div>
         </div>
@@ -527,7 +534,7 @@ defineExpose({
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs">
           <!-- Tanggal Memo -->
           <div>
-            <label class="block font-bold text-gray-700 mb-1.5">Tanggal Memo *</label>
+            <label class="block font-bold text-gray-700 mb-1.5">{{ $l('Memo Date *', 'Tanggal Memo *') }}</label>
             <input
               v-model="form.memo_date"
               type="date"
@@ -538,80 +545,80 @@ defineExpose({
 
           <!-- Nomor Memo -->
           <div>
-            <label class="block font-bold text-gray-700 mb-1.5">Nomor Surat Memo *</label>
+            <label class="block font-bold text-gray-700 mb-1.5">{{ $l('Memo Number *', 'Nomor Surat Memo *') }}</label>
             <input
               v-model="form.memo_number"
               type="text"
               required
-              placeholder="Contoh: 001/MEMO-LD.DIV/II/2026"
+              :placeholder="$l('Example: 001/MEMO-LD.DIV/II/2026', 'Contoh: 001/MEMO-LD.DIV/II/2026')"
               class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-[#0067AC]"
             />
           </div>
 
           <!-- PIC Pembuat -->
           <div>
-            <label class="block font-bold text-gray-700 mb-1.5">PIC Pembuat / Penanggung Jawab *</label>
+            <label class="block font-bold text-gray-700 mb-1.5">{{ $l('Creator PIC / Person in Charge *', 'Pembuat / Penanggung Jawab *') }}</label>
             <input
               v-model="form.pic"
               type="text"
               required
-              placeholder="Nama PIC (e.g. Aditya Nugraha)"
+              :placeholder="$l('PIC name (e.g. Aditya Nugraha)', 'Nama penanggung jawab (mis. Aditya Nugraha)')"
               class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-800 focus:outline-none focus:border-[#0067AC]"
             />
           </div>
 
           <!-- Receiver (Khusus Eksternal) -->
           <div v-if="form.category === 'EKSTERNAL'">
-            <label class="block font-bold text-emerald-800 mb-1.5">Penerima / Lembaga Eksternal *</label>
+            <label class="block font-bold text-emerald-800 mb-1.5">{{ $l('External Recipient / Institution *', 'Penerima / Lembaga Eksternal *') }}</label>
             <input
               v-model="form.receiver"
               type="text"
               required
-              placeholder="Nama Vendor / Lembaga Sertifikasi (e.g. LSPP, LPPI, Mitra Konsultan)"
+              :placeholder="$l('Vendor / Certification Body name (e.g. LSPP, LPPI, Partner)', 'Nama Vendor / Lembaga Sertifikasi (mis. LSPP, LPPI, Mitra Konsultan)')"
               class="w-full bg-emerald-50/40 border border-emerald-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-900 focus:outline-none focus:border-emerald-600"
             />
           </div>
 
           <div v-else>
-            <label class="block font-bold text-gray-400 mb-1.5">Unit Tujuan / Penerima</label>
+            <label class="block font-bold text-gray-400 mb-1.5">{{ $l('Destination Unit / Recipient', 'Unit Tujuan / Penerima') }}</label>
             <input
               type="text"
               disabled
-              value="Unit Internal Divisi L&D / Bank Woori Saudara"
+              :value="$l('Internal L&D Division / Bank Woori Saudara', 'Unit Internal Divisi L&D / Bank Woori Saudara')"
               class="w-full bg-gray-100 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-gray-500 cursor-not-allowed"
             />
           </div>
 
           <!-- Perihal / Subject -->
           <div class="sm:col-span-2">
-            <label class="block font-bold text-gray-700 mb-1.5">Perihal / Subject Memo *</label>
+            <label class="block font-bold text-gray-700 mb-1.5">{{ $l('Memo Subject *', 'Perihal Surat Memo *') }}</label>
             <input
               v-model="form.subject"
               type="text"
               required
-              placeholder="Perihal surat (e.g. Usulan Pelaksanaan Diklat Sertifikasi Risiko Level 1)"
+              :placeholder="$l('Letter subject (e.g. Risk Certification Level 1 Training Proposal)', 'Perihal surat (mis. Usulan Pelaksanaan Diklat Sertifikasi Risiko Level 1)')"
               class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-900 focus:outline-none focus:border-[#0067AC]"
             />
           </div>
 
           <!-- Keterangan Tambahan -->
           <div class="sm:col-span-2">
-            <label class="block font-bold text-gray-700 mb-1.5">Keterangan Tambahan / Ringkasan Isi</label>
+            <label class="block font-bold text-gray-700 mb-1.5">{{ $l('Additional Notes / Content Summary', 'Keterangan Tambahan / Ringkasan Isi') }}</label>
             <textarea
               v-model="form.description"
               rows="3"
-              placeholder="Ringkasan poin memo atau instruksi pelaksanaan..."
+              :placeholder="$l('Summary of memo points or execution instructions...', 'Ringkasan poin memo atau instruksi pelaksanaan...')"
               class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-800 focus:outline-none focus:border-[#0067AC]"
             ></textarea>
           </div>
 
           <!-- Upload Berkas Dokumen -->
           <div class="sm:col-span-2">
-            <label class="block font-bold text-gray-700 mb-1.5">Berkas Dokumen Memo (PDF, Word, Scan)</label>
+            <label class="block font-bold text-gray-700 mb-1.5">{{ $l('Memo Document File (PDF, Word, Scan)', 'Berkas Dokumen Memo (PDF, Word, Pindai)') }}</label>
             <div class="flex items-center gap-3">
               <label class="px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold cursor-pointer transition flex items-center gap-2">
                 <UploadCloud class="w-4 h-4 text-[#0067AC]" />
-                <span>Pilih Berkas...</span>
+                <span>{{ $l('Choose File...', 'Pilih Berkas...') }}</span>
                 <input type="file" @change="handleFileChange" accept=".pdf,.doc,.docx,.jpg,.png" class="hidden" />
               </label>
               <div v-if="form.document_name" class="flex items-center gap-2 bg-blue-50 text-[#0067AC] px-3 py-1.5 rounded-xl font-mono text-xs">
@@ -619,7 +626,7 @@ defineExpose({
                 <span>{{ form.document_name }}</span>
                 <button type="button" @click="removeFile" class="text-rose-500 hover:text-rose-700 font-bold ml-1">✕</button>
               </div>
-              <span v-else class="text-gray-400 text-xs italic">Belum ada file dipilih</span>
+              <span v-else class="text-gray-400 text-xs italic">{{ $l('No file selected', 'Belum ada berkas dipilih') }}</span>
             </div>
           </div>
         </div>
@@ -631,7 +638,7 @@ defineExpose({
             @click="viewMode = 'list'"
             class="px-5 py-2.5 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer"
           >
-            Batal
+            {{ $t('common.cancel') }}
           </button>
           <button
             type="submit"
@@ -639,7 +646,7 @@ defineExpose({
             class="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-[#0067AC] hover:bg-[#00528c] shadow-sm transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <Save class="w-4 h-4" />
-            <span>{{ isSubmitting ? 'Menyimpan...' : (isEditMode ? 'Simpan Perubahan Memo' : 'Simpan Dokumen Memo') }}</span>
+            <span>{{ isSubmitting ? $l('Saving...', 'Menyimpan...') : (isEditMode ? $l('Save Memo Changes', 'Simpan Perubahan Memo') : $l('Save Memo Document', 'Simpan Dokumen Memo')) }}</span>
           </button>
         </div>
 
@@ -658,22 +665,22 @@ defineExpose({
             <Trash2 class="w-6 h-6 text-rose-600" />
           </div>
           <div>
-            <h3 class="font-bold text-gray-900 text-base">Hapus Dokumen Memo</h3>
-            <p class="text-xs text-gray-500">Konfirmasi penghapusan arsip surat memo</p>
+            <h3 class="font-bold text-gray-900 text-base">{{ $l('Delete Memo Document', 'Hapus Dokumen Memo') }}</h3>
+            <p class="text-xs text-gray-500">{{ $l('Confirm memo archive deletion', 'Konfirmasi penghapusan arsip surat memo') }}</p>
           </div>
         </div>
 
         <div class="bg-gray-50 rounded-2xl p-4 mb-4 border border-gray-100 space-y-2 text-xs">
           <div class="flex justify-between items-center">
-            <span class="text-gray-400">Nomor Memo:</span>
+            <span class="text-gray-400">{{ $l('Memo Number:', 'Nomor Memo:') }}</span>
             <span class="font-mono font-bold text-[#0067AC]">{{ memoToDelete.memo_number }}</span>
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-gray-400">Kategori:</span>
-            <span class="font-bold" :class="memoToDelete.category === 'INTERNAL' ? 'text-blue-700' : 'text-emerald-700'">{{ memoToDelete.category }}</span>
+            <span class="text-gray-400">{{ $l('Category:', 'Kategori:') }}</span>
+            <span class="font-bold" :class="memoToDelete.category === 'INTERNAL' ? 'text-blue-700' : 'text-emerald-700'">{{ memoToDelete.category === 'INTERNAL' ? $l('INTERNAL', 'INTERNAL') : $l('EXTERNAL', 'EKSTERNAL') }}</span>
           </div>
           <div class="flex justify-between items-start">
-            <span class="text-gray-400">Perihal:</span>
+            <span class="text-gray-400">{{ $l('Subject:', 'Perihal:') }}</span>
             <span class="font-bold text-gray-800 text-right max-w-[200px] truncate">{{ memoToDelete.subject }}</span>
           </div>
         </div>
@@ -685,7 +692,7 @@ defineExpose({
             :disabled="isDeleting"
             class="px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-100 transition cursor-pointer"
           >
-            Batal
+            {{ $t('common.cancel') }}
           </button>
           <button
             type="button"
@@ -693,8 +700,8 @@ defineExpose({
             :disabled="isDeleting"
             class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-sm transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
-            <span v-if="isDeleting">Menghapus...</span>
-            <span v-else>Ya, Hapus Memo</span>
+            <span v-if="isDeleting">{{ $l('Deleting...', 'Menghapus...') }}</span>
+            <span v-else>{{ $l('Yes, Delete Memo', 'Ya, Hapus Memo') }}</span>
           </button>
         </div>
       </div>

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import apiClient from '@/api/client'
+import { useI18n } from '@/i18n'
 import {
   Users,
   ShieldCheck,
@@ -35,6 +36,7 @@ import {
   Sparkles
 } from 'lucide-vue-next'
 
+const { l } = useI18n()
 const auth = useAuthStore()
 
 const props = defineProps({
@@ -194,28 +196,28 @@ const uniqueCabangList = computed(() => {
 })
 
 const roleFilterOptions = computed(() => [
-  { value: 'ALL', label: `Semua Peran (${levels.value.length})` },
-  ...levels.value.map(l => ({
-    value: l.level_id,
-    label: l.level,
-    subLabel: l.keterangan || l.role || ''
+  { value: 'ALL', label: l(`All Roles (${levels.value.length})`, `Semua Peran (${levels.value.length})`) },
+  ...levels.value.map(lvl => ({
+    value: lvl.level_id,
+    label: lvl.level,
+    subLabel: lvl.keterangan || lvl.role || ''
   }))
 ])
 
-const stKerjaFilterOptions = [
-  { value: 'ALL', label: 'Semua Status' },
-  { value: 'AKTIF', label: 'Aktif Tetap' },
-  { value: 'KONTRAK', label: 'Kontrak' },
-  { value: 'RESIGN', label: 'Resign / Nonaktif' }
-]
+const stKerjaFilterOptions = computed(() => [
+  { value: 'ALL', label: l('All Statuses', 'Semua Status') },
+  { value: 'AKTIF', label: l('Permanent Active', 'Aktif Tetap') },
+  { value: 'KONTRAK', label: l('Contract', 'Kontrak') },
+  { value: 'RESIGN', label: l('Resigned / Inactive', 'Berhenti / Nonaktif') }
+])
 
 const cabangFilterOptions = computed(() => [
-  { value: 'ALL', label: 'Semua Cabang' },
+  { value: 'ALL', label: l('All Branches', 'Semua Cabang') },
   ...uniqueCabangList.value.map(c => ({ value: c, label: c }))
 ])
 
 const karyawanSelectOptions = computed(() => [
-  { value: '', label: '-- Pilih dari Karyawan Terdaftar --' },
+  { value: '', label: l('-- Select from Registered Employees --', '-- Pilih dari Karyawan Terdaftar --') },
   ...karyawans.value.map(k => ({
     value: k.karyawan_id,
     label: `${k.nik} — ${k.nama}`,
@@ -223,30 +225,30 @@ const karyawanSelectOptions = computed(() => [
   }))
 ])
 
-const levelSelectOptions = computed(() => 
-  levels.value.map(l => ({
-    value: l.level_id,
-    label: `Level ${l.level_id}: ${l.level}`,
-    subLabel: l.keterangan || l.role || ''
+const levelSelectOptions = computed(() =>
+  levels.value.map(lvl => ({
+    value: lvl.level_id,
+    label: l(`Level ${lvl.level_id}: ${lvl.level}`, `Tingkat ${lvl.level_id}: ${lvl.level}`),
+    subLabel: lvl.keterangan || lvl.role || ''
   }))
 )
 
-const accountStatusOptions = [
-  { value: true, label: 'Aktif' },
-  { value: false, label: 'Nonaktif' }
-]
+const accountStatusOptions = computed(() => [
+  { value: true, label: l('Active', 'Aktif') },
+  { value: false, label: l('Inactive', 'Nonaktif') }
+])
 
-const jkOptions = [
-  { value: 'L', label: 'Laki-laki' },
-  { value: 'P', label: 'Perempuan' }
-]
+const jkOptions = computed(() => [
+  { value: 'L', label: l('Male', 'Laki-laki') },
+  { value: 'P', label: l('Female', 'Perempuan') }
+])
 
-const employeeStKerjaOptions = [
-  { value: 'AKTIF', label: 'Aktif Tetap' },
-  { value: 'KONTRAK', label: 'Pegawai Kontrak' },
-  { value: 'PROBATION', label: 'Masa Percobaan (Probation)' },
-  { value: 'RESIGN', label: 'Nonaktif / Resign' }
-]
+const employeeStKerjaOptions = computed(() => [
+  { value: 'AKTIF', label: l('Permanent Active', 'Aktif Tetap') },
+  { value: 'KONTRAK', label: l('Contract Employee', 'Pegawai Kontrak') },
+  { value: 'PROBATION', label: l('Probation Period', 'Masa Percobaan') },
+  { value: 'RESIGN', label: l('Inactive / Resigned', 'Nonaktif / Berhenti') }
+])
 
 // API Loaders
 async function fetchRbacData() {
@@ -338,15 +340,15 @@ async function savePermissionMatrix() {
   feedbackMsg.value = ''
   try {
     const keysArray = Array.from(activePermissionKeys.value)
-    const { data } = await apiClient.post(`/rbac/levels/${selectedLevel.value.level_id}/access`, {
+    await apiClient.post(`/rbac/levels/${selectedLevel.value.level_id}/access`, {
       controller_keys: keysArray
     })
     feedbackType.value = 'success'
-    feedbackMsg.value = data.message || 'Matriks Hak Akses RBAC berhasil diperbarui.'
+    feedbackMsg.value = l('RBAC Access Matrix updated successfully.', 'Matriks Hak Akses RBAC berhasil diperbarui.')
     await fetchRbacData()
   } catch (err) {
     feedbackType.value = 'error'
-    feedbackMsg.value = err.response?.data?.message || 'Gagal menyimpan hak akses.'
+    feedbackMsg.value = l('Failed to save access permissions.', err.response?.data?.message || 'Gagal menyimpan hak akses.')
   } finally {
     savingMatrix.value = false
   }
@@ -407,19 +409,19 @@ async function submitUserForm() {
     if (editingUser.value) {
       const payload = { ...userForm.value }
       if (!payload.password) delete payload.password
-      const { data } = await apiClient.put(`/users/${editingUser.value.id}`, payload)
+      await apiClient.put(`/users/${editingUser.value.id}`, payload)
       feedbackType.value = 'success'
-      feedbackMsg.value = data.message || 'Pengguna berhasil diperbarui.'
+      feedbackMsg.value = l('User updated successfully.', 'Pengguna berhasil diperbarui.')
     } else {
-      const { data } = await apiClient.post('/users', userForm.value)
+      await apiClient.post('/users', userForm.value)
       feedbackType.value = 'success'
-      feedbackMsg.value = data.message || 'Pengguna baru berhasil ditambahkan.'
+      feedbackMsg.value = l('New user added successfully.', 'Pengguna baru berhasil ditambahkan.')
     }
     showUserModal.value = false
     await fetchRbacData()
   } catch (err) {
     feedbackType.value = 'error'
-    feedbackMsg.value = err.response?.data?.message || 'Gagal menyimpan data pengguna.'
+    feedbackMsg.value = l('Failed to save user data.', err.response?.data?.message || 'Gagal menyimpan data pengguna.')
   } finally {
     savingUser.value = false
   }
@@ -436,15 +438,15 @@ async function confirmDeleteUser() {
   deletingUser.value = true
   feedbackMsg.value = ''
   try {
-    const { data } = await apiClient.delete(`/users/${userToDelete.value.id}`)
+    await apiClient.delete(`/users/${userToDelete.value.id}`)
     feedbackType.value = 'success'
-    feedbackMsg.value = data.message || 'Pengguna berhasil dihapus dari sistem.'
+    feedbackMsg.value = l('User removed from system successfully.', 'Pengguna berhasil dihapus dari sistem.')
     showDeleteUserModal.value = false
     userToDelete.value = null
     await fetchRbacData()
   } catch (err) {
     feedbackType.value = 'error'
-    feedbackMsg.value = err.response?.data?.message || 'Gagal menghapus pengguna.'
+    feedbackMsg.value = l('Failed to delete user.', err.response?.data?.message || 'Gagal menghapus pengguna.')
   } finally {
     deletingUser.value = false
   }
@@ -496,20 +498,20 @@ async function submitKaryawanForm() {
   feedbackMsg.value = ''
   try {
     if (editingKaryawan.value) {
-      const { data } = await apiClient.put(`/karyawan/${editingKaryawan.value.karyawan_id}`, karyawanForm.value)
+      await apiClient.put(`/karyawan/${editingKaryawan.value.karyawan_id}`, karyawanForm.value)
       feedbackType.value = 'success'
-      feedbackMsg.value = data.message || 'Data karyawan berhasil diperbarui.'
+      feedbackMsg.value = l('Employee record updated successfully.', 'Data karyawan berhasil diperbarui.')
     } else {
-      const { data } = await apiClient.post('/karyawan', karyawanForm.value)
+      await apiClient.post('/karyawan', karyawanForm.value)
       feedbackType.value = 'success'
-      feedbackMsg.value = data.message || 'Karyawan baru berhasil ditambahkan.'
+      feedbackMsg.value = l('New employee added successfully.', 'Karyawan baru berhasil ditambahkan.')
     }
     showKaryawanModal.value = false
     await fetchKaryawanList()
     await fetchRbacData()
   } catch (err) {
     feedbackType.value = 'error'
-    feedbackMsg.value = err.response?.data?.message || 'Gagal menyimpan data karyawan.'
+    feedbackMsg.value = l('Failed to save employee data.', err.response?.data?.message || 'Gagal menyimpan data karyawan.')
   } finally {
     savingKaryawan.value = false
   }
@@ -525,16 +527,16 @@ async function confirmDeleteKaryawan() {
   deletingKaryawan.value = true
   feedbackMsg.value = ''
   try {
-    const { data } = await apiClient.delete(`/karyawan/${karyawanToDelete.value.karyawan_id}`)
+    await apiClient.delete(`/karyawan/${karyawanToDelete.value.karyawan_id}`)
     feedbackType.value = 'success'
-    feedbackMsg.value = data.message || 'Data karyawan berhasil dihapus.'
+    feedbackMsg.value = l('Employee record deleted successfully.', 'Data karyawan berhasil dihapus.')
     showDeleteKaryawanModal.value = false
     karyawanToDelete.value = null
     await fetchKaryawanList()
     await fetchRbacData()
   } catch (err) {
     feedbackType.value = 'error'
-    feedbackMsg.value = err.response?.data?.message || 'Gagal menghapus data karyawan.'
+    feedbackMsg.value = l('Failed to delete employee record.', err.response?.data?.message || 'Gagal menghapus data karyawan.')
   } finally {
     deletingKaryawan.value = false
   }
@@ -592,8 +594,8 @@ onMounted(async () => {
           <BadgeCheck class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Total Pegawai</p>
-          <p class="text-xl font-extrabold text-gray-900">{{ karyawanStats.total_karyawan }} Orang</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ l('Total Employees', 'Total Pegawai') }}</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ karyawanStats.total_karyawan }} {{ l('People', 'Orang') }}</p>
         </div>
       </div>
 
@@ -602,8 +604,8 @@ onMounted(async () => {
           <CheckCircle2 class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Status Pegawai</p>
-          <p class="text-xl font-extrabold text-gray-900">{{ karyawanStats.aktif_karyawan }} Aktif</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ l('Employee Status', 'Status Pegawai') }}</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ karyawanStats.aktif_karyawan }} {{ l('Active', 'Aktif') }}</p>
         </div>
       </div>
 
@@ -612,8 +614,8 @@ onMounted(async () => {
           <Building class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Kantor Cabang</p>
-          <p class="text-xl font-extrabold text-gray-900">{{ karyawanStats.total_cabang || 3 }} Wilayah</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ l('Branch Offices', 'Kantor Cabang') }}</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ karyawanStats.total_cabang || 3 }} {{ l('Regions', 'Wilayah') }}</p>
         </div>
       </div>
 
@@ -622,8 +624,8 @@ onMounted(async () => {
           <Clock class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Target Diklat OJK</p>
-          <p class="text-xl font-extrabold text-gray-900">{{ karyawanStats.target_jam_avg }} Jam / Thn</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ l('OJK Training Target', 'Target Diklat OJK') }}</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ karyawanStats.target_jam_avg }} {{ l('Hrs / Yr', 'Jam / Thn') }}</p>
         </div>
       </div>
     </div>
@@ -634,8 +636,8 @@ onMounted(async () => {
           <Users class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Total Pengguna</p>
-          <p class="text-xl font-extrabold text-gray-900">{{ stats.total_users }} Akun</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ l('Total Users', 'Total Pengguna') }}</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ stats.total_users }} {{ l('Accounts', 'Akun') }}</p>
         </div>
       </div>
 
@@ -644,8 +646,8 @@ onMounted(async () => {
           <CheckCircle2 class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Status Akun</p>
-          <p class="text-xl font-extrabold text-gray-900">{{ stats.active_users }} Aktif</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ l('Account Status', 'Status Akun') }}</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ stats.active_users }} {{ l('Active', 'Aktif') }}</p>
         </div>
       </div>
 
@@ -654,8 +656,8 @@ onMounted(async () => {
           <ShieldCheck class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Tingkat Peran</p>
-          <p class="text-xl font-extrabold text-gray-900">{{ stats.total_levels }} Level</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ l('Role Levels', 'Tingkat Peran') }}</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ stats.total_levels }} {{ l('Levels', 'Tingkat') }}</p>
         </div>
       </div>
 
@@ -664,8 +666,8 @@ onMounted(async () => {
           <KeyRound class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">Matriks Hak Akses</p>
-          <p class="text-xl font-extrabold text-gray-900">{{ stats.total_permissions }} Aturan</p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ l('Access Matrix', 'Matriks Hak Akses') }}</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ stats.total_permissions }} {{ l('Rules', 'Aturan') }}</p>
         </div>
       </div>
     </div>
@@ -683,7 +685,7 @@ onMounted(async () => {
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Cari nama, NIK, email, atau divisi..."
+              :placeholder="l('Search name, NIK, email, or division...', 'Cari nama, NIK, email, atau divisi...')"
               class="w-full bg-[#f4f6f5] focus:bg-white text-xs text-gray-800 rounded-full pl-9 pr-4 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none transition"
             />
           </div>
@@ -693,8 +695,8 @@ onMounted(async () => {
             <AppSearchableSelect
               v-model="selectedRoleFilter"
               :options="roleFilterOptions"
-              placeholder="Semua Peran..."
-              search-placeholder="Cari peran..."
+              :placeholder="l('All Roles...', 'Semua Peran...')"
+              :search-placeholder="l('Search role...', 'Cari peran...')"
               input-class="rounded-full bg-[#f4f6f5] py-2 px-3 border-transparent"
             />
           </div>
@@ -706,7 +708,7 @@ onMounted(async () => {
           icon="user-plus"
           @click="openCreateUserModal"
         >
-          Tambah Pengguna Baru
+          {{ l('Add New User', 'Tambah Pengguna Baru') }}
         </AppButton>
       </div>
 
@@ -715,12 +717,12 @@ onMounted(async () => {
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="bg-[#f8faf9] text-gray-500 font-bold uppercase tracking-wider text-[10px] border-b border-gray-100">
-              <th class="py-3 px-4">Pengguna & Akun</th>
-              <th class="py-3 px-4">Karyawan & NIK</th>
-              <th class="py-3 px-4">Peran (User Level)</th>
-              <th class="py-3 px-4">Departemen & Cabang</th>
-              <th class="py-3 px-4">Status</th>
-              <th class="py-3 px-4 text-right">Aksi</th>
+              <th class="py-3 px-4">{{ l('User & Account', 'Pengguna & Akun') }}</th>
+              <th class="py-3 px-4">{{ l('Employee & NIK', 'Karyawan & NIK') }}</th>
+              <th class="py-3 px-4">{{ l('Role (User Level)', 'Peran (Tingkat Pengguna)') }}</th>
+              <th class="py-3 px-4">{{ l('Department & Branch', 'Departemen & Cabang') }}</th>
+              <th class="py-3 px-4">{{ l('Status', 'Status') }}</th>
+              <th class="py-3 px-4 text-right">{{ l('Actions', 'Aksi') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
@@ -746,7 +748,7 @@ onMounted(async () => {
               <td class="py-3 px-4">
                 <div v-if="u.karyawan">
                   <span class="font-mono font-bold text-[#0067AC] text-xs block">{{ u.karyawan.nik }}</span>
-                  <span class="text-[11px] text-gray-400">{{ u.karyawan.jabatan || 'Pegawai BWS' }}</span>
+                  <span class="text-[11px] text-gray-400">{{ u.karyawan.jabatan || l('BWS Employee', 'Pegawai BWS') }}</span>
                 </div>
                 <div v-else>
                   <span class="font-mono text-gray-400 text-xs">{{ u.nik || '-' }}</span>
@@ -767,8 +769,8 @@ onMounted(async () => {
 
               <!-- Department -->
               <td class="py-3 px-4">
-                <p class="font-medium text-gray-800">{{ u.department || 'Kantor Pusat Sudirman' }}</p>
-                <p class="text-[11px] text-gray-400">{{ u.branch || 'Kantor Pusat' }}</p>
+                <p class="font-medium text-gray-800">{{ u.department || l('Sudirman Head Office', 'Kantor Pusat Sudirman') }}</p>
+                <p class="text-[11px] text-gray-400">{{ u.branch || l('Head Office', 'Kantor Pusat') }}</p>
               </td>
 
               <!-- Status -->
@@ -778,14 +780,14 @@ onMounted(async () => {
                   class="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200"
                 >
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  Aktif
+                  {{ l('Active', 'Aktif') }}
                 </span>
                 <span
                   v-else
                   class="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200"
                 >
                   <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                  Nonaktif
+                  {{ l('Inactive', 'Nonaktif') }}
                 </span>
               </td>
 
@@ -796,7 +798,7 @@ onMounted(async () => {
                   <button
                     @click="openEditUserModal(u)"
                     class="p-1.5 rounded-lg text-gray-500 hover:text-[#0067AC] hover:bg-blue-50 transition"
-                    title="Edit Pengguna"
+                    :title="l('Edit User', 'Ubah Pengguna')"
                   >
                     <Edit2 class="w-3.5 h-3.5" />
                   </button>
@@ -805,7 +807,7 @@ onMounted(async () => {
                   <button
                     @click="openDeleteUserModal(u)"
                     class="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition"
-                    title="Hapus Pengguna"
+                    :title="l('Delete User', 'Hapus Pengguna')"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
                   </button>
@@ -814,7 +816,7 @@ onMounted(async () => {
                   <button
                     @click="selectLevelForMatrix(u.level)"
                     class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EBF4FC] text-[#0067AC] hover:bg-blue-100 transition"
-                    title="Buka Matriks RBAC untuk peran ini"
+                    :title="l('Open RBAC Matrix for this role', 'Buka Matriks RBAC untuk peran ini')"
                   >
                     RBAC
                   </button>
@@ -840,7 +842,7 @@ onMounted(async () => {
             <input
               v-model="searchKaryawan"
               type="text"
-              placeholder="Cari nama karyawan, NIK, jabatan, atau cabang..."
+              :placeholder="l('Search employee name, NIK, position, or branch...', 'Cari nama karyawan, NIK, jabatan, atau cabang...')"
               class="w-full bg-[#f4f6f5] focus:bg-white text-xs text-gray-800 rounded-full pl-9 pr-4 py-2 border border-transparent focus:border-[#0067AC] focus:outline-none transition"
             />
           </div>
@@ -850,8 +852,8 @@ onMounted(async () => {
             <AppSearchableSelect
               v-model="filterStKerja"
               :options="stKerjaFilterOptions"
-              placeholder="Semua Status..."
-              search-placeholder="Cari status..."
+              :placeholder="l('All Statuses...', 'Semua Status...')"
+              :search-placeholder="l('Search status...', 'Cari status...')"
               input-class="rounded-full bg-[#f4f6f5] py-2 px-3 border-transparent"
             />
           </div>
@@ -861,8 +863,8 @@ onMounted(async () => {
             <AppSearchableSelect
               v-model="filterCabang"
               :options="cabangFilterOptions"
-              placeholder="Semua Cabang..."
-              search-placeholder="Cari cabang..."
+              :placeholder="l('All Branches...', 'Semua Cabang...')"
+              :search-placeholder="l('Search branch...', 'Cari cabang...')"
               input-class="rounded-full bg-[#f4f6f5] py-2 px-3 border-transparent"
             />
           </div>
@@ -874,7 +876,7 @@ onMounted(async () => {
           icon="user-plus"
           @click="openCreateKaryawanModal"
         >
-          Tambah Karyawan Baru
+          {{ l('Add New Employee', 'Tambah Karyawan Baru') }}
         </AppButton>
       </div>
 
@@ -883,13 +885,13 @@ onMounted(async () => {
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="bg-[#f8faf9] text-gray-500 font-bold uppercase tracking-wider text-[10px] border-b border-gray-100">
-              <th class="py-3 px-4">Pegawai & NIK</th>
-              <th class="py-3 px-4">Departemen & Jabatan</th>
-              <th class="py-3 px-4">Kantor Cabang & Golongan</th>
-              <th class="py-3 px-4">Status Kerja</th>
-              <th class="py-3 px-4">Target Diklat</th>
-              <th class="py-3 px-4">Akun Login</th>
-              <th class="py-3 px-4 text-right">Aksi</th>
+              <th class="py-3 px-4">{{ l('Employee & NIK', 'Pegawai & NIK') }}</th>
+              <th class="py-3 px-4">{{ l('Department & Position', 'Departemen & Jabatan') }}</th>
+              <th class="py-3 px-4">{{ l('Branch & Grade', 'Kantor Cabang & Golongan') }}</th>
+              <th class="py-3 px-4">{{ l('Employment Status', 'Status Kerja') }}</th>
+              <th class="py-3 px-4">{{ l('Training Target', 'Target Diklat') }}</th>
+              <th class="py-3 px-4">{{ l('Login Account', 'Akun Pengguna') }}</th>
+              <th class="py-3 px-4 text-right">{{ l('Actions', 'Aksi') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
@@ -908,7 +910,7 @@ onMounted(async () => {
                     <p class="font-bold text-gray-900 leading-tight">{{ k.nama }}</p>
                     <div class="flex items-center gap-2 mt-0.5">
                       <span class="font-mono text-[#0067AC] font-extrabold text-[11px]">{{ k.nik }}</span>
-                      <span class="text-[10px] text-gray-400">{{ k.jk === 'L' ? 'Laki-laki' : 'Perempuan' }}</span>
+                      <span class="text-[10px] text-gray-400">{{ k.jk === 'L' ? l('Male', 'Laki-laki') : l('Female', 'Perempuan') }}</span>
                     </div>
                   </div>
                 </div>
@@ -924,7 +926,7 @@ onMounted(async () => {
               <td class="py-3 px-4">
                 <p class="font-medium text-gray-800">{{ k.kantor_cabang }}</p>
                 <span class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-gray-100 text-gray-600 inline-block mt-0.5">
-                  Gol: {{ k.golongan || 'Officer' }}
+                  {{ l('Grade:', 'Gol:') }} {{ k.golongan || 'Officer' }}
                 </span>
               </td>
 
@@ -935,7 +937,7 @@ onMounted(async () => {
                   :class="k.st_kerja === 'AKTIF' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'"
                 >
                   <span class="w-1.5 h-1.5 rounded-full" :class="k.st_kerja === 'AKTIF' ? 'bg-emerald-500' : 'bg-amber-500'"></span>
-                  {{ k.st_kerja }}
+                  {{ k.st_kerja === 'AKTIF' ? l('ACTIVE', 'AKTIF') : k.st_kerja === 'KONTRAK' ? l('CONTRACT', 'KONTRAK') : k.st_kerja === 'PROBATION' ? l('PROBATION', 'MASA PERCOBAAN') : l('RESIGNED', 'BERHENTI') }}
                 </span>
               </td>
 
@@ -943,7 +945,7 @@ onMounted(async () => {
               <td class="py-3 px-4">
                 <div class="flex items-center gap-1.5">
                   <span class="font-mono font-extrabold text-[#0067AC]">{{ k.target_jam_pelatihan || 20 }}</span>
-                  <span class="text-[10px] text-gray-400">Jam/Thn</span>
+                  <span class="text-[10px] text-gray-400">{{ l('Hrs/Yr', 'Jam/Thn') }}</span>
                 </div>
               </td>
 
@@ -954,13 +956,13 @@ onMounted(async () => {
                   class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC] border border-blue-200"
                 >
                   <UserCheck class="w-3 h-3" />
-                  <span>Akun Aktif</span>
+                  <span>{{ l('Active Account', 'Akun Aktif') }}</span>
                 </span>
                 <span
                   v-else
                   class="text-[10px] text-gray-400 italic"
                 >
-                  Belum ada akun
+                  {{ l('No account linked', 'Belum ada akun') }}
                 </span>
               </td>
 
@@ -970,7 +972,7 @@ onMounted(async () => {
                   <button
                     @click="openEditKaryawanModal(k)"
                     class="p-1.5 rounded-lg text-gray-500 hover:text-[#0067AC] hover:bg-blue-50 transition"
-                    title="Edit Data Karyawan"
+                    :title="l('Edit Employee Data', 'Ubah Data Karyawan')"
                   >
                     <Edit2 class="w-3.5 h-3.5" />
                   </button>
@@ -978,7 +980,7 @@ onMounted(async () => {
                   <button
                     @click="openDeleteKaryawanModal(k)"
                     class="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition"
-                    title="Hapus Karyawan"
+                    :title="l('Delete Employee', 'Hapus Karyawan')"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
                   </button>
@@ -1008,9 +1010,9 @@ onMounted(async () => {
                 class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider"
                 :class="lvl.is_admin ? 'bg-[#002855] text-white' : 'bg-gray-100 text-gray-700'"
               >
-                Level #{{ lvl.level_id }} • {{ lvl.role }}
+                {{ l(`Level #${lvl.level_id}`, `Tingkat #${lvl.level_id}`) }} • {{ lvl.role }}
               </span>
-              <span v-if="lvl.is_admin" class="text-amber-500" title="Administrator (Full Access)">
+              <span v-if="lvl.is_admin" class="text-amber-500" :title="l('Administrator (Full Access)', 'Administrator (Akses Penuh)')">
                 <Crown class="w-4 h-4 fill-amber-400 text-amber-500" />
               </span>
             </div>
@@ -1019,15 +1021,15 @@ onMounted(async () => {
               {{ lvl.level }}
             </h3>
             <p class="text-xs text-gray-500 mt-1 line-clamp-3 leading-relaxed">
-              {{ lvl.keterangan || 'Peran operasional perbankan di Bank Woori Saudara.' }}
+              {{ lvl.keterangan || l('Operational banking role at Bank Woori Saudara.', 'Peran operasional perbankan di Bank Woori Saudara.') }}
             </p>
           </div>
 
           <div class="mt-5 pt-3 border-t border-gray-100 flex items-center justify-between">
             <div class="leading-tight">
-              <span class="text-xs font-bold text-gray-900 block">{{ lvl.users_count || 1 }} User</span>
+              <span class="text-xs font-bold text-gray-900 block">{{ lvl.users_count || 1 }} {{ l('Users', 'Pengguna') }}</span>
               <span class="text-[10px] text-gray-400 font-medium">
-                {{ lvl.is_admin ? 'Akses Penuh (All)' : (lvl.accesses_count || (lvl.accesses ? lvl.accesses.length : 0)) + ' Permissions' }}
+                {{ lvl.is_admin ? l('Full Access (All)', 'Akses Penuh (Semua)') : (lvl.accesses_count || (lvl.accesses ? lvl.accesses.length : 0)) + ' ' + l('Permissions', 'Izin Akses') }}
               </span>
             </div>
 
@@ -1035,7 +1037,7 @@ onMounted(async () => {
               @click="selectLevelForMatrix(lvl)"
               class="px-3 py-1.5 rounded-full text-xs font-bold bg-[#EBF4FC] text-[#0067AC] hover:bg-[#0067AC] hover:text-white transition flex items-center gap-1 shadow-2xs"
             >
-              <span>Atur RBAC</span>
+              <span>{{ l('Configure RBAC', 'Atur RBAC') }}</span>
               <ChevronRight class="w-3 h-3" />
             </button>
           </div>
@@ -1053,7 +1055,7 @@ onMounted(async () => {
       <div class="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         
         <div>
-          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Pilih Peran untuk Dikonfigurasi</span>
+          <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">{{ l('Select Role to Configure', 'Pilih Peran untuk Dikonfigurasi') }}</span>
           <div class="flex flex-wrap items-center gap-1.5">
             <button
               v-for="lvl in levels"
@@ -1074,13 +1076,13 @@ onMounted(async () => {
             @click="selectAllPermissions"
             class="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#f4f6f5] hover:bg-gray-200 text-gray-700 transition"
           >
-            Pilih Semua
+            {{ l('Select All', 'Pilih Semua') }}
           </button>
           <button
             @click="deselectAllPermissions"
             class="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#f4f6f5] hover:bg-gray-200 text-gray-700 transition"
           >
-            Batal Semua
+            {{ l('Deselect All', 'Batal Semua') }}
           </button>
           <button
             @click="savePermissionMatrix"
@@ -1089,7 +1091,7 @@ onMounted(async () => {
           >
             <RefreshCw v-if="savingMatrix" class="w-3.5 h-3.5 animate-spin" />
             <Save v-else class="w-3.5 h-3.5" />
-            <span>Simpan Matriks Hak Akses</span>
+            <span>{{ l('Save Access Matrix', 'Simpan Matriks Hak Akses') }}</span>
           </button>
         </div>
 
@@ -1104,9 +1106,9 @@ onMounted(async () => {
           <Crown class="w-6 h-6 text-amber-300" />
         </div>
         <div>
-          <h4 class="font-extrabold text-sm sm:text-base">Peran Super Administrator (Full Authority)</h4>
+          <h4 class="font-extrabold text-sm sm:text-base">{{ l('Super Administrator Role (Full Authority)', 'Peran Super Administrator (Otoritas Penuh)') }}</h4>
           <p class="text-xs text-blue-100 mt-1">
-            Sesuai standar arsitektur perbankan LDMS, peran Administrator memiliki akses penuh (*bypass*) secara otomatis ke seluruh menu, controller, otorisasi Maker-Checker, dan mutasi audit tanpa perlu konfigurasi matriks manual.
+            {{ l('Per LDMS banking architecture standards, the Administrator role automatically holds full bypass access to all menus, controllers, Maker-Checker authorizations, and audit logs without manual matrix configuration.', 'Sesuai standar arsitektur perbankan LDMS, peran Administrator memiliki akses penuh secara otomatis ke seluruh menu, pengendali sistem, otorisasi pembuat-pemeriksa, dan log audit tanpa perlu konfigurasi matriks manual.') }}
           </p>
         </div>
       </div>
@@ -1131,7 +1133,7 @@ onMounted(async () => {
                 @click="toggleModuleAll(mod)"
                 class="text-[11px] font-bold text-[#0067AC] hover:underline"
               >
-                Toggle Modul
+                {{ l('Toggle Module', 'Pilih / Batal Modul') }}
               </button>
             </div>
 
@@ -1185,7 +1187,7 @@ onMounted(async () => {
           <div class="flex items-center gap-2">
             <UserPlus class="w-4 h-4 text-[#0067AC]" />
             <h3 class="font-extrabold text-sm text-gray-900">
-              {{ editingUser ? 'Edit Data Pengguna' : 'Tambah Pengguna Baru' }}
+              {{ editingUser ? l('Edit User Details', 'Ubah Data Pengguna') : l('Add New User', 'Tambah Pengguna Baru') }}
             </h3>
           </div>
           <button @click="showUserModal = false" class="text-gray-400 hover:text-gray-600 font-bold">&times;</button>
@@ -1195,13 +1197,13 @@ onMounted(async () => {
           
           <!-- Hubungkan ke Master Karyawan -->
           <div>
-            <label class="font-bold text-gray-700 block mb-1">Hubungkan ke Master Karyawan (Opsional)</label>
+            <label class="font-bold text-gray-700 block mb-1">{{ l('Link to Employee Master (Optional)', 'Hubungkan ke Data Master Karyawan (Opsional)') }}</label>
             <AppSearchableSelect
               v-model="userForm.karyawan_id"
               :options="karyawanSelectOptions"
               @change="onKaryawanSelectChange"
-              placeholder="Pilih dari Karyawan Terdaftar..."
-              search-placeholder="Cari NIK, nama, departemen..."
+              :placeholder="l('Select from Registered Employees...', 'Pilih dari Karyawan Terdaftar...')"
+              :search-placeholder="l('Search NIK, name, department...', 'Cari NIK, nama, departemen...')"
               input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-gray-200"
             />
           </div>
@@ -1209,22 +1211,22 @@ onMounted(async () => {
           <!-- Nama Lengkap & Email -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Nama Lengkap *</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Full Name *', 'Nama Lengkap *') }}</label>
               <input
                 v-model="userForm.name"
                 type="text"
                 required
-                placeholder="cth: Budi Pratama"
+                :placeholder="l('e.g. Budi Pratama', 'Contoh: Budi Pratama')"
                 class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
               />
             </div>
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Email Perusahaan *</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Corporate Email *', 'Email Perusahaan *') }}</label>
               <input
                 v-model="userForm.email"
                 type="email"
                 required
-                placeholder="nama@bws.co.id"
+                :placeholder="l('name@bws.co.id', 'nama@bws.co.id')"
                 class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
               />
             </div>
@@ -1232,12 +1234,12 @@ onMounted(async () => {
 
           <!-- Tingkat Peran / Level RBAC -->
           <div>
-            <label class="font-bold text-gray-700 block mb-1">Peran & Tingkat Otoritas (RBAC Level) *</label>
+            <label class="font-bold text-gray-700 block mb-1">{{ l('Role & Authority Level (RBAC Level) *', 'Peran & Tingkat Otoritas (Tingkat RBAC) *') }}</label>
             <AppSearchableSelect
               v-model="userForm.level_id"
               :options="levelSelectOptions"
-              placeholder="Pilih Peran & Tingkat Level..."
-              search-placeholder="Cari level RBAC..."
+              :placeholder="l('Select Role & Authority Level...', 'Pilih Peran & Tingkat Otoritas...')"
+              :search-placeholder="l('Search RBAC level...', 'Cari tingkat RBAC...')"
               input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-gray-200 font-bold text-gray-800"
             />
           </div>
@@ -1245,20 +1247,20 @@ onMounted(async () => {
           <!-- Departemen & Cabang -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Departemen / Divisi</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Department / Division', 'Departemen / Divisi') }}</label>
               <input
                 v-model="userForm.department"
                 type="text"
-                placeholder="cth: HC Learning & Dev"
+                :placeholder="l('e.g. HC Learning & Dev', 'Contoh: Pembelajaran & Pengembangan HC')"
                 class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
               />
             </div>
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Kantor Cabang</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Branch Office', 'Kantor Cabang') }}</label>
               <input
                 v-model="userForm.branch"
                 type="text"
-                placeholder="cth: Kantor Pusat Sudirman"
+                :placeholder="l('e.g. Sudirman Head Office', 'Contoh: Kantor Pusat Sudirman')"
                 class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
               />
             </div>
@@ -1268,23 +1270,23 @@ onMounted(async () => {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="font-bold text-gray-700 block mb-1">
-                Password {{ editingUser ? '(Kosongkan jika tidak diubah)' : '*' }}
+                {{ l('Password', 'Kata Sandi') }} {{ editingUser ? l('(Leave blank to keep unchanged)', '(Kosongkan jika tidak diubah)') : '*' }}
               </label>
               <input
                 v-model="userForm.password"
                 type="password"
                 :required="!editingUser"
-                placeholder="Default: password123"
+                :placeholder="l('Default: password123', 'Bawaan: password123')"
                 class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
               />
             </div>
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Status Akun</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Account Status', 'Status Akun') }}</label>
               <AppSearchableSelect
                 v-model="userForm.is_active"
                 :options="accountStatusOptions"
-                placeholder="Pilih status..."
-                search-placeholder="Cari status..."
+                :placeholder="l('Select status...', 'Pilih status...')"
+                :search-placeholder="l('Search status...', 'Cari status...')"
                 input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-gray-200 font-semibold"
               />
             </div>
@@ -1297,7 +1299,7 @@ onMounted(async () => {
               @click="showUserModal = false"
               class="px-4 py-2 rounded-full text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
             >
-              Batal
+              {{ l('Cancel', 'Batal') }}
             </button>
             <button
               type="submit"
@@ -1305,7 +1307,7 @@ onMounted(async () => {
               class="bg-[#0067AC] hover:bg-[#00528c] text-white px-5 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-xs disabled:opacity-50"
             >
               <RefreshCw v-if="savingUser" class="w-3.5 h-3.5 animate-spin" />
-              <span>{{ editingUser ? 'Simpan Perubahan' : 'Daftarkan Pengguna' }}</span>
+              <span>{{ editingUser ? l('Save Changes', 'Simpan Perubahan') : l('Register User', 'Daftarkan Pengguna') }}</span>
             </button>
           </div>
 
@@ -1329,16 +1331,16 @@ onMounted(async () => {
           </div>
 
           <div class="space-y-1">
-            <h3 class="text-base font-extrabold text-gray-900">Hapus Akun Pengguna</h3>
+            <h3 class="text-base font-extrabold text-gray-900">{{ l('Delete User Account', 'Hapus Akun Pengguna') }}</h3>
             <p class="text-xs text-gray-500 leading-relaxed">
-              Apakah Anda yakin ingin menghapus akun pengguna berikut secara permanen?
+              {{ l('Are you sure you want to permanently delete this user account?', 'Apakah Anda yakin ingin menghapus akun pengguna berikut secara permanen?') }}
             </p>
           </div>
 
           <!-- User Details Card -->
           <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-left text-xs space-y-1.5">
             <div class="flex items-center justify-between">
-              <span class="text-gray-400">Nama:</span>
+              <span class="text-gray-400">{{ l('Name:', 'Nama:') }}</span>
               <span class="font-bold text-gray-800">{{ userToDelete.name }}</span>
             </div>
             <div class="flex items-center justify-between">
@@ -1346,7 +1348,7 @@ onMounted(async () => {
               <span class="font-mono text-gray-700">{{ userToDelete.email }}</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-gray-400">Peran:</span>
+              <span class="text-gray-400">{{ l('Role:', 'Peran:') }}</span>
               <span class="font-bold text-[#0067AC]">{{ userToDelete.level?.level || userToDelete.role_name }}</span>
             </div>
           </div>
@@ -1357,7 +1359,7 @@ onMounted(async () => {
             class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs text-left flex items-start gap-2"
           >
             <AlertCircle class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <span>Akun ini sedang Anda gunakan untuk login saat ini. Sistem keamanan perbankan melarang penghapusan akun aktif sendiri.</span>
+            <span>{{ l('You are currently signed in with this account. Banking security policy prohibits deleting your own active session account.', 'Akun ini sedang Anda gunakan untuk masuk ke sistem saat ini. Kebijakan keamanan perbankan melarang penghapusan akun aktif sendiri.') }}</span>
           </div>
 
           <!-- Actions -->
@@ -1367,7 +1369,7 @@ onMounted(async () => {
               @click="showDeleteUserModal = false"
               class="px-4 py-2 rounded-full text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
             >
-              Batal
+              {{ l('Cancel', 'Batal') }}
             </button>
             <button
               type="button"
@@ -1376,7 +1378,7 @@ onMounted(async () => {
               class="bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-xs disabled:opacity-40"
             >
               <RefreshCw v-if="deletingUser" class="w-3.5 h-3.5 animate-spin" />
-              <span>Hapus Akun Pengguna</span>
+              <span>{{ l('Delete User Account', 'Hapus Akun Pengguna') }}</span>
             </button>
           </div>
         </div>
@@ -1397,7 +1399,7 @@ onMounted(async () => {
           <div class="flex items-center gap-2">
             <BadgeCheck class="w-4 h-4 text-[#0067AC]" />
             <h3 class="font-extrabold text-sm text-gray-900">
-              {{ editingKaryawan ? 'Edit Master Data Karyawan' : 'Tambah Karyawan Baru BWS' }}
+              {{ editingKaryawan ? l('Edit Employee Master Data', 'Ubah Data Master Karyawan') : l('Add New BWS Employee', 'Tambah Karyawan Baru BWS') }}
             </h3>
           </div>
           <button @click="showKaryawanModal = false" class="text-gray-400 hover:text-gray-600 font-bold">&times;</button>
@@ -1408,22 +1410,22 @@ onMounted(async () => {
           <!-- NIK & Nama Lengkap -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="font-bold text-gray-700 block mb-1">NIK Pegawai *</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Employee ID (NIK) *', 'NIK Pegawai *') }}</label>
               <input
                 v-model="karyawanForm.nik"
                 type="text"
                 required
-                placeholder="cth: BWS-EMP-1020"
+                :placeholder="l('e.g. BWS-EMP-1020', 'Contoh: BWS-EMP-1020')"
                 class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none font-mono"
               />
             </div>
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Nama Lengkap *</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Full Name *', 'Nama Lengkap *') }}</label>
               <input
                 v-model="karyawanForm.nama"
                 type="text"
                 required
-                placeholder="cth: Hendro Santoso"
+                :placeholder="l('e.g. Hendro Santoso', 'Contoh: Hendro Santoso')"
                 class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
               />
             </div>
@@ -1432,21 +1434,21 @@ onMounted(async () => {
           <!-- Panggilan & Gender -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Nama Panggilan</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Preferred Name', 'Nama Panggilan') }}</label>
               <input
                 v-model="karyawanForm.nama_panggilan"
                 type="text"
-                placeholder="cth: Hendro"
+                :placeholder="l('e.g. Hendro', 'Contoh: Hendro')"
                 class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
               />
             </div>
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Jenis Kelamin</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Gender', 'Jenis Kelamin') }}</label>
               <AppSearchableSelect
                 v-model="karyawanForm.jk"
                 :options="jkOptions"
-                placeholder="Pilih jenis kelamin..."
-                search-placeholder="Cari..."
+                :placeholder="l('Select gender...', 'Pilih jenis kelamin...')"
+                :search-placeholder="l('Search...', 'Cari...')"
                 input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-gray-200"
               />
             </div>
@@ -1455,7 +1457,7 @@ onMounted(async () => {
           <!-- Email & No HP -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Email Korporat *</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Corporate Email *', 'Email Korporat *') }}</label>
               <input
                 v-model="karyawanForm.email"
                 type="email"
@@ -1465,7 +1467,7 @@ onMounted(async () => {
               />
             </div>
             <div>
-              <label class="font-bold text-gray-700 block mb-1">No. Handphone</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Mobile Number', 'No. Ponsel') }}</label>
               <input
                 v-model="karyawanForm.hp"
                 type="text"
@@ -1478,22 +1480,22 @@ onMounted(async () => {
           <!-- Departemen & Jabatan -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Departemen / Divisi *</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Department / Division *', 'Departemen / Divisi *') }}</label>
               <input
                 v-model="karyawanForm.departemen"
                 type="text"
                 required
-                placeholder="cth: Information Technology"
+                :placeholder="l('e.g. Information Technology', 'Contoh: Teknologi Informasi')"
                 class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
               />
             </div>
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Jabatan *</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Job Title *', 'Jabatan *') }}</label>
               <input
                 v-model="karyawanForm.jabatan"
                 type="text"
                 required
-                placeholder="cth: IT Senior Officer"
+                :placeholder="l('e.g. IT Senior Officer', 'Contoh: Pejabat Senior TI')"
                 class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
               />
             </div>
@@ -1502,21 +1504,21 @@ onMounted(async () => {
           <!-- Kantor Cabang & Golongan -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Kantor Cabang / Unit Kerja *</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Branch Office / Work Unit *', 'Kantor Cabang / Unit Kerja *') }}</label>
               <input
                 v-model="karyawanForm.kantor_cabang"
                 type="text"
                 required
-                placeholder="cth: Kantor Pusat Sudirman"
+                :placeholder="l('e.g. Sudirman Head Office', 'Contoh: Kantor Pusat Sudirman')"
                 class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
               />
             </div>
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Golongan / Grade</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Grade / Rank', 'Golongan / Pangkat') }}</label>
               <input
                 v-model="karyawanForm.golongan"
                 type="text"
-                placeholder="cth: Senior Officer / AVP"
+                :placeholder="l('e.g. Senior Officer / AVP', 'Contoh: Pejabat Senior / AVP')"
                 class="w-full bg-[#f4f6f5] rounded-xl px-3 py-2 border border-gray-200 focus:border-[#0067AC] focus:bg-white focus:outline-none"
               />
             </div>
@@ -1525,17 +1527,17 @@ onMounted(async () => {
           <!-- Status Kerja & Target Jam Pelatihan -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Status Kepegawaian *</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('Employment Status *', 'Status Kepegawaian *') }}</label>
               <AppSearchableSelect
                 v-model="karyawanForm.st_kerja"
                 :options="employeeStKerjaOptions"
-                placeholder="Pilih status..."
-                search-placeholder="Cari status..."
+                :placeholder="l('Select status...', 'Pilih status...')"
+                :search-placeholder="l('Search status...', 'Cari status...')"
                 input-class="bg-[#f4f6f5] rounded-xl px-3 py-2 border-gray-200"
               />
             </div>
             <div>
-              <label class="font-bold text-gray-700 block mb-1">Target Jam Pelatihan (OJK)</label>
+              <label class="font-bold text-gray-700 block mb-1">{{ l('OJK Training Hour Target', 'Target Jam Pelatihan (OJK)') }}</label>
               <input
                 v-model.number="karyawanForm.target_jam_pelatihan"
                 type="number"
@@ -1553,7 +1555,7 @@ onMounted(async () => {
               @click="showKaryawanModal = false"
               class="px-4 py-2 rounded-full text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
             >
-              Batal
+              {{ l('Cancel', 'Batal') }}
             </button>
             <button
               type="submit"
@@ -1561,7 +1563,7 @@ onMounted(async () => {
               class="bg-[#0067AC] hover:bg-[#00528c] text-white px-5 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-xs disabled:opacity-50"
             >
               <RefreshCw v-if="savingKaryawan" class="w-3.5 h-3.5 animate-spin" />
-              <span>{{ editingKaryawan ? 'Simpan Perubahan' : 'Simpan Karyawan' }}</span>
+              <span>{{ editingKaryawan ? l('Save Changes', 'Simpan Perubahan') : l('Save Employee', 'Simpan Karyawan') }}</span>
             </button>
           </div>
 
@@ -1585,9 +1587,9 @@ onMounted(async () => {
           </div>
 
           <div class="space-y-1">
-            <h3 class="text-base font-extrabold text-gray-900">Hapus Data Karyawan</h3>
+            <h3 class="text-base font-extrabold text-gray-900">{{ l('Delete Employee Record', 'Hapus Data Karyawan') }}</h3>
             <p class="text-xs text-gray-500 leading-relaxed">
-              Apakah Anda yakin ingin menghapus data karyawan ini dari database master?
+              {{ l('Are you sure you want to remove this employee from the master database?', 'Apakah Anda yakin ingin menghapus data karyawan ini dari basis data master?') }}
             </p>
           </div>
 
@@ -1598,15 +1600,15 @@ onMounted(async () => {
               <span class="font-mono font-bold text-[#0067AC]">{{ karyawanToDelete.nik }}</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-gray-400">Nama:</span>
+              <span class="text-gray-400">{{ l('Name:', 'Nama:') }}</span>
               <span class="font-bold text-gray-800">{{ karyawanToDelete.nama }}</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-gray-400">Jabatan:</span>
+              <span class="text-gray-400">{{ l('Position:', 'Jabatan:') }}</span>
               <span class="text-gray-700">{{ karyawanToDelete.jabatan }}</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-gray-400">Cabang:</span>
+              <span class="text-gray-400">{{ l('Branch:', 'Cabang:') }}</span>
               <span class="text-gray-700">{{ karyawanToDelete.kantor_cabang }}</span>
             </div>
           </div>
@@ -1618,7 +1620,7 @@ onMounted(async () => {
               @click="showDeleteKaryawanModal = false"
               class="px-4 py-2 rounded-full text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
             >
-              Batal
+              {{ l('Cancel', 'Batal') }}
             </button>
             <button
               type="button"
@@ -1627,7 +1629,7 @@ onMounted(async () => {
               class="bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-xs disabled:opacity-40"
             >
               <RefreshCw v-if="deletingKaryawan" class="w-3.5 h-3.5 animate-spin" />
-              <span>Hapus Karyawan</span>
+              <span>{{ l('Delete Employee', 'Hapus Karyawan') }}</span>
             </button>
           </div>
         </div>

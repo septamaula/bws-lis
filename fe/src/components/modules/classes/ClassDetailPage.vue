@@ -33,6 +33,9 @@ import {
 } from 'lucide-vue-next'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
+import { useI18n } from '@/i18n'
+
+const { l, t } = useI18n()
 
 const props = defineProps({
   classId: {
@@ -95,7 +98,7 @@ const uniquePegawaiDepts = computed(() => {
 })
 
 const deptFilterOptions = computed(() => [
-  { value: '', label: '-- Seluruh Unit Kerja --' },
+  { value: '', label: l('-- All Work Units --', '-- Seluruh Unit Kerja --') },
   ...uniquePegawaiDepts.value.map(d => ({ value: d, label: d }))
 ])
 
@@ -165,14 +168,17 @@ async function handleEnrollSelectedPegawai() {
     selectedPegawaiIds.value = []
     actionFeedback.value = {
       type: 'success',
-      message: `${selected.length} peserta dari Master Pegawai berhasil didaftarkan ke batch kelas ini.`
+      message: l(
+        `${selected.length} participants from Employee Master have been enrolled in this class batch.`,
+        `${selected.length} peserta dari Master Pegawai berhasil didaftarkan ke angkatan kelas ini.`
+      )
     }
     fetchClassDetail()
   } catch (err) {
     console.error('Failed to enroll pegawai:', err)
     actionFeedback.value = {
       type: 'error',
-      message: err.response?.data?.message || 'Gagal mendaftarkan peserta dari master pegawai.'
+      message: err.response?.data?.message || l('Failed to enroll participants from employee master.', 'Gagal mendaftarkan peserta dari master pegawai.')
     }
   } finally {
     isEnrollingPegawai.value = false
@@ -198,7 +204,7 @@ async function fetchClassDetail() {
     console.error('Failed to load class detail:', err)
     actionFeedback.value = {
       type: 'error',
-      message: 'Gagal memuat rincian batch kelas. Pastikan data ID valid.'
+      message: l('Failed to load class batch details. Ensure the ID is valid.', 'Gagal memuat rincian angkatan kelas. Pastikan ID data valid.')
     }
   } finally {
     loading.value = false
@@ -264,16 +270,24 @@ const currentSessionStats = computed(() => {
   }
 })
 
+function formatAttendanceShort(status) {
+  if (status === 'HADIR') return l('PRS', 'HAD')
+  if (status === 'IZIN') return l('EXC', 'IZN')
+  if (status === 'SAKIT') return l('SCK', 'SKT')
+  if (status === 'ALPA') return l('ABS', 'ALP')
+  return status?.substring(0, 3) || '-'
+}
+
 // Quick Mark All Present for Selected Session
 async function handleQuickMarkAllPresent() {
   if (!selectedSessionId.value) return
   isSavingAttendance.value = true
   actionFeedback.value = { type: '', message: '' }
   try {
-    const { data } = await apiClient.post(`/classes/${props.classId}/attendance/quick-all`, {
+    await apiClient.post(`/classes/${props.classId}/attendance/quick-all`, {
       session_id: selectedSessionId.value
     })
-    actionFeedback.value = { type: 'success', message: data.message }
+    actionFeedback.value = { type: 'success', message: l('All participants in this session have been marked as present.', 'Seluruh peserta sesi ini berhasil ditandai hadir.') }
     // Update local state
     Object.keys(attendanceRecords.value).forEach(k => {
       attendanceRecords.value[k].status = 'HADIR'
@@ -283,7 +297,7 @@ async function handleQuickMarkAllPresent() {
   } catch (err) {
     actionFeedback.value = {
       type: 'error',
-      message: err.response?.data?.message || 'Gagal menandai seluruh hadir.'
+      message: err.response?.data?.message || l('Failed to mark all participants present.', 'Gagal menandai seluruh hadir.')
     }
   } finally {
     isSavingAttendance.value = false
@@ -305,13 +319,13 @@ async function handleSaveAttendance() {
         notes: att.notes
       }))
     }
-    const { data } = await apiClient.post(`/classes/${props.classId}/attendance`, payload)
-    actionFeedback.value = { type: 'success', message: data.message }
+    await apiClient.post(`/classes/${props.classId}/attendance`, payload)
+    actionFeedback.value = { type: 'success', message: l('Session attendance records have been saved.', 'Presensi sesi berhasil disimpan.') }
     await fetchClassDetail()
   } catch (err) {
     actionFeedback.value = {
       type: 'error',
-      message: err.response?.data?.message || 'Gagal menyimpan presensi.'
+      message: err.response?.data?.message || l('Failed to save attendance records.', 'Gagal menyimpan presensi.')
     }
   } finally {
     isSavingAttendance.value = false
@@ -333,13 +347,13 @@ async function handleSaveScores() {
         eval_notes: s.eval_notes
       }))
     }
-    const { data } = await apiClient.post(`/classes/${props.classId}/evaluation/scores`, payload)
-    actionFeedback.value = { type: 'success', message: data.message }
+    await apiClient.post(`/classes/${props.classId}/evaluation/scores`, payload)
+    actionFeedback.value = { type: 'success', message: l('Exam scores and evaluations have been saved.', 'Nilai evaluasi berhasil disimpan.') }
     await fetchClassDetail()
   } catch (err) {
     actionFeedback.value = {
       type: 'error',
-      message: err.response?.data?.message || 'Gagal menyimpan nilai evaluasi.'
+      message: err.response?.data?.message || l('Failed to save evaluation scores.', 'Gagal menyimpan nilai evaluasi.')
     }
   } finally {
     isSavingScores.value = false
@@ -351,13 +365,13 @@ async function handleGenerateCertificates() {
   isGeneratingCertificates.value = true
   actionFeedback.value = { type: '', message: '' }
   try {
-    const { data } = await apiClient.post(`/classes/${props.classId}/certificates/generate`)
-    actionFeedback.value = { type: 'success', message: data.message }
+    await apiClient.post(`/classes/${props.classId}/certificates/generate`)
+    actionFeedback.value = { type: 'success', message: l('Eligible participant e-certificates have been issued.', 'E-sertifikat peserta yang memenuhi syarat berhasil diterbitkan.') }
     await fetchClassDetail()
   } catch (err) {
     actionFeedback.value = {
       type: 'error',
-      message: err.response?.data?.message || 'Gagal menerbitkan sertifikat.'
+      message: err.response?.data?.message || l('Failed to issue certificates.', 'Gagal menerbitkan sertifikat.')
     }
   } finally {
     isGeneratingCertificates.value = false
@@ -367,16 +381,19 @@ async function handleGenerateCertificates() {
 // Checker Approval
 async function handleCheckerDecision(decision) {
   try {
-    const { data } = await apiClient.post(`/classes/${props.classId}/approve`, {
+    await apiClient.post(`/classes/${props.classId}/approve`, {
       decision: decision,
-      checker_notes: `Disetujui oleh Checker: ${auth.user?.name || 'HC Learning Head'}`
+      checker_notes: l(
+        `Authorized by Checker: ${auth.user?.name || 'HC Learning Head'}`,
+        `Disetujui oleh Verifikator: ${auth.user?.name || 'HC Learning Head'}`
+      )
     })
-    actionFeedback.value = { type: 'success', message: data.message }
+    actionFeedback.value = { type: 'success', message: l('Class batch authorization decision has been processed.', 'Keputusan otorisasi angkatan kelas berhasil diproses.') }
     await fetchClassDetail()
   } catch (err) {
     actionFeedback.value = {
       type: 'error',
-      message: err.response?.data?.message || 'Gagal memproses otorisasi batch kelas.'
+      message: err.response?.data?.message || l('Failed to process class batch authorization.', 'Gagal memproses otorisasi angkatan kelas.')
     }
   }
 }
@@ -395,32 +412,32 @@ async function handleEnrollSelectedNominations() {
     }))
 
   try {
-    const { data } = await apiClient.post(`/classes/${props.classId}/enroll`, {
+    await apiClient.post(`/classes/${props.classId}/enroll`, {
       participants: participantsToEnroll
     })
-    actionFeedback.value = { type: 'success', message: data.message }
+    actionFeedback.value = { type: 'success', message: l('Selected nominations have been enrolled into this class batch.', 'Peserta nominasi terpilih berhasil ditambahkan ke angkatan kelas.') }
     showAddParticipantModal.value = false
     selectedNominationIds.value = []
     await fetchClassDetail()
   } catch (err) {
     actionFeedback.value = {
       type: 'error',
-      message: err.response?.data?.message || 'Gagal menambahkan peserta.'
+      message: err.response?.data?.message || l('Failed to enroll participants.', 'Gagal menambahkan peserta.')
     }
   }
 }
 
 // Remove Participant
 async function handleRemoveParticipant(enrollmentId) {
-  if (!confirm('Apakah Anda yakin ingin menghapus peserta ini dari batch kelas?')) return
+  if (!confirm(l('Are you sure you want to remove this participant from the class batch?', 'Apakah Anda yakin ingin menghapus peserta ini dari angkatan kelas?'))) return
   try {
-    const { data } = await apiClient.delete(`/classes/${props.classId}/enroll/${enrollmentId}`)
-    actionFeedback.value = { type: 'success', message: data.message }
+    await apiClient.delete(`/classes/${props.classId}/enroll/${enrollmentId}`)
+    actionFeedback.value = { type: 'success', message: l('Participant has been removed from this batch.', 'Peserta berhasil dihapus dari angkatan.') }
     await fetchClassDetail()
   } catch (err) {
     actionFeedback.value = {
       type: 'error',
-      message: err.response?.data?.message || 'Gagal menghapus peserta.'
+      message: err.response?.data?.message || l('Failed to remove participant.', 'Gagal menghapus peserta.')
     }
   }
 }
@@ -437,18 +454,18 @@ onMounted(() => {
     <!-- Loading State -->
     <div v-if="loading" class="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-2xs">
       <div class="inline-block animate-spin w-8 h-8 border-4 border-[#0067AC] border-t-transparent rounded-full mb-3"></div>
-      <p class="text-xs text-gray-500 font-semibold">Memuat data operasional batch kelas...</p>
+      <p class="text-xs text-gray-500 font-semibold">{{ $l('Loading class batch operational data...', 'Memuat data operasional angkatan kelas...') }}</p>
     </div>
 
     <template v-else-if="trainingClass">
       
       <!-- Standard Subpage Header (Navigation & Actions) -->
       <SubpageHeader
-        back-label="Kembali ke Daftar Kelas"
+        :back-label="$l('Back to Class List', 'Kembali ke Daftar Kelas')"
         :title="trainingClass.batch_name"
-        :subtitle="`Program: ${trainingClass.program?.title || ''} • ${trainingClass.program?.category || ''} • Metode ${trainingClass.method || ''}`"
+        :subtitle="$l(`Program: ${trainingClass.program?.title || ''} • ${trainingClass.program?.category || ''} • Method: ${trainingClass.method || ''}`, `Program: ${trainingClass.program?.title || ''} • ${trainingClass.program?.category || ''} • Metode: ${trainingClass.method || ''}`)"
         :badge="trainingClass.class_code"
-        :status-badge="trainingClass.dual_control_status === 'APPROVED' ? 'Terotorisasi Checker' : trainingClass.dual_control_status === 'PENDING_CHECKER' ? 'Menunggu Otorisasi Checker' : trainingClass.dual_control_status"
+        :status-badge="trainingClass.dual_control_status === 'APPROVED' ? $l('Authorized by Checker', 'Terotorisasi Verifikator') : trainingClass.dual_control_status === 'PENDING_CHECKER' ? $l('Pending Checker Authorization', 'Menunggu Otorisasi Verifikator') : trainingClass.dual_control_status"
         :status-class="trainingClass.dual_control_status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'"
         @back="emit('back')"
       >
@@ -459,20 +476,20 @@ onMounted(() => {
               class="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Check class="w-3.5 h-3.5" />
-              <span>Otorisasi (Approve)</span>
+              <span>{{ $l('Authorize (Approve)', 'Otorisasi (Setujui)') }}</span>
             </button>
             <button
               @click="handleCheckerDecision('REJECTED')"
               class="px-3.5 py-2 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition cursor-pointer"
             >
-              Tolak
+              {{ $l('Reject', 'Tolak') }}
             </button>
           </div>
 
           <button
             @click="fetchClassDetail"
             class="w-9 h-9 rounded-full bg-white hover:bg-gray-100 text-gray-600 flex items-center justify-center transition border border-gray-200 cursor-pointer shadow-2xs"
-            title="Refresh Data"
+            :title="$l('Refresh Data', 'Segarkan Data')"
           >
             <RotateCcw class="w-4 h-4" />
           </button>
@@ -485,37 +502,37 @@ onMounted(() => {
         <!-- Metric KPI Ribbon Strip -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-3 pt-3 border-t border-gray-100 text-xs">
           <div class="bg-blue-50/50 p-3 rounded-2xl border border-blue-100/60">
-            <span class="text-[10px] text-gray-500 block font-medium">Kapasitas Peserta</span>
+            <span class="text-[10px] text-gray-500 block font-medium">{{ $l('Participant Capacity', 'Kapasitas Peserta') }}</span>
             <span class="text-base font-extrabold text-[#002855]">
-              {{ trainingClass.enrollments?.length || 0 }} / {{ trainingClass.max_quota }} Kursi
+              {{ trainingClass.enrollments?.length || 0 }} / {{ trainingClass.max_quota }} {{ $l('Seats', 'Kursi') }}
             </span>
           </div>
 
           <div class="bg-purple-50/50 p-3 rounded-2xl border border-purple-100/60">
-            <span class="text-[10px] text-gray-500 block font-medium">Sesi Pelatihan</span>
+            <span class="text-[10px] text-gray-500 block font-medium">{{ $l('Training Sessions', 'Sesi Pelatihan') }}</span>
             <span class="text-base font-extrabold text-purple-800">
-              {{ trainingClass.sessions?.length || 0 }} Sesi Harian
+              {{ trainingClass.sessions?.length || 0 }} {{ $l('Daily Sessions', 'Sesi Harian') }}
             </span>
           </div>
 
           <div class="bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100/60">
-            <span class="text-[10px] text-gray-500 block font-medium">Kehadiran Rata-rata</span>
+            <span class="text-[10px] text-gray-500 block font-medium">{{ $l('Average Attendance', 'Rata-rata Kehadiran') }}</span>
             <span class="text-base font-extrabold text-emerald-700 font-mono">
               {{ classStats.avg_attendance_pct || 0 }}%
             </span>
           </div>
 
           <div class="bg-amber-50/50 p-3 rounded-2xl border border-amber-100/60">
-            <span class="text-[10px] text-gray-500 block font-medium">Skill Gain (&Delta;%)</span>
+            <span class="text-[10px] text-gray-500 block font-medium">{{ $l('Skill Gain (Δ%)', 'Peningkatan Kompetensi (Δ%)') }}</span>
             <span class="text-base font-extrabold text-amber-700 font-mono">
               +{{ classStats.competency_gain_pct || 0 }}%
             </span>
           </div>
 
           <div class="bg-teal-50/50 p-3 rounded-2xl border border-teal-100/60">
-            <span class="text-[10px] text-gray-500 block font-medium">Kelulusan Peserta</span>
+            <span class="text-[10px] text-gray-500 block font-medium">{{ $l('Participant Pass Rate', 'Kelulusan Peserta') }}</span>
             <span class="text-base font-extrabold text-teal-800 font-mono">
-              {{ classStats.passed_count || 0 }} Lulus ({{ classStats.pass_rate_pct || 0 }}%)
+              {{ classStats.passed_count || 0 }} {{ $l('Passed', 'Lulus') }} ({{ classStats.pass_rate_pct || 0 }}%)
             </span>
           </div>
         </div>
@@ -528,9 +545,9 @@ onMounted(() => {
             :class="activeSubTab === 'attendance' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'"
           >
             <Clock class="w-3.5 h-3.5" />
-            <span>Modul Kehadiran (Attendance)</span>
+            <span>{{ $l('Attendance Module', 'Modul Kehadiran') }}</span>
             <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="activeSubTab === 'attendance' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'">
-              {{ trainingClass.sessions?.length || 0 }} Sesi
+              {{ trainingClass.sessions?.length || 0 }} {{ $l('Sessions', 'Sesi') }}
             </span>
           </button>
 
@@ -540,9 +557,9 @@ onMounted(() => {
             :class="activeSubTab === 'evaluation' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'"
           >
             <Award class="w-3.5 h-3.5" />
-            <span>Evaluasi Hasil Kelas &amp; Ujian</span>
+            <span>{{ $l('Class Evaluation & Exams', 'Evaluasi Hasil Kelas & Ujian') }}</span>
             <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="activeSubTab === 'evaluation' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'">
-              Passing {{ trainingClass.passing_grade || 75 }}
+              {{ $l('Pass:', 'Lulus:') }} {{ trainingClass.passing_grade || 75 }}
             </span>
           </button>
 
@@ -552,7 +569,7 @@ onMounted(() => {
             :class="activeSubTab === 'overview' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'"
           >
             <BookOpen class="w-3.5 h-3.5" />
-            <span>Ikhtisar &amp; Jadwal Sesi</span>
+            <span>{{ $l('Overview & Session Schedule', 'Ikhtisar & Jadwal Sesi') }}</span>
           </button>
 
           <button
@@ -561,7 +578,7 @@ onMounted(() => {
             :class="activeSubTab === 'roster' ? 'bg-[#0067AC] text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100'"
           >
             <Users class="w-3.5 h-3.5" />
-            <span>Daftar Peserta (Roster)</span>
+            <span>{{ $l('Participant Roster', 'Daftar Peserta') }}</span>
             <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="activeSubTab === 'roster' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'">
               {{ trainingClass.enrollments?.length || 0 }}
             </span>
@@ -589,7 +606,7 @@ onMounted(() => {
         <!-- Session Pills Bar -->
         <div class="bg-white p-4 rounded-3xl border border-gray-100 shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0 mr-1">Pilih Sesi:</span>
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0 mr-1">{{ $l('Select Session:', 'Pilih Sesi:') }}</span>
             <button
               v-for="s in trainingClass.sessions"
               :key="s.id"
@@ -598,7 +615,7 @@ onMounted(() => {
               :class="selectedSessionId === s.id ? 'bg-[#002855] text-white shadow-2xs' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'"
             >
               <Clock class="w-3.5 h-3.5" />
-              <span>Sesi {{ s.session_number }}</span>
+              <span>{{ $l('Session', 'Sesi') }} {{ s.session_number }}</span>
               <span class="text-[10px] opacity-80 font-normal">({{ s.session_date?.substring(5) }})</span>
             </button>
           </div>
@@ -612,7 +629,7 @@ onMounted(() => {
               class="px-3.5 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <CheckCircle2 class="w-3.5 h-3.5" />
-              <span>Tandai Semua Hadir</span>
+              <span>{{ $l('Mark All Present', 'Tandai Semua Hadir') }}</span>
             </button>
 
             <button
@@ -622,7 +639,7 @@ onMounted(() => {
               class="px-5 py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
             >
               <Save class="w-3.5 h-3.5" />
-              <span>{{ isSavingAttendance ? 'Menyimpan...' : 'Simpan Presensi Sesi Ini' }}</span>
+              <span>{{ isSavingAttendance ? $l('Saving...', 'Menyimpan...') : $l('Save Session Attendance', 'Simpan Presensi Sesi Ini') }}</span>
             </button>
           </div>
         </div>
@@ -631,29 +648,29 @@ onMounted(() => {
         <div v-if="currentSession" class="bg-white rounded-3xl p-5 border border-gray-100 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2 text-xs">
-              <span class="font-bold text-[#0067AC]">Sesi {{ currentSession.session_number }}</span>
+              <span class="font-bold text-[#0067AC]">{{ $l('Session', 'Sesi') }} {{ currentSession.session_number }}</span>
               <span class="text-gray-300">•</span>
               <span class="text-gray-500">{{ currentSession.session_date }}</span>
               <span class="text-gray-300">•</span>
               <span class="font-mono text-gray-600">{{ currentSession.start_time }} - {{ currentSession.end_time }} WIB</span>
             </div>
             <h3 class="text-base font-extrabold text-[#002855] mt-1">{{ currentSession.session_name }}</h3>
-            <p class="text-xs text-gray-500 mt-0.5">{{ currentSession.topic || 'Materi Pelatihan BWS' }}</p>
+            <p class="text-xs text-gray-500 mt-0.5">{{ currentSession.topic || $l('BWS Training Material', 'Materi Pelatihan BWS') }}</p>
           </div>
 
           <!-- Session Breakdown Badges -->
           <div class="flex items-center gap-2 shrink-0">
             <span class="px-3 py-1 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-extrabold">
-              {{ currentSessionStats.hadir }} Hadir
+              {{ currentSessionStats.hadir }} {{ $l('Present', 'Hadir') }}
             </span>
             <span class="px-3 py-1 rounded-xl bg-amber-50 text-amber-700 text-xs font-extrabold">
-              {{ currentSessionStats.izin }} Izin
+              {{ currentSessionStats.izin }} {{ $l('Excused', 'Izin') }}
             </span>
             <span class="px-3 py-1 rounded-xl bg-blue-50 text-blue-700 text-xs font-extrabold">
-              {{ currentSessionStats.sakit }} Sakit
+              {{ currentSessionStats.sakit }} {{ $l('Sick', 'Sakit') }}
             </span>
             <span class="px-3 py-1 rounded-xl bg-rose-50 text-rose-700 text-xs font-extrabold">
-              {{ currentSessionStats.alpa }} Alpa
+              {{ currentSessionStats.alpa }} {{ $l('Absent', 'Alpa') }}
             </span>
             <span class="px-3 py-1 rounded-xl bg-purple-50 text-purple-700 text-xs font-black font-mono">
               {{ currentSessionStats.pct }}%
@@ -665,11 +682,11 @@ onMounted(() => {
         <div class="bg-white rounded-3xl p-5 border border-gray-100 shadow-2xs space-y-4">
           <div class="flex items-center justify-between pb-2 border-b border-gray-100">
             <div>
-              <h4 class="text-sm font-extrabold text-[#002855]">Daftar Presensi Peserta Diklat</h4>
-              <p class="text-[11px] text-gray-500">Pilih status kehadiran peserta untuk sesi yang sedang aktif.</p>
+              <h4 class="text-sm font-extrabold text-[#002855]">{{ $l('Participant Attendance Sheet', 'Daftar Presensi Peserta Diklat') }}</h4>
+              <p class="text-[11px] text-gray-500">{{ $l('Select attendance status for participants in the active session.', 'Pilih status kehadiran peserta untuk sesi yang sedang aktif.') }}</p>
             </div>
             <span class="text-xs text-gray-400 font-medium">
-              Total: {{ trainingClass.enrollments?.length || 0 }} Peserta
+              {{ $l('Total:', 'Total:') }} {{ trainingClass.enrollments?.length || 0 }} {{ $l('Participants', 'Peserta') }}
             </span>
           </div>
 
@@ -678,11 +695,11 @@ onMounted(() => {
               <thead class="bg-gray-50/80 text-gray-600 font-bold border-b border-gray-100">
                 <tr>
                   <th class="py-2.5 px-3 w-10 text-center">No</th>
-                  <th class="py-2.5 px-3">Nama Pegawai &amp; NIK</th>
-                  <th class="py-2.5 px-3">Divisi / Unit Kerja</th>
-                  <th class="py-2.5 px-3 w-64 text-center">Status Presensi</th>
-                  <th class="py-2.5 px-3 w-32">Jam Check-In</th>
-                  <th class="py-2.5 px-3">Catatan / Dispensasi</th>
+                  <th class="py-2.5 px-3">{{ $l('Employee Name & NIK', 'Nama Pegawai & NIK') }}</th>
+                  <th class="py-2.5 px-3">{{ $l('Division / Work Unit', 'Divisi / Unit Kerja') }}</th>
+                  <th class="py-2.5 px-3 w-64 text-center">{{ $l('Attendance Status', 'Status Presensi') }}</th>
+                  <th class="py-2.5 px-3 w-32">{{ $l('Check-In Time', 'Jam Masuk') }}</th>
+                  <th class="py-2.5 px-3">{{ $l('Notes / Dispensation', 'Catatan / Dispensasi') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100 text-gray-700">
@@ -694,7 +711,7 @@ onMounted(() => {
                 >
                   <td class="py-2.5 px-3 text-center text-gray-400">{{ idx + 1 }}</td>
                   <td class="py-2.5 px-3">
-                    <p class="font-bold text-gray-900">{{ e.participant_name || e.user?.name || 'Peserta BWS' }}</p>
+                    <p class="font-bold text-gray-900">{{ e.participant_name || e.user?.name || $l('BWS Participant', 'Peserta BWS') }}</p>
                     <p class="font-mono text-[10px] text-gray-400">{{ e.nik || e.user?.nik || '-' }}</p>
                   </td>
                   <td class="py-2.5 px-3 text-gray-600">
@@ -711,7 +728,7 @@ onMounted(() => {
                         class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer"
                         :class="attendanceRecords[e.id]?.status === 'HADIR' ? 'bg-emerald-600 text-white shadow-2xs' : 'bg-gray-100 text-gray-600 hover:bg-emerald-50'"
                       >
-                        Hadir
+                        {{ $l('Present', 'Hadir') }}
                       </button>
                       <button
                         type="button"
@@ -719,7 +736,7 @@ onMounted(() => {
                         class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer"
                         :class="attendanceRecords[e.id]?.status === 'IZIN' ? 'bg-amber-500 text-white shadow-2xs' : 'bg-gray-100 text-gray-600 hover:bg-amber-50'"
                       >
-                        Izin
+                        {{ $l('Excused', 'Izin') }}
                       </button>
                       <button
                         type="button"
@@ -727,7 +744,7 @@ onMounted(() => {
                         class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer"
                         :class="attendanceRecords[e.id]?.status === 'SAKIT' ? 'bg-blue-600 text-white shadow-2xs' : 'bg-gray-100 text-gray-600 hover:bg-blue-50'"
                       >
-                        Sakit
+                        {{ $l('Sick', 'Sakit') }}
                       </button>
                       <button
                         type="button"
@@ -735,7 +752,7 @@ onMounted(() => {
                         class="px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer"
                         :class="attendanceRecords[e.id]?.status === 'ALPA' ? 'bg-rose-600 text-white shadow-2xs' : 'bg-gray-100 text-gray-600 hover:bg-rose-50'"
                       >
-                        Alpa
+                        {{ $l('Absent', 'Alpa') }}
                       </button>
                     </div>
                   </td>
@@ -753,14 +770,14 @@ onMounted(() => {
                     <input
                       type="text"
                       v-model="attendanceRecords[e.id].notes"
-                      placeholder="Catatan / surat tugas..."
+                      :placeholder="$l('Notes / assignment letter...', 'Catatan / surat tugas...')"
                       class="w-full bg-white border border-gray-200 rounded-xl px-2.5 py-1 text-xs text-gray-800 focus:outline-none focus:border-[#0067AC]"
                     />
                   </td>
                 </tr>
                 <tr v-if="!trainingClass.enrollments?.length">
                   <td colspan="6" class="py-8 text-center text-gray-400">
-                    Belum ada peserta terdaftar dalam batch ini. Buka tab "Roster Peserta" untuk mendaftarkan peserta.
+                    {{ $l('No participants enrolled in this batch yet. Open the "Participant Roster" tab to enroll participants.', 'Belum ada peserta terdaftar dalam angkatan ini. Buka tab "Daftar Peserta" untuk mendaftarkan peserta.') }}
                   </td>
                 </tr>
               </tbody>
@@ -772,11 +789,11 @@ onMounted(() => {
         <div class="bg-white rounded-3xl p-5 border border-gray-100 shadow-2xs space-y-3">
           <div class="flex items-center justify-between pb-2 border-b border-gray-100">
             <div>
-              <h4 class="text-sm font-extrabold text-[#002855]">Rekapitulasi Kehadiran Kumulatif Seluruh Sesi</h4>
-              <p class="text-[11px] text-gray-500">Syarat minimal kelulusan sertifikasi adalah kehadiran &ge; 80%.</p>
+              <h4 class="text-sm font-extrabold text-[#002855]">{{ $l('Cumulative Attendance Matrix Across All Sessions', 'Rekapitulasi Kehadiran Kumulatif Seluruh Sesi') }}</h4>
+              <p class="text-[11px] text-gray-500">{{ $l('Minimum attendance requirement for certification is ≥ 80%.', 'Syarat minimal kelulusan sertifikasi adalah kehadiran ≥ 80%.') }}</p>
             </div>
             <span class="text-xs font-bold text-[#0067AC]">
-              {{ classStats.eligible_for_cert_count || 0 }} / {{ trainingClass.enrollments?.length || 0 }} Memenuhi Syarat &ge; 80%
+              {{ classStats.eligible_for_cert_count || 0 }} / {{ trainingClass.enrollments?.length || 0 }} {{ $l('Eligible ≥ 80%', 'Memenuhi Syarat ≥ 80%') }}
             </span>
           </div>
 
@@ -785,16 +802,16 @@ onMounted(() => {
               <thead class="bg-gray-50/80 text-gray-600 font-bold border-b border-gray-100">
                 <tr>
                   <th class="py-2 px-3 w-10 text-center">No</th>
-                  <th class="py-2 px-3">Nama Pegawai</th>
+                  <th class="py-2 px-3">{{ $l('Employee Name', 'Nama Pegawai') }}</th>
                   <th
                     v-for="s in trainingClass.sessions"
                     :key="s.id"
                     class="py-2 px-2 text-center w-16"
                   >
-                    Sesi {{ s.session_number }}
+                    {{ $l('Session', 'Sesi') }} {{ s.session_number }}
                   </th>
-                  <th class="py-2 px-3 text-center w-24">Kehadiran</th>
-                  <th class="py-2 px-3 text-center w-28">Status Kelayakan</th>
+                  <th class="py-2 px-3 text-center w-24">{{ $l('Attendance', 'Kehadiran') }}</th>
+                  <th class="py-2 px-3 text-center w-28">{{ $l('Eligibility Status', 'Status Kelayakan') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100 text-gray-700">
@@ -810,7 +827,7 @@ onMounted(() => {
                       class="px-2 py-0.5 rounded text-[10px] font-bold"
                       :class="e.attendances?.find(a => a.class_session_id === s.id)?.status === 'HADIR' ? 'bg-emerald-100 text-emerald-800' : e.attendances?.find(a => a.class_session_id === s.id)?.status === 'IZIN' ? 'bg-amber-100 text-amber-800' : e.attendances?.find(a => a.class_session_id === s.id)?.status === 'SAKIT' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'"
                     >
-                      {{ e.attendances?.find(a => a.class_session_id === s.id)?.status?.substring(0, 3) || '-' }}
+                      {{ formatAttendanceShort(e.attendances?.find(a => a.class_session_id === s.id)?.status) }}
                     </span>
                   </td>
                   <td class="py-2 px-3 text-center font-mono font-black text-[#0067AC]">
@@ -821,7 +838,7 @@ onMounted(() => {
                       class="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
                       :class="e.attendance_percentage >= 80 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'"
                     >
-                      {{ e.attendance_percentage >= 80 ? 'Memenuhi Syarat' : 'Belum Memenuhi' }}
+                      {{ e.attendance_percentage >= 80 ? $l('Eligible', 'Memenuhi Syarat') : $l('Not Eligible', 'Belum Memenuhi') }}
                     </span>
                   </td>
                 </tr>
@@ -842,15 +859,20 @@ onMounted(() => {
           <div>
             <div class="flex items-center gap-2">
               <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#EBF4FC] text-[#0067AC] uppercase tracking-wider">
-                Kirkpatrick Model L1 &amp; L2
+                {{ $l('Kirkpatrick Model L1 & L2', 'Model Kirkpatrick L1 & L2') }}
               </span>
-              <span class="text-xs text-gray-400">• Standar Evaluasi BWS</span>
+              <span class="text-xs text-gray-400">• {{ $l('BWS Evaluation Standard', 'Standar Evaluasi BWS') }}</span>
             </div>
             <h3 class="text-base font-extrabold text-[#002855] mt-1">
-              Evaluasi Hasil Belajar &amp; Pengesahan Kelulusan
+              {{ $l('Learning Outcome Evaluation & Pass Certification', 'Evaluasi Hasil Belajar & Pengesahan Kelulusan') }}
             </h3>
             <p class="text-xs text-gray-500 mt-0.5">
-              Passing grade kelulusan: <strong class="text-emerald-700">{{ trainingClass.passing_grade || 75 }} poin</strong>. Bobot nilai: Pre-Test 30%, Post-Test 70%.
+              <template v-if="$locale === 'en'">
+                Minimum passing grade: <strong class="text-emerald-700">{{ trainingClass.passing_grade || 75 }} points</strong>. Score weighting: Pre-Test 30%, Post-Test 70%.
+              </template>
+              <template v-else>
+                Batas nilai kelulusan: <strong class="text-emerald-700">{{ trainingClass.passing_grade || 75 }} poin</strong>. Bobot nilai: Tes Awal 30%, Tes Akhir 70%.
+              </template>
             </p>
           </div>
 
@@ -862,7 +884,7 @@ onMounted(() => {
               class="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
             >
               <Award class="w-3.5 h-3.5" />
-              <span>{{ isGeneratingCertificates ? 'Menerbitkan...' : 'Terbitkan E-Sertifikat' }}</span>
+              <span>{{ isGeneratingCertificates ? $l('Issuing...', 'Menerbitkan...') : $l('Issue E-Certificates', 'Terbitkan E-Sertifikat') }}</span>
             </button>
 
             <button
@@ -872,7 +894,7 @@ onMounted(() => {
               class="px-5 py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
             >
               <Save class="w-3.5 h-3.5" />
-              <span>{{ isSavingScores ? 'Menyimpan...' : 'Simpan Nilai Evaluasi' }}</span>
+              <span>{{ isSavingScores ? $l('Saving...', 'Menyimpan...') : $l('Save Evaluation Scores', 'Simpan Nilai Evaluasi') }}</span>
             </button>
           </div>
         </div>
@@ -884,7 +906,7 @@ onMounted(() => {
               <HelpCircle class="w-5 h-5" />
             </div>
             <div>
-              <p class="text-[11px] text-gray-400 font-medium">Rata-rata Pre-Test</p>
+              <p class="text-[11px] text-gray-400 font-medium">{{ $l('Average Pre-Test', 'Rata-rata Tes Awal') }}</p>
               <p class="text-xl font-extrabold text-gray-900 font-mono">{{ classStats.avg_pre_test || 0 }} <span class="text-xs text-gray-400 font-normal">/ 100</span></p>
             </div>
           </div>
@@ -894,7 +916,7 @@ onMounted(() => {
               <CheckCircle2 class="w-5 h-5" />
             </div>
             <div>
-              <p class="text-[11px] text-gray-400 font-medium">Rata-rata Post-Test</p>
+              <p class="text-[11px] text-gray-400 font-medium">{{ $l('Average Post-Test', 'Rata-rata Tes Akhir') }}</p>
               <p class="text-xl font-extrabold text-emerald-700 font-mono">{{ classStats.avg_post_test || 0 }} <span class="text-xs text-gray-400 font-normal">/ 100</span></p>
             </div>
           </div>
@@ -904,7 +926,7 @@ onMounted(() => {
               <TrendingUp class="w-5 h-5" />
             </div>
             <div>
-              <p class="text-[11px] text-gray-400 font-medium">Peningkatan Kompetensi</p>
+              <p class="text-[11px] text-gray-400 font-medium">{{ $l('Competency Gain', 'Peningkatan Kompetensi') }}</p>
               <p class="text-xl font-extrabold text-[#0067AC] font-mono">+{{ classStats.competency_gain_pct || 0 }}%</p>
             </div>
           </div>
@@ -914,7 +936,7 @@ onMounted(() => {
               <Star class="w-5 h-5" />
             </div>
             <div>
-              <p class="text-[11px] text-gray-400 font-medium">Rating Instruktur</p>
+              <p class="text-[11px] text-gray-400 font-medium">{{ $l('Instructor Rating', 'Penilaian Pengajar') }}</p>
               <p class="text-xl font-extrabold text-purple-700 font-mono">{{ classStats.avg_instructor_rating || '4.8' }} <span class="text-xs text-gray-400 font-normal">/ 5.0</span></p>
             </div>
           </div>
@@ -924,11 +946,11 @@ onMounted(() => {
         <div class="bg-white rounded-3xl p-5 border border-gray-100 shadow-2xs space-y-4">
           <div class="flex items-center justify-between pb-2 border-b border-gray-100">
             <div>
-              <h4 class="text-sm font-extrabold text-[#002855]">Tabel Input Nilai Ujian &amp; Status Kelulusan</h4>
-              <p class="text-[11px] text-gray-500">Masukkan nilai Pre-Test dan Post-Test untuk setiap peserta.</p>
+              <h4 class="text-sm font-extrabold text-[#002855]">{{ $l('Exam Scores & Completion Status Entry Table', 'Tabel Pengisian Nilai Ujian & Status Kelulusan') }}</h4>
+              <p class="text-[11px] text-gray-500">{{ $l('Enter Pre-Test and Post-Test scores for each participant.', 'Masukkan nilai Tes Awal dan Tes Akhir untuk setiap peserta.') }}</p>
             </div>
             <span class="text-xs font-bold text-emerald-700">
-              {{ classStats.passed_count || 0 }} LULUS • {{ classStats.failed_count || 0 }} BELUM LULUS
+              {{ classStats.passed_count || 0 }} {{ $l('PASSED', 'LULUS') }} • {{ classStats.failed_count || 0 }} {{ $l('NOT PASSED', 'BELUM LULUS') }}
             </span>
           </div>
 
@@ -937,15 +959,15 @@ onMounted(() => {
               <thead class="bg-gray-50/80 text-gray-600 font-bold border-b border-gray-100">
                 <tr>
                   <th class="py-2.5 px-3 w-10 text-center">No</th>
-                  <th class="py-2.5 px-3">Nama Pegawai &amp; NIK</th>
-                  <th class="py-2.5 px-3 w-20 text-center">Hadir (%)</th>
-                  <th class="py-2.5 px-3 w-24 text-center">Pre-Test</th>
-                  <th class="py-2.5 px-3 w-24 text-center">Post-Test</th>
-                  <th class="py-2.5 px-3 w-24 text-center">Nilai Akhir</th>
-                  <th class="py-2.5 px-3 w-24 text-center">Delta (&Delta;%)</th>
-                  <th class="py-2.5 px-3 w-28 text-center">Status Kelulusan</th>
-                  <th class="py-2.5 px-3 w-24 text-center">Rating Trainer</th>
-                  <th class="py-2.5 px-3">No. E-Sertifikat</th>
+                  <th class="py-2.5 px-3">{{ $l('Employee Name & NIK', 'Nama Pegawai & NIK') }}</th>
+                  <th class="py-2.5 px-3 w-20 text-center">{{ $l('Present (%)', 'Hadir (%)') }}</th>
+                  <th class="py-2.5 px-3 w-24 text-center">{{ $l('Pre-Test', 'Tes Awal') }}</th>
+                  <th class="py-2.5 px-3 w-24 text-center">{{ $l('Post-Test', 'Tes Akhir') }}</th>
+                  <th class="py-2.5 px-3 w-24 text-center">{{ $l('Final Score', 'Nilai Akhir') }}</th>
+                  <th class="py-2.5 px-3 w-24 text-center">{{ $l('Delta (Δ%)', 'Selisih (Δ%)') }}</th>
+                  <th class="py-2.5 px-3 w-28 text-center">{{ $l('Completion Status', 'Status Kelulusan') }}</th>
+                  <th class="py-2.5 px-3 w-24 text-center">{{ $l('Trainer Rating', 'Nilai Pengajar') }}</th>
+                  <th class="py-2.5 px-3">{{ $l('E-Certificate No.', 'No. E-Sertifikat') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100 text-gray-700">
@@ -1004,7 +1026,7 @@ onMounted(() => {
                       class="px-2.5 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap"
                       :class="e.completion_status === 'PASSED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : e.completion_status === 'FAILED' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-gray-100 text-gray-600'"
                     >
-                      {{ e.completion_status === 'PASSED' ? 'LULUS (Grade ' + (e.grade || 'B') + ')' : e.completion_status === 'FAILED' ? 'TIDAK LULUS' : 'Belum Ujian' }}
+                      {{ e.completion_status === 'PASSED' ? $l('PASSED', 'LULUS') + ' (' + (e.grade || 'B') + ')' : e.completion_status === 'FAILED' ? $l('FAILED', 'TIDAK LULUS') : $l('Pending Exam', 'Belum Ujian') }}
                     </span>
                   </td>
 
@@ -1028,7 +1050,7 @@ onMounted(() => {
                       <FileCheck2 class="w-3.5 h-3.5 shrink-0" />
                       <span class="truncate">{{ e.certificate_number }}</span>
                     </div>
-                    <span v-else class="text-[10px] text-gray-400 italic">Belum terbit</span>
+                    <span v-else class="text-[10px] text-gray-400 italic">{{ $l('Not issued yet', 'Belum terbit') }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -1047,40 +1069,40 @@ onMounted(() => {
         <div class="md:col-span-2 space-y-5">
           <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs space-y-4">
             <h3 class="text-sm font-extrabold text-[#002855] pb-3 border-b border-gray-100">
-              Informasi Pelaksanaan Batch
+              {{ $l('Batch Execution Details', 'Informasi Pelaksanaan Angkatan') }}
             </h3>
 
             <div class="grid grid-cols-2 gap-4 text-xs">
               <div>
-                <span class="text-gray-400 block font-medium">Metode Pelaksanaan</span>
+                <span class="text-gray-400 block font-medium">{{ $l('Delivery Method', 'Metode Pelaksanaan') }}</span>
                 <span class="font-bold text-gray-800 text-sm">{{ trainingClass.method }}</span>
               </div>
               <div>
-                <span class="text-gray-400 block font-medium">Lokasi / Ruangan</span>
+                <span class="text-gray-400 block font-medium">{{ $l('Location / Room', 'Lokasi / Ruangan') }}</span>
                 <span class="font-bold text-gray-800 text-sm">{{ trainingClass.location_or_url }}</span>
               </div>
               <div>
-                <span class="text-gray-400 block font-medium">Jadwal Tanggal</span>
+                <span class="text-gray-400 block font-medium">{{ $l('Schedule Dates', 'Jadwal Tanggal') }}</span>
                 <span class="font-bold text-gray-800 text-sm">
-                  {{ trainingClass.start_date?.substring(0, 10) }} s/d {{ trainingClass.end_date?.substring(0, 10) }}
+                  {{ trainingClass.start_date?.substring(0, 10) }} {{ $l('to', 's/d') }} {{ trainingClass.end_date?.substring(0, 10) }}
                 </span>
               </div>
               <div>
-                <span class="text-gray-400 block font-medium">Jam Pelaksanaan Harian</span>
+                <span class="text-gray-400 block font-medium">{{ $l('Daily Schedule Hours', 'Jam Pelaksanaan Harian') }}</span>
                 <span class="font-bold text-gray-800 text-sm">{{ trainingClass.daily_schedule || '08:30 - 16:30 WIB' }}</span>
               </div>
               <div>
-                <span class="text-gray-400 block font-medium">Instruktur / Trainer</span>
-                <span class="font-bold text-[#0067AC] text-sm">{{ trainingClass.trainer_name || 'Tim Trainer BWS' }}</span>
+                <span class="text-gray-400 block font-medium">{{ $l('Instructor / Trainer', 'Pengajar / Instruktur') }}</span>
+                <span class="font-bold text-[#0067AC] text-sm">{{ trainingClass.trainer_name || $l('BWS Trainer Team', 'Tim Pengajar BWS') }}</span>
               </div>
               <div>
-                <span class="text-gray-400 block font-medium">Passing Grade Kelulusan</span>
-                <span class="font-bold text-emerald-700 text-sm">{{ trainingClass.passing_grade || 75 }} Poin Minimal</span>
+                <span class="text-gray-400 block font-medium">{{ $l('Minimum Passing Grade', 'Nilai Minimum Kelulusan') }}</span>
+                <span class="font-bold text-emerald-700 text-sm">{{ trainingClass.passing_grade || 75 }} {{ $l('Points Min.', 'Poin Minimal') }}</span>
               </div>
             </div>
 
             <div v-if="trainingClass.description" class="pt-3 border-t border-gray-100 text-xs">
-              <span class="text-gray-400 block font-medium mb-1">Deskripsi Silabus Batch:</span>
+              <span class="text-gray-400 block font-medium mb-1">{{ $l('Batch Syllabus Description:', 'Deskripsi Silabus Angkatan:') }}</span>
               <p class="text-gray-700 leading-relaxed">{{ trainingClass.description }}</p>
             </div>
           </div>
@@ -1088,7 +1110,7 @@ onMounted(() => {
           <!-- Sessions List Table -->
           <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs space-y-4">
             <h3 class="text-sm font-extrabold text-[#002855] pb-3 border-b border-gray-100">
-              Daftar Sesi Pelatihan Harian ({{ trainingClass.sessions?.length || 0 }} Sesi)
+              {{ $l('Daily Training Sessions', 'Daftar Sesi Pelatihan Harian') }} ({{ trainingClass.sessions?.length || 0 }} {{ $l('Sessions', 'Sesi') }})
             </h3>
 
             <div class="space-y-3">
@@ -1103,7 +1125,7 @@ onMounted(() => {
                   </div>
                   <div>
                     <h4 class="font-bold text-gray-900 text-sm">{{ s.session_name }}</h4>
-                    <p class="text-gray-500 mt-0.5">{{ s.topic || 'Materi Pelatihan' }}</p>
+                    <p class="text-gray-500 mt-0.5">{{ s.topic || $l('Training Material', 'Materi Pelatihan') }}</p>
                     <div class="flex items-center gap-2 text-[11px] text-gray-400 mt-1">
                       <span>{{ s.session_date }}</span>
                       <span>•</span>
@@ -1116,7 +1138,7 @@ onMounted(() => {
                   @click="activeSubTab = 'attendance'; onSessionChange(s.id)"
                   class="px-3 py-1.5 rounded-xl bg-white hover:bg-gray-100 border border-gray-200 text-[#0067AC] text-xs font-bold transition shrink-0 cursor-pointer"
                 >
-                  Presensi Sesi
+                  {{ $l('Session Attendance', 'Presensi Sesi') }}
                 </button>
               </div>
             </div>
@@ -1129,26 +1151,26 @@ onMounted(() => {
           <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs space-y-3 text-xs">
             <h3 class="font-extrabold text-[#002855] pb-2 border-b border-gray-100 flex items-center gap-2">
               <Scale class="w-4 h-4 text-amber-600" />
-              <span>Otorisasi Dual-Control Perbankan</span>
+              <span>{{ $l('Banking Dual-Control Authorization', 'Otorisasi Kontrol Ganda Perbankan') }}</span>
             </h3>
 
             <div class="space-y-2.5">
               <div>
-                <span class="text-gray-400 block font-medium">Status Dual-Control</span>
+                <span class="text-gray-400 block font-medium">{{ $l('Dual-Control Status', 'Status Kontrol Ganda') }}</span>
                 <span class="font-bold text-sm" :class="trainingClass.dual_control_status === 'APPROVED' ? 'text-emerald-700' : 'text-amber-600'">
-                  {{ trainingClass.dual_control_status }}
+                  {{ trainingClass.dual_control_status === 'APPROVED' ? $l('APPROVED', 'DISETUJUI') : trainingClass.dual_control_status === 'PENDING_CHECKER' ? $l('PENDING CHECKER', 'MENUNGGU VERIFIKATOR') : trainingClass.dual_control_status }}
                 </span>
               </div>
               <div>
-                <span class="text-gray-400 block font-medium">Dibuat oleh (Maker)</span>
-                <span class="font-semibold text-gray-800">{{ trainingClass.maker?.name || 'HC Training Officer' }}</span>
+                <span class="text-gray-400 block font-medium">{{ $l('Created by (Maker)', 'Dibuat oleh (Pembuat)') }}</span>
+                <span class="font-semibold text-gray-800">{{ trainingClass.maker?.name || $l('HC Training Officer', 'Petugas Pelatihan HC') }}</span>
               </div>
               <div v-if="trainingClass.checker">
-                <span class="text-gray-400 block font-medium">Disetujui oleh (Checker)</span>
+                <span class="text-gray-400 block font-medium">{{ $l('Approved by (Checker)', 'Disetujui oleh (Verifikator)') }}</span>
                 <span class="font-semibold text-gray-800">{{ trainingClass.checker?.name }}</span>
               </div>
               <div v-if="trainingClass.checker_notes" class="p-3 rounded-xl bg-gray-50 border border-gray-100 text-[11px] text-gray-600">
-                <strong>Catatan Checker:</strong> {{ trainingClass.checker_notes }}
+                <strong>{{ $l('Checker Notes:', 'Catatan Verifikator:') }}</strong> {{ trainingClass.checker_notes }}
               </div>
             </div>
           </div>
@@ -1157,7 +1179,7 @@ onMounted(() => {
           <div v-if="trainingClass.program" class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs space-y-3 text-xs">
             <h3 class="font-extrabold text-[#002855] pb-2 border-b border-gray-100 flex items-center gap-2">
               <BookOpen class="w-4 h-4 text-[#0067AC]" />
-              <span>Program Kerja Induk</span>
+              <span>{{ $l('Parent Work Program', 'Program Kerja Induk') }}</span>
             </h3>
 
             <div>
@@ -1176,9 +1198,9 @@ onMounted(() => {
       <div v-if="activeSubTab === 'roster'" class="bg-white rounded-3xl p-6 border border-gray-100 shadow-2xs space-y-4">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
           <div>
-            <h3 class="text-sm font-extrabold text-[#002855]">Daftar Peserta Terdaftar (Roster Batch)</h3>
+            <h3 class="text-sm font-extrabold text-[#002855]">{{ $l('Enrolled Participants (Batch Roster)', 'Daftar Peserta Terdaftar (Anggota Angkatan)') }}</h3>
             <p class="text-[11px] text-gray-500">
-              Total peserta terdaftar saat ini: {{ trainingClass.enrollments?.length || 0 }} dari kuota {{ trainingClass.max_quota }} kursi.
+              {{ $l('Currently enrolled participants:', 'Total peserta terdaftar saat ini:') }} {{ trainingClass.enrollments?.length || 0 }} {{ $l('of quota', 'dari kuota') }} {{ trainingClass.max_quota }} {{ $l('seats.', 'kursi.') }}
             </p>
           </div>
 
@@ -1189,7 +1211,7 @@ onMounted(() => {
               class="px-4 py-2 bg-[#0067AC] hover:bg-[#00528c] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Users class="w-3.5 h-3.5" />
-              <span>+ Tambah dari Master Pegawai</span>
+              <span>+ {{ $l('Add from Employee Master', 'Tambah dari Master Pegawai') }}</span>
             </button>
             <AppButton
               v-if="availableNominations.length"
@@ -1199,7 +1221,7 @@ onMounted(() => {
               icon="plus"
               @click="showAddParticipantModal = true"
             >
-              Tambah dari Nominasi Program ({{ availableNominations.length }})
+              {{ $l('Add from Program Nominations', 'Tambah dari Nominasi Program') }} ({{ availableNominations.length }})
             </AppButton>
           </div>
         </div>
@@ -1210,13 +1232,13 @@ onMounted(() => {
               <tr>
                 <th class="py-2.5 px-3 w-10 text-center">No</th>
                 <th class="py-2.5 px-3 w-28">NIK</th>
-                <th class="py-2.5 px-3">Nama Lengkap</th>
-                <th class="py-2.5 px-3">Divisi / Unit Kerja</th>
-                <th class="py-2.5 px-3">Jabatan</th>
-                <th class="py-2.5 px-3 text-center">Kehadiran (%)</th>
-                <th class="py-2.5 px-3 text-center">Nilai Akhir</th>
-                <th class="py-2.5 px-3 text-center">Status Kelulusan</th>
-                <th class="py-2.5 px-3 w-16 text-center">Aksi</th>
+                <th class="py-2.5 px-3">{{ $l('Full Name', 'Nama Lengkap') }}</th>
+                <th class="py-2.5 px-3">{{ $l('Division / Work Unit', 'Divisi / Unit Kerja') }}</th>
+                <th class="py-2.5 px-3">{{ $l('Position', 'Jabatan') }}</th>
+                <th class="py-2.5 px-3 text-center">{{ $l('Attendance (%)', 'Kehadiran (%)') }}</th>
+                <th class="py-2.5 px-3 text-center">{{ $l('Final Score', 'Nilai Akhir') }}</th>
+                <th class="py-2.5 px-3 text-center">{{ $l('Completion Status', 'Status Kelulusan') }}</th>
+                <th class="py-2.5 px-3 w-16 text-center">{{ $l('Action', 'Aksi') }}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 text-gray-700">
@@ -1238,7 +1260,7 @@ onMounted(() => {
                     class="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
                     :class="e.completion_status === 'PASSED' ? 'bg-emerald-50 text-emerald-800' : e.completion_status === 'FAILED' ? 'bg-rose-50 text-rose-700' : 'bg-gray-100 text-gray-600'"
                   >
-                    {{ e.completion_status }}
+                    {{ e.completion_status === 'PASSED' ? $l('PASSED', 'LULUS') : e.completion_status === 'FAILED' ? $l('FAILED', 'TIDAK LULUS') : $l('In Progress', 'Sedang Berjalan') }}
                   </span>
                 </td>
                 <td class="py-2 px-3 text-center">
@@ -1246,7 +1268,7 @@ onMounted(() => {
                     type="button"
                     @click="handleRemoveParticipant(e.id)"
                     class="p-1 rounded-lg text-rose-500 hover:bg-rose-50 transition cursor-pointer"
-                    title="Hapus dari Batch"
+                    :title="$l('Remove from Batch', 'Hapus dari Angkatan')"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
                   </button>
@@ -1263,8 +1285,8 @@ onMounted(() => {
         <div class="relative bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-gray-100 flex flex-col gap-4 z-10 animate-scaleIn">
           <div class="flex items-center justify-between pb-3 border-b border-gray-100">
             <div>
-              <h3 class="font-extrabold text-sm text-[#002855]">Daftarkan Peserta dari Nominasi Program</h3>
-              <p class="text-xs text-gray-400">Pilih pegawai yang akan dimasukkan ke dalam batch kelas ini.</p>
+              <h3 class="font-extrabold text-sm text-[#002855]">{{ $l('Enroll Participants from Program Nominations', 'Daftarkan Peserta dari Nominasi Program') }}</h3>
+              <p class="text-xs text-gray-400">{{ $l('Select employees to add to this class batch.', 'Pilih pegawai yang akan dimasukkan ke dalam angkatan kelas ini.') }}</p>
             </div>
             <button @click="showAddParticipantModal = false" class="text-gray-400 hover:text-gray-600 font-bold text-lg cursor-pointer">&times;</button>
           </div>
@@ -1293,14 +1315,14 @@ onMounted(() => {
               @click="showAddParticipantModal = false"
               class="px-4 py-2 rounded-full border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition cursor-pointer"
             >
-              Batal
+              {{ $t('common.cancel') }}
             </button>
             <button
               @click="handleEnrollSelectedNominations"
               :disabled="!selectedNominationIds.length"
               class="px-5 py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
             >
-              Daftarkan ({{ selectedNominationIds.length }})
+              {{ $l('Enroll', 'Daftarkan') }} ({{ selectedNominationIds.length }})
             </button>
           </div>
         </div>
@@ -1320,9 +1342,9 @@ onMounted(() => {
                 <Users class="w-5 h-5" />
               </div>
               <div>
-                <h3 class="font-extrabold text-base text-gray-900">Tambah Peserta dari Master Pegawai</h3>
+                <h3 class="font-extrabold text-base text-gray-900">{{ $l('Add Participants from Employee Master', 'Tambah Peserta dari Master Pegawai') }}</h3>
                 <p class="text-xs text-gray-500">
-                  Pilih pegawai Bank Woori Saudara untuk didaftarkan langsung ke batch kelas ini
+                  {{ $l('Select Bank Woori Saudara employees to enroll directly into this class batch', 'Pilih pegawai Bank Woori Saudara untuk didaftarkan langsung ke angkatan kelas ini') }}
                 </p>
               </div>
             </div>
@@ -1341,7 +1363,7 @@ onMounted(() => {
               <input
                 v-model="searchPegawai"
                 type="text"
-                placeholder="Cari NIK, Nama Pegawai, Jabatan, atau Cabang..."
+                :placeholder="$l('Search NIK, Employee Name, Position, or Branch...', 'Cari NIK, Nama Pegawai, Jabatan, atau Cabang...')"
                 class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#0067AC]"
               />
               <Search class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
@@ -1351,8 +1373,8 @@ onMounted(() => {
               <AppSearchableSelect
                 v-model="filterPegawaiDept"
                 :options="deptFilterOptions"
-                placeholder="-- Seluruh Unit Kerja --"
-                search-placeholder="Cari unit kerja..."
+                :placeholder="$l('-- All Work Units --', '-- Seluruh Unit Kerja --')"
+                :search-placeholder="$l('Search work unit...', 'Cari unit kerja...')"
                 input-class="bg-gray-50 border-gray-200 text-gray-700 py-2"
               />
             </div>
@@ -1372,16 +1394,16 @@ onMounted(() => {
                     />
                   </th>
                   <th class="py-3 px-3">NIK</th>
-                  <th class="py-3 px-3">Nama Pegawai</th>
-                  <th class="py-3 px-3">Departemen & Jabatan</th>
-                  <th class="py-3 px-3">Kantor Cabang</th>
-                  <th class="py-3 px-3 text-center">Status</th>
+                  <th class="py-3 px-3">{{ $l('Employee Name', 'Nama Pegawai') }}</th>
+                  <th class="py-3 px-3">{{ $l('Department & Position', 'Departemen & Jabatan') }}</th>
+                  <th class="py-3 px-3">{{ $l('Branch Office', 'Kantor Cabang') }}</th>
+                  <th class="py-3 px-3 text-center">{{ $l('Status', 'Status') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
                 <tr v-if="filteredMasterPegawai.length === 0">
                   <td colspan="6" class="py-8 text-center text-gray-400">
-                    Tidak ada data pegawai yang sesuai dengan pencarian.
+                    {{ $l('No employees match your search criteria.', 'Tidak ada data pegawai yang sesuai dengan pencarian.') }}
                   </td>
                 </tr>
                 <tr
@@ -1407,19 +1429,19 @@ onMounted(() => {
                     <p class="font-medium text-gray-800">{{ k.departemen }}</p>
                     <p class="text-[10px] text-gray-400">{{ k.jabatan }}</p>
                   </td>
-                  <td class="py-2.5 px-3 text-gray-600">{{ k.kantor_cabang || 'Kantor Pusat Sudirman' }}</td>
+                  <td class="py-2.5 px-3 text-gray-600">{{ k.kantor_cabang || $l('Sudirman Head Office', 'Kantor Pusat Sudirman') }}</td>
                   <td class="py-2.5 px-3 text-center">
                     <span
                       v-if="isPegawaiEnrolledInDetail(k)"
                       class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-200"
                     >
-                      Sudah Terdaftar
+                      {{ $l('Already Enrolled', 'Sudah Terdaftar') }}
                     </span>
                     <span
                       v-else
                       class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100"
                     >
-                      {{ k.st_kerja || 'Aktif' }}
+                      {{ k.st_kerja === 'Aktif' || !k.st_kerja ? $l('Active', 'Aktif') : k.st_kerja }}
                     </span>
                   </td>
                 </tr>
@@ -1430,7 +1452,7 @@ onMounted(() => {
           <!-- Footer Actions -->
           <div class="flex items-center justify-between pt-3 border-t border-gray-100">
             <p class="text-xs text-gray-500">
-              Terpilih: <strong class="text-[#0067AC]">{{ selectedPegawaiIds.length }} Pegawai</strong>
+              {{ $l('Selected:', 'Terpilih:') }} <strong class="text-[#0067AC]">{{ selectedPegawaiIds.length }} {{ $l('Employees', 'Pegawai') }}</strong>
             </p>
             <div class="flex items-center gap-2">
               <button
@@ -1439,7 +1461,7 @@ onMounted(() => {
                 :disabled="isEnrollingPegawai"
                 class="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
               >
-                Batal
+                {{ $t('common.cancel') }}
               </button>
               <button
                 type="button"
@@ -1447,7 +1469,7 @@ onMounted(() => {
                 :disabled="selectedPegawaiIds.length === 0 || isEnrollingPegawai"
                 class="px-5 py-2 rounded-xl bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold transition cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
               >
-                <span>{{ isEnrollingPegawai ? 'Mendaftarkan...' : `Daftarkan ke Kelas (${selectedPegawaiIds.length})` }}</span>
+                <span>{{ isEnrollingPegawai ? $l('Enrolling...', 'Mendaftarkan...') : `${$l('Enroll to Class', 'Daftarkan ke Kelas')} (${selectedPegawaiIds.length})` }}</span>
               </button>
             </div>
           </div>

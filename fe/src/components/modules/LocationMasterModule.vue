@@ -17,6 +17,9 @@ import {
 } from 'lucide-vue-next'
 import apiClient from '@/api/client'
 import SubpageHeader from '@/components/SubpageHeader.vue'
+import { useI18n } from '@/i18n'
+
+const { l } = useI18n()
 
 const emit = defineEmits(['back'])
 
@@ -64,10 +67,24 @@ const typeOptions = [
   'Computer Lab'
 ]
 
-const filterTypeOptions = [
-  { value: 'ALL', label: 'Semua Tipe Ruangan' },
-  ...typeOptions.map(t => ({ value: t, label: t }))
-]
+const getLocationTypeLabel = (type) => {
+  const map = {
+    'Physical Room': l('Physical Room', 'Ruang Fisik'),
+    'Virtual Platform': l('Virtual Platform', 'Platform Virtual'),
+    'Auditorium': l('Auditorium', 'Auditorium'),
+    'Computer Lab': l('Computer Lab', 'Laboratorium Komputer')
+  }
+  return map[type] || type
+}
+
+const filterTypeOptions = computed(() => [
+  { value: 'ALL', label: l('All Room Types', 'Semua Tipe Ruangan') },
+  ...typeOptions.map(t => ({ value: t, label: getLocationTypeLabel(t) }))
+])
+
+const typeSelectOptions = computed(() =>
+  typeOptions.map(t => ({ value: t, label: getLocationTypeLabel(t) }))
+)
 
 async function fetchData() {
   loading.value = true
@@ -79,7 +96,7 @@ async function fetchData() {
     }
   } catch (err) {
     feedbackType.value = 'error'
-    feedbackMsg.value = err.response?.data?.message || 'Gagal memuat master data ruangan.'
+    feedbackMsg.value = l('Failed to load room master data.', err.response?.data?.message || 'Gagal memuat data master ruangan.')
   } finally {
     loading.value = false
   }
@@ -111,7 +128,7 @@ function openCreateModal() {
     name: '',
     type: 'Physical Room',
     building: 'BWS Corporate Learning Center',
-    floor: 'Lt. 8',
+    floor: l('8th Floor', 'Lt. 8'),
     capacity: 30,
     facilities: '',
     is_active: true
@@ -137,7 +154,7 @@ function openEditModal(item) {
 async function handleSubmit() {
   if (!form.value.name) {
     feedbackType.value = 'error'
-    feedbackMsg.value = 'Nama ruangan wajib diisi.'
+    feedbackMsg.value = l('Room name is required.', 'Nama ruangan wajib diisi.')
     return
   }
 
@@ -146,17 +163,17 @@ async function handleSubmit() {
     if (editingItem.value) {
       await apiClient.put(`/training-locations/${editingItem.value.id}`, form.value)
       feedbackType.value = 'success'
-      feedbackMsg.value = `Ruangan "${form.value.name}" berhasil diperbarui.`
+      feedbackMsg.value = l(`Room "${form.value.name}" updated successfully.`, `Ruangan "${form.value.name}" berhasil diperbarui.`)
     } else {
       await apiClient.post('/training-locations', form.value)
       feedbackType.value = 'success'
-      feedbackMsg.value = `Ruangan "${form.value.name}" berhasil ditambahkan ke Master Data.`
+      feedbackMsg.value = l(`Room "${form.value.name}" added to Master Data.`, `Ruangan "${form.value.name}" berhasil ditambahkan ke Data Master.`)
     }
     showModal.value = false
     await fetchData()
   } catch (err) {
     feedbackType.value = 'error'
-    feedbackMsg.value = err.response?.data?.message || 'Gagal menyimpan data ruangan.'
+    feedbackMsg.value = l('Failed to save room data.', err.response?.data?.message || 'Gagal menyimpan data ruangan.')
   } finally {
     isSubmitting.value = false
   }
@@ -173,13 +190,13 @@ async function handleDelete() {
   try {
     await apiClient.delete(`/training-locations/${itemToDelete.value.id}`)
     feedbackType.value = 'success'
-    feedbackMsg.value = `Ruangan "${itemToDelete.value.name}" berhasil dihapus.`
+    feedbackMsg.value = l(`Room "${itemToDelete.value.name}" deleted successfully.`, `Ruangan "${itemToDelete.value.name}" berhasil dihapus.`)
     showDeleteModal.value = false
     itemToDelete.value = null
     await fetchData()
   } catch (err) {
     feedbackType.value = 'error'
-    feedbackMsg.value = err.response?.data?.message || 'Gagal menghapus data ruangan.'
+    feedbackMsg.value = l('Failed to delete room data.', err.response?.data?.message || 'Gagal menghapus data ruangan.')
   } finally {
     isDeleting.value = false
   }
@@ -190,8 +207,8 @@ async function handleDelete() {
   <div class="space-y-6">
     <!-- Subpage Header -->
     <SubpageHeader
-      title="Master Ruangan & Lokasi Diklat"
-      subtitle="Kelola direktori ruang pelatihan, auditorium, laboratorium perbankan, dan platform virtual kelas"
+      :title="l('Training Rooms & Locations Master', 'Master Ruangan & Lokasi Diklat')"
+      :subtitle="l('Manage training rooms, auditoriums, banking labs, and virtual classroom platforms', 'Kelola direktori ruang pelatihan, auditorium, laboratorium perbankan, dan platform kelas virtual')"
     >
       <template #actions>
         <div class="flex items-center gap-2">
@@ -200,14 +217,14 @@ async function handleDelete() {
             class="px-4 py-2 border border-gray-200 text-gray-700 rounded-2xl hover:bg-gray-50 font-semibold text-xs flex items-center gap-1.5 transition cursor-pointer"
           >
             <ArrowLeft class="w-3.5 h-3.5" />
-            Kembali ke Daftar Kelas
+            {{ l('Back to Class List', 'Kembali ke Daftar Kelas') }}
           </button>
           <button
             @click="openCreateModal"
             class="px-4 py-2 bg-[#0067AC] text-white rounded-2xl hover:bg-[#005288] font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
           >
             <Plus class="w-4 h-4" />
-            Tambah Ruangan Baru
+            {{ l('Add New Room', 'Tambah Ruangan Baru') }}
           </button>
         </div>
       </template>
@@ -236,7 +253,7 @@ async function handleDelete() {
           <Building class="w-5 h-5" />
         </div>
         <div>
-          <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Ruangan</div>
+          <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{{ l('Total Rooms', 'Total Ruangan') }}</div>
           <div class="text-xl font-black text-gray-900">{{ stats.total }}</div>
         </div>
       </div>
@@ -246,7 +263,7 @@ async function handleDelete() {
           <CheckCircle2 class="w-5 h-5" />
         </div>
         <div>
-          <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Aktif Digunakan</div>
+          <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{{ l('Active in Use', 'Aktif Digunakan') }}</div>
           <div class="text-xl font-black text-gray-900">{{ stats.active }}</div>
         </div>
       </div>
@@ -256,7 +273,7 @@ async function handleDelete() {
           <MapPin class="w-5 h-5" />
         </div>
         <div>
-          <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Ruang Fisik</div>
+          <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{{ l('Physical Rooms', 'Ruang Fisik') }}</div>
           <div class="text-xl font-black text-gray-900">{{ stats.physical }}</div>
         </div>
       </div>
@@ -266,7 +283,7 @@ async function handleDelete() {
           <Monitor class="w-5 h-5" />
         </div>
         <div>
-          <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Platform Virtual</div>
+          <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{{ l('Virtual Platforms', 'Platform Virtual') }}</div>
           <div class="text-xl font-black text-gray-900">{{ stats.virtual }}</div>
         </div>
       </div>
@@ -282,8 +299,8 @@ async function handleDelete() {
             <AppSearchableSelect
               v-model="selectedType"
               :options="filterTypeOptions"
-              placeholder="Semua Tipe Ruangan..."
-              search-placeholder="Cari tipe..."
+              :placeholder="l('All Room Types...', 'Semua Tipe Ruangan...')"
+              :search-placeholder="l('Search type...', 'Cari tipe...')"
               input-class="bg-[#f8fafc] border-gray-200 rounded-xl px-3 py-2 font-medium text-gray-700"
             />
           </div>
@@ -295,7 +312,7 @@ async function handleDelete() {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Cari ruang, kode, gedung, fasilitas..."
+            :placeholder="l('Search room, code, building, facilities...', 'Cari ruang, kode, gedung, fasilitas...')"
             class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-xs font-medium text-gray-700 focus:outline-none focus:border-[#0067AC]"
           />
         </div>
@@ -307,24 +324,24 @@ async function handleDelete() {
           <thead class="bg-[#f8fafc] text-gray-500 font-bold border-b border-gray-100">
             <tr>
               <th class="py-3 px-4 w-12 text-center">No</th>
-              <th class="py-3 px-4 w-28">Kode</th>
-              <th class="py-3 px-4">Nama Ruangan & Lokasi</th>
-              <th class="py-3 px-4 w-36">Tipe Ruang</th>
-              <th class="py-3 px-4 w-32">Gedung / Lantai</th>
-              <th class="py-3 px-4 w-24 text-center">Kapasitas</th>
-              <th class="py-3 px-4 w-24 text-center">Status</th>
-              <th class="py-3 px-4 w-24 text-center">Aksi</th>
+              <th class="py-3 px-4 w-28">{{ l('Code', 'Kode') }}</th>
+              <th class="py-3 px-4">{{ l('Room Name & Location', 'Nama Ruangan & Lokasi') }}</th>
+              <th class="py-3 px-4 w-36">{{ l('Room Type', 'Tipe Ruang') }}</th>
+              <th class="py-3 px-4 w-32">{{ l('Building / Floor', 'Gedung / Lantai') }}</th>
+              <th class="py-3 px-4 w-24 text-center">{{ l('Capacity', 'Kapasitas') }}</th>
+              <th class="py-3 px-4 w-24 text-center">{{ l('Status', 'Status') }}</th>
+              <th class="py-3 px-4 w-24 text-center">{{ l('Actions', 'Aksi') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50 font-medium text-gray-700">
             <tr v-if="loading">
               <td colspan="8" class="text-center py-10 text-gray-400">
-                Memuat data ruangan...
+                {{ l('Loading room data...', 'Memuat data ruangan...') }}
               </td>
             </tr>
             <tr v-else-if="filteredList.length === 0">
               <td colspan="8" class="text-center py-10 text-gray-400">
-                Tidak ada data ruangan ditemukan.
+                {{ l('No room data found.', 'Tidak ada data ruangan ditemukan.') }}
               </td>
             </tr>
             <tr
@@ -355,7 +372,7 @@ async function handleDelete() {
                     'bg-emerald-50 text-emerald-700': item.type === 'Computer Lab'
                   }"
                 >
-                  {{ item.type }}
+                  {{ getLocationTypeLabel(item.type) }}
                 </span>
               </td>
               <td class="py-3.5 px-4 text-gray-600">
@@ -364,14 +381,14 @@ async function handleDelete() {
               </td>
               <td class="py-3.5 px-4 text-center">
                 <span class="font-bold text-gray-800">{{ item.capacity }}</span>
-                <span class="text-[10px] text-gray-400 block">kursi</span>
+                <span class="text-[10px] text-gray-400 block">{{ l('seats', 'kursi') }}</span>
               </td>
               <td class="py-3.5 px-4 text-center">
                 <span
                   class="px-2 py-0.5 rounded-full text-[10px] font-bold"
                   :class="item.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'"
                 >
-                  {{ item.is_active ? 'Aktif' : 'Non-Aktif' }}
+                  {{ item.is_active ? l('Active', 'Aktif') : l('Inactive', 'Non-Aktif') }}
                 </span>
               </td>
               <td class="py-3.5 px-4 text-center">
@@ -379,14 +396,14 @@ async function handleDelete() {
                   <button
                     @click="openEditModal(item)"
                     class="p-1.5 rounded-lg text-gray-400 hover:text-[#0067AC] hover:bg-blue-50 transition cursor-pointer"
-                    title="Edit Ruangan"
+                    :title="l('Edit Room', 'Ubah Ruangan')"
                   >
                     <Edit2 class="w-3.5 h-3.5" />
                   </button>
                   <button
                     @click="confirmDelete(item)"
                     class="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                    title="Hapus Ruangan"
+                    :title="l('Delete Room', 'Hapus Ruangan')"
                   >
                     <Trash2 class="w-3.5 h-3.5" />
                   </button>
@@ -410,7 +427,7 @@ async function handleDelete() {
               <MapPin class="w-4 h-4" />
             </div>
             <h3 class="font-extrabold text-sm text-gray-900">
-              {{ editingItem ? 'Edit Master Ruangan' : 'Tambah Ruangan Baru' }}
+              {{ editingItem ? l('Edit Room Master', 'Ubah Data Ruangan') : l('Add New Room', 'Tambah Ruangan Baru') }}
             </h3>
           </div>
           <button @click="showModal = false" class="text-gray-400 hover:text-gray-600 cursor-pointer">
@@ -420,33 +437,33 @@ async function handleDelete() {
 
         <form @submit.prevent="handleSubmit" class="space-y-3.5 text-xs">
           <div>
-            <label class="block font-bold text-gray-700 mb-1">Nama Ruangan & Lokasi <span class="text-rose-500">*</span></label>
+            <label class="block font-bold text-gray-700 mb-1">{{ l('Room Name & Location', 'Nama Ruangan & Lokasi') }} <span class="text-rose-500">*</span></label>
             <input
               v-model="form.name"
               type="text"
               required
-              placeholder="e.g. Ruang 1 - BWS Corporate Learning Center"
+              :placeholder="l('e.g. Room 1 - BWS Corporate Learning Center', 'Contoh: Ruang 1 - BWS Corporate Learning Center')"
               class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800 focus:outline-none focus:border-[#0067AC]"
             />
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block font-bold text-gray-700 mb-1">Kode Ruang</label>
+              <label class="block font-bold text-gray-700 mb-1">{{ l('Room Code', 'Kode Ruang') }}</label>
               <input
                 v-model="form.code"
                 type="text"
-                placeholder="e.g. RNG-01 (Auto jika kosong)"
+                :placeholder="l('e.g. RNG-01 (Auto if blank)', 'Contoh: RNG-01 (Otomatis jika kosong)')"
                 class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-[#0067AC] focus:outline-none focus:border-[#0067AC]"
               />
             </div>
             <div>
-              <label class="block font-bold text-gray-700 mb-1">Tipe Ruangan</label>
+              <label class="block font-bold text-gray-700 mb-1">{{ l('Room Type', 'Tipe Ruangan') }}</label>
               <AppSearchableSelect
                 v-model="form.type"
-                :options="typeOptions"
-                placeholder="Pilih tipe ruangan..."
-                search-placeholder="Cari tipe..."
+                :options="typeSelectOptions"
+                :placeholder="l('Select room type...', 'Pilih tipe ruangan...')"
+                :search-placeholder="l('Search type...', 'Cari tipe...')"
                 input-class="bg-[#f8fafc] border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800"
               />
             </div>
@@ -454,27 +471,27 @@ async function handleDelete() {
 
           <div class="grid grid-cols-3 gap-3">
             <div class="col-span-2">
-              <label class="block font-bold text-gray-700 mb-1">Gedung / Lokasi</label>
+              <label class="block font-bold text-gray-700 mb-1">{{ l('Building / Location', 'Gedung / Lokasi') }}</label>
               <input
                 v-model="form.building"
                 type="text"
-                placeholder="e.g. BWS Corporate Learning Center"
+                :placeholder="l('e.g. BWS Corporate Learning Center', 'Contoh: BWS Corporate Learning Center')"
                 class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800 focus:outline-none focus:border-[#0067AC]"
               />
             </div>
             <div>
-              <label class="block font-bold text-gray-700 mb-1">Lantai</label>
+              <label class="block font-bold text-gray-700 mb-1">{{ l('Floor', 'Lantai') }}</label>
               <input
                 v-model="form.floor"
                 type="text"
-                placeholder="e.g. Lt. 8"
+                :placeholder="l('e.g. 8th Floor', 'Contoh: Lt. 8')"
                 class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800 focus:outline-none focus:border-[#0067AC]"
               />
             </div>
           </div>
 
           <div>
-            <label class="block font-bold text-gray-700 mb-1">Kapasitas (Kursi / Peserta)</label>
+            <label class="block font-bold text-gray-700 mb-1">{{ l('Capacity (Seats / Participants)', 'Kapasitas (Kursi / Peserta)') }}</label>
             <input
               v-model.number="form.capacity"
               type="number"
@@ -484,11 +501,11 @@ async function handleDelete() {
           </div>
 
           <div>
-            <label class="block font-bold text-gray-700 mb-1">Fasilitas & Kelengkapan</label>
+            <label class="block font-bold text-gray-700 mb-1">{{ l('Facilities & Equipment', 'Fasilitas & Kelengkapan') }}</label>
             <textarea
               v-model="form.facilities"
               rows="2"
-              placeholder="e.g. Proyektor HD, Audio System, Wi-Fi 500 Mbps, AC Central, Smart Board"
+              :placeholder="l('e.g. HD Projector, Audio System, Wi-Fi 500 Mbps, Central AC, Smart Board', 'Contoh: Proyektor HD, Sistem Audio, Wi-Fi 500 Mbps, AC Sentral, Papan Pintar')"
               class="w-full bg-[#f8fafc] border border-gray-200 rounded-xl px-3 py-2 text-xs font-medium text-gray-800 focus:outline-none focus:border-[#0067AC]"
             ></textarea>
           </div>
@@ -500,7 +517,7 @@ async function handleDelete() {
               v-model="form.is_active"
               class="rounded text-[#0067AC] focus:ring-[#0067AC] h-4 w-4 border-gray-300 cursor-pointer"
             />
-            <label for="is_active_loc" class="font-bold text-gray-700 cursor-pointer">Ruangan Aktif & Siap Digunakan</label>
+            <label for="is_active_loc" class="font-bold text-gray-700 cursor-pointer">{{ l('Room Active & Ready for Use', 'Ruangan Aktif & Siap Digunakan') }}</label>
           </div>
 
           <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
@@ -509,7 +526,7 @@ async function handleDelete() {
               @click="showModal = false"
               class="px-4 py-2 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-semibold cursor-pointer"
             >
-              Batal
+              {{ l('Cancel', 'Batal') }}
             </button>
             <button
               type="submit"
@@ -517,7 +534,7 @@ async function handleDelete() {
               class="px-5 py-2 bg-[#0067AC] text-white rounded-xl hover:bg-[#005288] font-bold flex items-center gap-1.5 shadow-sm transition cursor-pointer"
             >
               <Save class="w-3.5 h-3.5" />
-              {{ isSubmitting ? 'Menyimpan...' : 'Simpan Ruangan' }}
+              {{ isSubmitting ? l('Saving...', 'Menyimpan...') : l('Save Room', 'Simpan Ruangan') }}
             </button>
           </div>
         </form>
@@ -534,9 +551,9 @@ async function handleDelete() {
           <Trash2 class="w-6 h-6" />
         </div>
         <div>
-          <h3 class="font-extrabold text-base text-gray-900">Hapus Master Ruangan?</h3>
+          <h3 class="font-extrabold text-base text-gray-900">{{ l('Delete Room Master?', 'Hapus Data Ruangan?') }}</h3>
           <p class="text-xs text-gray-500 mt-1">
-            Ruangan <span class="font-bold text-gray-800">"{{ itemToDelete?.name }}"</span> akan dihapus dari Master Data.
+            {{ l('Room', 'Ruangan') }} <span class="font-bold text-gray-800">"{{ itemToDelete?.name }}"</span> {{ l('will be permanently deleted from Master Data.', 'akan dihapus dari Data Master.') }}
           </p>
         </div>
         <div class="flex items-center justify-center gap-2 pt-2">
@@ -544,14 +561,14 @@ async function handleDelete() {
             @click="showDeleteModal = false"
             class="px-4 py-2 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 font-semibold text-xs cursor-pointer"
           >
-            Batal
+            {{ l('Cancel', 'Batal') }}
           </button>
           <button
             @click="handleDelete"
             :disabled="isDeleting"
             class="px-4 py-2 bg-rose-600 text-white rounded-xl hover:bg-rose-700 font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
           >
-            {{ isDeleting ? 'Menghapus...' : 'Ya, Hapus' }}
+            {{ isDeleting ? l('Deleting...', 'Menghapus...') : l('Yes, Delete', 'Ya, Hapus') }}
           </button>
         </div>
       </div>

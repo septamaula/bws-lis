@@ -27,8 +27,8 @@ function printCertificate() {
             <Award class="w-4 h-4" />
           </div>
           <div>
-            <h3 class="font-bold text-base text-gray-900">E-Sertifikat Kelulusan Resmi BWS</h3>
-            <p class="text-xs text-gray-400">Verifikasi Kredensial Digital & Kepatuhan Sertifikasi Perbankan</p>
+            <h3 class="font-bold text-base text-gray-900">{{ $l('Official BWS Graduation E-Certificate', 'E-Sertifikat Kelulusan Resmi BWS') }}</h3>
+            <p class="text-xs text-gray-400">{{ $l('Digital Credential Verification & Banking Certification Compliance', 'Verifikasi Kredensial Digital & Kepatuhan Sertifikasi Perbankan') }}</p>
           </div>
         </div>
         <div class="flex items-center gap-2">
@@ -37,7 +37,7 @@ function printCertificate() {
             class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-semibold shadow-xs transition"
           >
             <Printer class="w-3.5 h-3.5" />
-            <span>Cetak PDF</span>
+            <span>{{ $l('Print PDF', 'Cetak PDF') }}</span>
           </button>
           <button @click="emit('close')" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition">
             <X class="w-4 h-4" />
@@ -59,30 +59,35 @@ function printCertificate() {
             <span class="font-extrabold text-sm tracking-wider uppercase text-gray-900">PT BANK WOORI SAUDARA INDONESIA 1906, TBK</span>
           </div>
 
-          <h2 class="text-2xl font-serif font-black tracking-wide text-gray-900 uppercase">SERTIFIKAT KELULUSAN</h2>
+          <h2 class="text-2xl font-serif font-black tracking-wide text-gray-900 uppercase">{{ $l('CERTIFICATE OF COMPLETION', 'SERTIFIKAT KELULUSAN') }}</h2>
           <p class="text-[11px] font-mono text-gray-400 tracking-wider">
             NO: {{ certificateData.certNumber || certificateData.certificate_number || 'BWS-CERT-2026-0899' }}
           </p>
 
-          <p class="text-xs text-gray-500 pt-2">Diberikan secara resmi kepada:</p>
+          <p class="text-xs text-gray-500 pt-2">{{ $l('This is to officially certify that:', 'Diberikan secara resmi kepada:') }}</p>
           <h3 class="text-xl font-bold text-[#0067AC] tracking-tight border-b-2 border-[#0067AC]/20 pb-2 inline-block px-8">
-            {{ certificateData.employeeName || certificateData.user?.name || 'Pegawai Bank Woori Saudara' }}
+            {{ certificateData.employeeName || certificateData.user?.name || $l('Bank Woori Saudara Employee', 'Pegawai Bank Woori Saudara') }}
           </h3>
           <p class="font-mono text-xs text-gray-400">
             NIK: {{ certificateData.nik || certificateData.user?.nik || 'NIK-10294' }}
           </p>
 
           <p class="text-xs text-gray-600 max-w-lg mx-auto leading-relaxed pt-2">
-            Telah menyelesaikan seluruh modul dan dinyatakan <strong>LULUS (PASSED)</strong> dengan kompetensi memuaskan pada program pelatihan:
+            <template v-if="$locale === 'en'">
+              Has successfully completed all modules and is declared <strong>PASSED</strong> with satisfactory competency in the training program:
+            </template>
+            <template v-else>
+              Telah menyelesaikan seluruh modul dan dinyatakan <strong>LULUS</strong> dengan kompetensi memuaskan pada program pelatihan:
+            </template>
           </p>
           <h4 class="text-base font-bold text-gray-900">
-            {{ certificateData.certificationName || certificateData.training_class?.program?.title || 'Sertifikasi Manajemen Risiko (SMR) Tingkat 2' }}
+            {{ certificateData.certificationName || certificateData.training_class?.program?.title || $l('Risk Management Certification (SMR) Level 2', 'Sertifikasi Manajemen Risiko (SMR) Tingkat 2') }}
           </h4>
 
           <!-- Signatures & QR Section -->
           <div class="grid grid-cols-3 items-end pt-8 text-xs">
             <div class="text-center">
-              <p class="text-gray-400 text-[10px] mb-8">Kepala Divisi Human Capital</p>
+              <p class="text-gray-400 text-[10px] mb-8">{{ $l('Human Capital Division Head', 'Kepala Divisi Human Capital') }}</p>
               <p class="font-bold text-gray-900">Bambang Suryo, S.E.</p>
               <p class="text-[10px] text-gray-400 font-mono">BWS HC Head</p>
             </div>
@@ -92,13 +97,13 @@ function printCertificate() {
               <div class="w-16 h-16 bg-white p-1 rounded-xl border border-gray-200 shadow-2xs flex items-center justify-center">
                 <QrCode class="w-12 h-12 text-[#0067AC]" />
               </div>
-              <span class="text-[9px] text-gray-400 font-mono mt-1">Verifikasi Digital Resmi</span>
+              <span class="text-[9px] text-gray-400 font-mono mt-1">{{ $l('Official Digital Verification', 'Verifikasi Digital Resmi') }}</span>
             </div>
 
             <div class="text-center">
-              <p class="text-gray-400 text-[10px] mb-8">Lead Facilitator & Penguji</p>
+              <p class="text-gray-400 text-[10px] mb-8">{{ $l('Lead Facilitator & Examiner', 'Pengajar Utama & Penguji') }}</p>
               <p class="font-bold text-gray-900">Dr. Ir. Hendra Gunawan</p>
-              <p class="text-[10px] text-gray-400 font-mono">Senior Banking Trainer</p>
+              <p class="text-[10px] text-gray-400 font-mono">{{ $l('Senior Banking Trainer', 'Pengajar Perbankan Senior') }}</p>
             </div>
           </div>
 
