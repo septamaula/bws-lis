@@ -7,16 +7,22 @@ use App\Models\AuditLog;
 use App\Models\ClassAttendance;
 use App\Models\ClassEnrollment;
 use App\Models\ClassSession;
+use App\Models\Karyawan;
 use App\Models\ProgramParticipant;
 use App\Models\TrainingClass;
 use App\Models\TrainingProgram;
+use App\Models\User;
+use App\Services\ParticipantScoringService;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ClassApiController extends Controller
 {
+    public function __construct(private readonly ParticipantScoringService $scoring) {}
+
     /**
      * List all classes with filtering & summary statistics.
      */
@@ -122,10 +128,20 @@ class ClassApiController extends Controller
         $passedCount = $class->enrollments->where('completion_status', 'PASSED')->count();
         $failedCount = $class->enrollments->where('completion_status', 'FAILED')->count();
 
-        // Instructor Rating Stats
-        $avgInstructorRating = $class->evaluations()->avg('instructor_rating')
-            ?: $class->enrollments->whereNotNull('eval_instructor_rating')->avg('eval_instructor_rating')
-            ?: 4.8;
+        // Kirkpatrick Evaluation Stats (Scale 1-4; null when unrated instead of fabricated defaults)
+        $avgMaterialRating = $class->evaluations()->avg('material_avg')
+            ?? $class->evaluations()->avg('material_rating')
+            ?? $class->enrollments->whereNotNull('eval_material_rating')->avg('eval_material_rating');
+        $avgInstructorRating = $class->evaluations()->avg('instructor_avg')
+            ?? $class->evaluations()->avg('instructor_rating')
+            ?? $class->enrollments->whereNotNull('eval_instructor_rating')->avg('eval_instructor_rating');
+        $avgCommitteeRating = $class->evaluations()->avg('committee_avg')
+            ?? $class->evaluations()->avg('committee_rating')
+            ?? $class->enrollments->whereNotNull('eval_committee_rating')->avg('eval_committee_rating');
+        $avgOverallRating = $class->evaluations()->avg('overall_avg');
+
+        $totalInvitationPoints = (int) $class->enrollments->sum(fn ($e) => (int) ($e->invitation_point ?? 1));
+        $totalPointAdd = (int) $class->enrollments->sum(fn ($e) => (int) ($e->point_add ?? 0));
 
         return response()->json([
             'class' => $class,
@@ -134,13 +150,18 @@ class ClassApiController extends Controller
                 'total_enrolled' => $totalEnrollments,
                 'avg_attendance_pct' => $avgAttendancePct,
                 'eligible_for_cert_count' => $eligibleForCertCount,
+                'total_invitation_points' => $totalInvitationPoints,
+                'total_point_add' => $totalPointAdd,
                 'avg_pre_test' => round($avgPre, 1),
                 'avg_post_test' => round($avgPost, 1),
                 'competency_gain_pct' => $gainPct,
                 'passed_count' => $passedCount,
                 'failed_count' => $failedCount,
                 'pass_rate_pct' => $totalEnrollments > 0 ? round(($passedCount / $totalEnrollments) * 100, 1) : 0,
-                'avg_instructor_rating' => round($avgInstructorRating, 2),
+                'avg_material_rating' => $avgMaterialRating !== null ? round((float) $avgMaterialRating, 2) : null,
+                'avg_instructor_rating' => $avgInstructorRating !== null ? round((float) $avgInstructorRating, 2) : null,
+                'avg_committee_rating' => $avgCommitteeRating !== null ? round((float) $avgCommitteeRating, 2) : null,
+                'avg_overall_rating' => $avgOverallRating !== null ? round((float) $avgOverallRating, 2) : null,
             ],
             'available_program_participants' => $availableProgramParticipants,
         ]);
@@ -166,6 +187,8 @@ class ClassApiController extends Controller
             'max_quota' => 'required|integer|min:1|max:200',
             'facilitator_id' => 'nullable|exists:users,id',
             'trainer_name' => 'nullable|string|max:150',
+            'instructors' => 'nullable|array|max:15',
+            'instructors.*' => 'nullable|string|max:150',
             'passing_grade' => 'nullable|integer|min:0|max:100',
             'description' => 'nullable|string',
             'notes' => 'nullable|string',
@@ -213,7 +236,8 @@ class ClassApiController extends Controller
             'enrolled_count' => 0,
             'facilitator_id' => $validated['facilitator_id'] ?? null,
             'trainer_name' => $validated['trainer_name'] ?? ($program->trainer_name ?? ($program->facilitator ?? 'Tim Fasilitator BWS')),
-            'passing_grade' => $validated['passing_grade'] ?? ($program->passing_grade ?? 75),
+            'instructors' => ! empty($validated['instructors']) ? array_values(array_filter($validated['instructors'])) : null,
+            'passing_grade' => $validated['passing_grade'] ?? ($program->passing_grade ?? ParticipantScoringService::DEFAULT_PASSING_GRADE),
             'description' => $validated['description'] ?? "Batch pelaksanaan untuk program {$program->title}",
             'notes' => $validated['notes'] ?? null,
             'documents' => $validated['documents'] ?? [],
@@ -324,6 +348,8 @@ class ClassApiController extends Controller
             'max_quota' => 'sometimes|required|integer|min:1',
             'facilitator_id' => 'nullable|exists:users,id',
             'trainer_name' => 'nullable|string|max:150',
+            'instructors' => 'nullable|array|max:15',
+            'instructors.*' => 'nullable|string|max:150',
             'passing_grade' => 'nullable|integer|min:0|max:100',
             'description' => 'nullable|string',
             'notes' => 'nullable|string',
@@ -362,6 +388,7 @@ class ClassApiController extends Controller
             $enrolledCount = 0;
             foreach ($validated['enrolled_participants'] as $p) {
                 ClassEnrollment::create([
+                    'participant_code' => $p['participant_code'] ?? $this->scoring->generateParticipantCode(),
                     'training_class_id' => $class->id,
                     'user_id' => $p['user_id'] ?? null,
                     'nik' => $p['nik'] ?? null,
@@ -372,6 +399,8 @@ class ClassApiController extends Controller
                     'attendance_status' => 'REGISTERED',
                     'completion_status' => 'NOT_STARTED',
                     'attendance_percentage' => 0,
+                    'invitation_point' => 1,
+                    'point_add' => 0,
                 ]);
                 $enrolledCount++;
             }
@@ -496,6 +525,7 @@ class ClassApiController extends Controller
 
             if (! $exists) {
                 ClassEnrollment::create([
+                    'participant_code' => $p['participant_code'] ?? $this->scoring->generateParticipantCode(),
                     'training_class_id' => $class->id,
                     'user_id' => $p['user_id'] ?? null,
                     'nik' => $p['nik'] ?? null,
@@ -506,6 +536,8 @@ class ClassApiController extends Controller
                     'attendance_status' => 'REGISTERED',
                     'completion_status' => 'NOT_STARTED',
                     'attendance_percentage' => 0,
+                    'invitation_point' => 1,
+                    'point_add' => 0,
                 ]);
                 $added++;
             }
@@ -646,6 +678,9 @@ class ClassApiController extends Controller
                 $enrollment->update([
                     'attendance_percentage' => $pct,
                     'attendance_status' => $pct >= 80 ? 'PRESENT' : ($hadir > 0 ? 'PERMISSION' : 'ABSENT'),
+                    'attendance_remark' => $pct >= 80 ? 'Present' : ($hadir > 0 ? 'Absent - Busy' : 'Absent'),
+                    'invitation_point' => 1,
+                    'point_add' => $pct >= 80 ? 1 : 0,
                 ]);
             }
         }
@@ -698,6 +733,9 @@ class ClassApiController extends Controller
             $enrollment->update([
                 'attendance_percentage' => $pct,
                 'attendance_status' => 'PRESENT',
+                'attendance_remark' => 'Present',
+                'invitation_point' => 1,
+                'point_add' => 1,
             ]);
         }
 
@@ -717,14 +755,27 @@ class ClassApiController extends Controller
     {
         $class = TrainingClass::with([
             'program',
+            'facilitator',
+            'evaluations',
             'enrollments' => function ($q) {
                 $q->with('evaluation')->orderBy('participant_name');
             },
         ])->findOrFail($id);
 
-        $passingGrade = $class->passing_grade ?? 75;
+        $passingGrade = $this->scoring->resolvePassingGrade($class);
 
-        $participants = $class->enrollments->map(function ($e) {
+        $rawInstructors = is_array($class->instructors) && $class->instructors !== []
+            ? $class->instructors
+            : array_values(array_filter([$class->trainer_name ?? $class->facilitator?->name]));
+        $instructors = [];
+        foreach ($rawInstructors as $idx => $inst) {
+            $instructors[] = [
+                'slot' => 'P'.($idx + 1),
+                'name' => is_array($inst) ? (string) ($inst['name'] ?? 'Instructor') : (string) $inst,
+            ];
+        }
+
+        $participants = $class->enrollments->map(function (ClassEnrollment $e) {
             $pre = $e->pre_test_score !== null ? (float) $e->pre_test_score : null;
             $post = $e->post_test_score !== null ? (float) $e->post_test_score : null;
             $task = $e->task_score !== null ? (float) $e->task_score : null;
@@ -735,14 +786,24 @@ class ClassApiController extends Controller
                 $delta = round((($post - $pre) / $pre) * 100, 1);
             }
 
+            $eval = $e->evaluation;
+
             return [
                 'id' => $e->id,
+                'participant_code' => $e->participant_code,
                 'nik' => $e->nik,
                 'name' => $e->participant_name ?: ($e->user->name ?? 'Peserta'),
                 'department' => $e->department,
                 'branch' => $e->branch,
                 'position' => $e->position,
-                'attendance_percentage' => (float) $e->attendance_percentage,
+                'attendance_percentage' => $e->attendance_percentage !== null ? (float) $e->attendance_percentage : 0.0,
+                'attendance_remark' => $e->attendance_remark,
+                'invitation_point' => (int) ($e->invitation_point ?? 1),
+                'point_add' => (int) ($e->point_add ?? 0),
+                'leave_status' => $e->leave_status,
+                'leave_notes' => $e->leave_notes,
+                'leave_attachment_url' => $e->leave_attachment_url,
+                'commitment_signed_at' => $e->commitment_signed_at?->toIso8601String(),
                 'pre_test_score' => $pre,
                 'post_test_score' => $post,
                 'task_score' => $task,
@@ -750,17 +811,29 @@ class ClassApiController extends Controller
                 'delta_gain_pct' => $delta,
                 'grade' => $e->grade,
                 'completion_status' => $e->completion_status,
-                'eval_instructor_rating' => $e->eval_instructor_rating,
-                'eval_material_rating' => $e->eval_material_rating,
-                'eval_facility_rating' => $e->eval_facility_rating,
-                'eval_notes' => $e->eval_notes,
+                'eval_instructor_rating' => $e->eval_instructor_rating !== null ? (float) $e->eval_instructor_rating : $eval?->instructor_avg,
+                'eval_material_rating' => $e->eval_material_rating !== null ? (float) $e->eval_material_rating : $eval?->material_avg,
+                'eval_facility_rating' => $e->eval_facility_rating !== null ? (float) $e->eval_facility_rating : $eval?->facility_rating,
+                'eval_committee_rating' => $e->eval_committee_rating !== null ? (float) $e->eval_committee_rating : $eval?->committee_avg,
+                'eval_notes' => $e->eval_notes ?? $eval?->feedback_notes,
+                'evaluation_detail' => $eval ? [
+                    'evaluation_code' => $eval->evaluation_code,
+                    'material_scores' => $eval->material_scores,
+                    'instructor_scores' => $eval->instructor_scores,
+                    'committee_scores' => $eval->committee_scores,
+                    'material_avg' => $eval->material_avg,
+                    'instructor_avg' => $eval->instructor_avg,
+                    'committee_avg' => $eval->committee_avg,
+                    'overall_avg' => $eval->overall_avg,
+                    'feedback_notes' => $eval->feedback_notes,
+                ] : null,
                 'certificate_number' => $e->certificate_number,
                 'certificate_issued_at' => $e->certificate_issued_at ? Carbon::parse($e->certificate_issued_at)->format('d M Y') : null,
-                'is_eligible_for_cert' => ($e->completion_status === 'PASSED' && $e->attendance_percentage >= 80),
+                'is_eligible_for_cert' => $this->scoring->isEligibleForCertificate($e),
             ];
         });
 
-        // Summary Statistics
+        // Summary Statistics (no fabricated fallback ratings)
         $totalEnrolled = $class->enrollments->count();
         $scoredCount = $class->enrollments->whereNotNull('post_test_score')->count();
         $avgPre = $class->enrollments->whereNotNull('pre_test_score')->avg('pre_test_score') ?? 0;
@@ -772,7 +845,13 @@ class ClassApiController extends Controller
         $failedCount = $class->enrollments->where('completion_status', 'FAILED')->count();
         $certifiedCount = $class->enrollments->whereNotNull('certificate_number')->count();
 
-        $avgInstRating = $class->enrollments->whereNotNull('eval_instructor_rating')->avg('eval_instructor_rating') ?: 4.8;
+        $avgMatRating = $class->evaluations->whereNotNull('material_avg')->avg('material_avg')
+            ?? $class->enrollments->whereNotNull('eval_material_rating')->avg('eval_material_rating');
+        $avgInstRating = $class->evaluations->whereNotNull('instructor_avg')->avg('instructor_avg')
+            ?? $class->enrollments->whereNotNull('eval_instructor_rating')->avg('eval_instructor_rating');
+        $avgCommRating = $class->evaluations->whereNotNull('committee_avg')->avg('committee_avg')
+            ?? $class->enrollments->whereNotNull('eval_committee_rating')->avg('eval_committee_rating');
+        $avgOverallRating = $class->evaluations->whereNotNull('overall_avg')->avg('overall_avg');
 
         return response()->json([
             'class_id' => $class->id,
@@ -780,30 +859,35 @@ class ClassApiController extends Controller
             'batch_name' => $class->batch_name,
             'program_title' => $class->program->title,
             'passing_grade' => $passingGrade,
+            'instructors' => $instructors,
+            'evaluation_catalog' => $this->scoring->evaluationQuestionCatalog(),
             'participants' => $participants,
             'stats' => [
                 'total_enrolled' => $totalEnrolled,
                 'scored_count' => $scoredCount,
-                'avg_pre_test' => round($avgPre, 1),
-                'avg_post_test' => round($avgPost, 1),
-                'avg_final_score' => round($avgFinal, 1),
+                'avg_pre_test' => round((float) $avgPre, 1),
+                'avg_post_test' => round((float) $avgPost, 1),
+                'avg_final_score' => round((float) $avgFinal, 1),
                 'competency_gain_pct' => $gainPct,
                 'passed_count' => $passedCount,
                 'failed_count' => $failedCount,
                 'pass_rate_pct' => $totalEnrolled > 0 ? round(($passedCount / $totalEnrolled) * 100, 1) : 0,
                 'certified_count' => $certifiedCount,
-                'avg_instructor_rating' => round($avgInstRating, 2),
+                'avg_material_rating' => $avgMatRating !== null ? round((float) $avgMatRating, 2) : null,
+                'avg_instructor_rating' => $avgInstRating !== null ? round((float) $avgInstRating, 2) : null,
+                'avg_committee_rating' => $avgCommRating !== null ? round((float) $avgCommRating, 2) : null,
+                'avg_overall_rating' => $avgOverallRating !== null ? round((float) $avgOverallRating, 2) : null,
             ],
         ]);
     }
 
     /**
-     * Batch update scores for participants.
+     * Batch update scores and Kirkpatrick 1-4 evaluations for participants in this class.
      */
     public function saveScores(Request $request, int $id): JsonResponse
     {
-        $class = TrainingClass::findOrFail($id);
-        $passingGrade = $class->passing_grade ?? 75;
+        $class = TrainingClass::with('program')->findOrFail($id);
+        $passingGrade = $this->scoring->resolvePassingGrade($class);
 
         $request->validate([
             'scores' => 'required|array|min:1',
@@ -811,69 +895,58 @@ class ClassApiController extends Controller
             'scores.*.pre_test_score' => 'nullable|numeric|min:0|max:100',
             'scores.*.post_test_score' => 'nullable|numeric|min:0|max:100',
             'scores.*.task_score' => 'nullable|numeric|min:0|max:100',
-            'scores.*.eval_instructor_rating' => 'nullable|integer|min:1|max:5',
-            'scores.*.eval_material_rating' => 'nullable|integer|min:1|max:5',
-            'scores.*.eval_facility_rating' => 'nullable|integer|min:1|max:5',
+            'scores.*.eval_instructor_rating' => 'nullable|numeric|min:1|max:4',
+            'scores.*.eval_material_rating' => 'nullable|numeric|min:1|max:4',
+            'scores.*.eval_facility_rating' => 'nullable|numeric|min:1|max:4',
+            'scores.*.eval_committee_rating' => 'nullable|numeric|min:1|max:4',
             'scores.*.eval_notes' => 'nullable|string',
         ]);
 
         $updated = 0;
         foreach ($request->scores as $s) {
-            $enrollment = ClassEnrollment::findOrFail($s['enrollment_id']);
+            $enrollment = ClassEnrollment::where('training_class_id', $class->id)
+                ->findOrFail($s['enrollment_id']);
 
-            $pre = isset($s['pre_test_score']) && $s['pre_test_score'] !== '' ? (float) $s['pre_test_score'] : $enrollment->pre_test_score;
-            $post = isset($s['post_test_score']) && $s['post_test_score'] !== '' ? (float) $s['post_test_score'] : $enrollment->post_test_score;
-            $task = isset($s['task_score']) && $s['task_score'] !== '' ? (float) $s['task_score'] : $enrollment->task_score;
+            $pre = array_key_exists('pre_test_score', $s)
+                ? ($s['pre_test_score'] === null || $s['pre_test_score'] === '' ? null : (float) $s['pre_test_score'])
+                : ($enrollment->pre_test_score !== null ? (float) $enrollment->pre_test_score : null);
+            $post = array_key_exists('post_test_score', $s)
+                ? ($s['post_test_score'] === null || $s['post_test_score'] === '' ? null : (float) $s['post_test_score'])
+                : ($enrollment->post_test_score !== null ? (float) $enrollment->post_test_score : null);
+            $task = array_key_exists('task_score', $s)
+                ? ($s['task_score'] === null || $s['task_score'] === '' ? null : (float) $s['task_score'])
+                : ($enrollment->task_score !== null ? (float) $enrollment->task_score : null);
 
-            // Calculate final score
-            $final = null;
-            if ($post !== null) {
-                if ($task !== null) {
-                    $final = round(($pre * 0.2) + ($post * 0.5) + ($task * 0.3), 2);
-                } elseif ($pre !== null) {
-                    $final = round(($pre * 0.3) + ($post * 0.7), 2);
-                } else {
-                    $final = $post;
-                }
-            }
-
-            // Grade and completion
-            $status = $enrollment->completion_status;
-            $grade = null;
-            if ($final !== null) {
-                $status = ($final >= $passingGrade) ? 'PASSED' : 'FAILED';
-                if ($final >= 90) {
-                    $grade = 'A';
-                } elseif ($final >= 80) {
-                    $grade = 'B';
-                } elseif ($final >= 70) {
-                    $grade = 'C';
-                } elseif ($final >= 60) {
-                    $grade = 'D';
-                } else {
-                    $grade = 'E';
-                }
-            }
+            $evaluated = $this->scoring->evaluateScores(
+                $pre,
+                $post,
+                $task,
+                $passingGrade,
+                $enrollment->completion_status ?? 'ONGOING'
+            );
 
             $updateData = [
                 'pre_test_score' => $pre,
                 'post_test_score' => $post,
                 'task_score' => $task,
-                'final_score' => $final,
-                'grade' => $grade,
-                'completion_status' => $status,
+                'final_score' => $evaluated['final_score'],
+                'grade' => $evaluated['grade'],
+                'completion_status' => $evaluated['completion_status'],
             ];
 
-            if (isset($s['eval_instructor_rating'])) {
-                $updateData['eval_instructor_rating'] = $s['eval_instructor_rating'];
+            if ($evaluated['elapse_progress_pct'] !== null) {
+                $updateData['elapse_progress_pct'] = $evaluated['elapse_progress_pct'];
             }
-            if (isset($s['eval_material_rating'])) {
-                $updateData['eval_material_rating'] = $s['eval_material_rating'];
+
+            foreach (['eval_instructor_rating', 'eval_material_rating', 'eval_facility_rating', 'eval_committee_rating'] as $ratingKey) {
+                if (array_key_exists($ratingKey, $s)) {
+                    $updateData[$ratingKey] = $s[$ratingKey] === null || $s[$ratingKey] === ''
+                        ? null
+                        : (float) $s[$ratingKey];
+                }
             }
-            if (isset($s['eval_facility_rating'])) {
-                $updateData['eval_facility_rating'] = $s['eval_facility_rating'];
-            }
-            if (isset($s['eval_notes'])) {
+
+            if (array_key_exists('eval_notes', $s)) {
                 $updateData['eval_notes'] = $s['eval_notes'];
             }
 
@@ -883,6 +956,245 @@ class ClassApiController extends Controller
 
         return response()->json([
             'message' => "Nilai evaluasi {$updated} peserta berhasil disimpan dan kelulusan diperbarui.",
+            'updated_count' => $updated,
+        ]);
+    }
+
+    /**
+     * Import or dry-run preview participants & Pre/Post-Test scores from Excel (LD Part template).
+     */
+    public function importParticipants(Request $request, int $id): JsonResponse
+    {
+        $class = TrainingClass::with(['program', 'sessions'])->findOrFail($id);
+        $passingGrade = $this->scoring->resolvePassingGrade($class);
+
+        $validated = $request->validate([
+            'dry_run' => 'nullable|boolean',
+            'rows' => 'required|array|min:1|max:500',
+            'rows.*.nik' => 'required|string|max:50',
+            'rows.*.name' => 'nullable|string|max:255',
+            'rows.*.position' => 'nullable|string|max:150',
+            'rows.*.working_unit' => 'nullable|string|max:150',
+            'rows.*.attendance_remark' => 'nullable|string|max:60',
+            'rows.*.pre_test_score' => 'nullable|numeric|min:0|max:100',
+            'rows.*.post_test_score' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        $isDryRun = $request->boolean('dry_run', false);
+
+        $nikList = collect($validated['rows'])
+            ->map(fn (array $r): string => trim((string) $r['nik']))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $usersByNik = User::whereIn('nik', $nikList)->get()->keyBy('nik');
+        $karyawanByNik = Karyawan::whereIn('nik', $nikList)->get()->keyBy('nik');
+        $karyawanIds = $karyawanByNik->pluck('karyawan_id')->filter()->all();
+        $usersByKaryawanId = $karyawanIds !== []
+            ? User::whereIn('karyawan_id', $karyawanIds)->get()->keyBy('karyawan_id')
+            : collect();
+
+        $existingByNik = ClassEnrollment::where('training_class_id', $class->id)
+            ->whereIn('nik', $nikList)
+            ->get()
+            ->keyBy('nik');
+
+        $previewRows = [];
+        $created = 0;
+        $updated = 0;
+        $passed = 0;
+        $failed = 0;
+        $unmatchedNiks = [];
+
+        $process = function () use (
+            $validated,
+            $class,
+            $passingGrade,
+            $isDryRun,
+            $usersByNik,
+            $karyawanByNik,
+            $usersByKaryawanId,
+            $existingByNik,
+            &$previewRows,
+            &$created,
+            &$updated,
+            &$passed,
+            &$failed,
+            &$unmatchedNiks,
+            $request
+        ): void {
+            $nextCodeSeed = null;
+            $yy = date('y');
+            $prefix = "P{$yy}_";
+            $latestCode = ClassEnrollment::where('participant_code', 'like', $prefix.'%')
+                ->orderByDesc('participant_code')
+                ->value('participant_code');
+            if (is_string($latestCode) && preg_match('/^P\d+_(\d+)$/', $latestCode, $matches) === 1) {
+                $nextCodeSeed = ((int) $matches[1]) + 1;
+            } else {
+                $nextCodeSeed = ClassEnrollment::count() + 1;
+            }
+
+            foreach ($validated['rows'] as $row) {
+                $nik = trim((string) $row['nik']);
+                $user = $usersByNik->get($nik);
+                $karyawan = $karyawanByNik->get($nik);
+                if (! $user && $karyawan) {
+                    $user = $usersByKaryawanId->get($karyawan->karyawan_id);
+                }
+
+                if (! $user && ! $karyawan) {
+                    $unmatchedNiks[] = $nik;
+                }
+
+                /** @var ClassEnrollment|null $existing */
+                $existing = $existingByNik->get($nik);
+
+                $att = $this->scoring->mapAttendanceRemark($row['attendance_remark'] ?? 'Present');
+                $pre = array_key_exists('pre_test_score', $row) && $row['pre_test_score'] !== null && $row['pre_test_score'] !== ''
+                    ? (float) $row['pre_test_score']
+                    : null;
+                $post = array_key_exists('post_test_score', $row) && $row['post_test_score'] !== null && $row['post_test_score'] !== ''
+                    ? (float) $row['post_test_score']
+                    : null;
+
+                $existingTask = $existing?->task_score !== null ? (float) $existing->task_score : null;
+                $evaluated = $this->scoring->evaluateScores(
+                    $pre,
+                    $post,
+                    $existingTask,
+                    $passingGrade,
+                    $existing?->completion_status ?? 'ONGOING'
+                );
+
+                $action = $existing ? 'UPDATE' : 'CREATE';
+                if ($action === 'CREATE') {
+                    $created++;
+                } else {
+                    $updated++;
+                }
+
+                if ($evaluated['completion_status'] === 'PASSED') {
+                    $passed++;
+                } elseif ($evaluated['completion_status'] === 'FAILED') {
+                    $failed++;
+                }
+
+                $resolvedName = trim((string) ($row['name'] ?? ''))
+                    ?: ($karyawan?->nama ?? $user?->name ?? $existing?->participant_name ?? $nik);
+                $resolvedPos = trim((string) ($row['position'] ?? ''))
+                    ?: ($karyawan?->jabatan ?? $existing?->position ?? 'Staff');
+                $resolvedUnit = trim((string) ($row['working_unit'] ?? ''))
+                    ?: ($karyawan?->departemen ?? $user?->department ?? $existing?->department ?? 'Operations');
+
+                $participantCode = $existing?->participant_code
+                    ?: $prefix.str_pad((string) ($nextCodeSeed++), 6, '0', STR_PAD_LEFT);
+
+                $previewRows[] = [
+                    'nik' => $nik,
+                    'participant_code' => $participantCode,
+                    'name' => $resolvedName,
+                    'position' => $resolvedPos,
+                    'working_unit' => $resolvedUnit,
+                    'matched_system_user' => $user !== null || $karyawan !== null,
+                    'action' => $action,
+                    'attendance_remark' => $att['remark'],
+                    'invitation_point' => $att['invitation_point'],
+                    'point_add' => $att['point_add'],
+                    'pre_test_score' => $pre,
+                    'post_test_score' => $post,
+                    'final_score' => $evaluated['final_score'],
+                    'grade' => $evaluated['grade'],
+                    'completion_status' => $evaluated['completion_status'],
+                ];
+
+                if (! $isDryRun) {
+                    $payload = [
+                        'participant_code' => $participantCode,
+                        'training_class_id' => $class->id,
+                        'user_id' => $user?->id ?? $existing?->user_id,
+                        'nik' => $nik,
+                        'participant_name' => $resolvedName,
+                        'position' => $resolvedPos,
+                        'department' => $resolvedUnit,
+                        'branch' => $karyawan?->kantor_cabang ?? $user?->branch ?? $existing?->branch ?? 'Kantor Pusat',
+                        'attendance_remark' => $att['remark'],
+                        'attendance_status' => $att['enrollment_status'],
+                        'invitation_point' => $att['invitation_point'],
+                        'point_add' => $att['point_add'],
+                        'attendance_percentage' => $att['attendance_percentage'],
+                        'pre_test_score' => $pre,
+                        'post_test_score' => $post,
+                        'final_score' => $evaluated['final_score'],
+                        'grade' => $evaluated['grade'],
+                        'completion_status' => $evaluated['completion_status'],
+                        'elapse_progress_pct' => $evaluated['elapse_progress_pct'] ?? ($existing?->elapse_progress_pct ?? 0),
+                        'imported_at' => now(),
+                    ];
+
+                    if ($existing) {
+                        $existing->update($payload);
+                        $savedEnrollment = $existing;
+                    } else {
+                        $savedEnrollment = ClassEnrollment::create($payload);
+                    }
+
+                    // Sync attendance sessions when no manual attendance records exist yet
+                    if ($class->sessions->isNotEmpty() && ! $savedEnrollment->attendances()->exists()) {
+                        foreach ($class->sessions as $session) {
+                            ClassAttendance::create([
+                                'training_class_id' => $class->id,
+                                'class_session_id' => $session->id,
+                                'class_enrollment_id' => $savedEnrollment->id,
+                                'user_id' => $savedEnrollment->user_id,
+                                'attendance_date' => $session->session_date,
+                                'status' => $att['attendance_status'],
+                                'check_in_time' => $att['attendance_status'] === 'HADIR' ? '08:30 WIB' : null,
+                                'notes' => 'Excel LD Part Import: '.$att['remark'],
+                                'recorded_by' => $request->user()?->id,
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            if (! $isDryRun) {
+                $class->update(['enrolled_count' => $class->enrollments()->count()]);
+
+                AuditLog::record('IMPORT_CLASS_PARTICIPANTS_EXCEL', $class, null, [
+                    'class_code' => $class->class_code,
+                    'total_rows' => count($validated['rows']),
+                    'created' => $created,
+                    'updated' => $updated,
+                    'passed' => $passed,
+                    'failed' => $failed,
+                ]);
+            }
+        };
+
+        if ($isDryRun) {
+            $process();
+        } else {
+            DB::transaction($process);
+        }
+
+        return response()->json([
+            'message' => $isDryRun
+                ? 'Pratinjau impor Excel peserta berhasil divalidasi.'
+                : "Impor Excel selesai: {$created} peserta baru ditambahkan, {$updated} peserta diperbarui.",
+            'dry_run' => $isDryRun,
+            'passing_grade' => $passingGrade,
+            'summary' => [
+                'total_rows' => count($previewRows),
+                'created' => $created,
+                'updated' => $updated,
+                'passed' => $passed,
+                'failed' => $failed,
+                'unmatched_niks' => array_values(array_unique($unmatchedNiks)),
+            ],
+            'preview_rows' => $previewRows,
         ]);
     }
 
@@ -893,28 +1205,23 @@ class ClassApiController extends Controller
     {
         $class = TrainingClass::with('program')->findOrFail($id);
 
-        $eligible = ClassEnrollment::where('training_class_id', $class->id)
-            ->where('completion_status', 'PASSED')
-            ->where('attendance_percentage', '>=', 80)
+        $eligible = ClassEnrollment::with('trainingClass.program')
+            ->where('training_class_id', $class->id)
             ->whereNull('certificate_number')
-            ->get();
+            ->get()
+            ->filter(fn (ClassEnrollment $e): bool => $this->scoring->isEligibleForCertificate($e));
 
         $issued = 0;
-        $year = date('Y');
-        $codeClean = preg_replace('/[^A-Za-z0-9]/', '', $class->program->program_code ?? 'PRG');
-
         foreach ($eligible as $e) {
-            $seq = str_pad(ClassEnrollment::whereNotNull('certificate_number')->count() + 1, 4, '0', STR_PAD_LEFT);
-            $certNumber = "CERT/BWS-LIS/{$year}/{$codeClean}/{$seq}";
-
-            $e->update([
-                'certificate_id' => $certNumber,
-                'certificate_number' => $certNumber,
-                'certificate_url' => "/certificates/{$certNumber}.pdf",
-                'certificate_issued_at' => now(),
-            ]);
-            $issued++;
+            if ($this->scoring->issueCertificateIfEligible($e) !== null) {
+                $issued++;
+            }
         }
+
+        AuditLog::record('GENERATE_CLASS_CERTIFICATES', $class, null, [
+            'class_code' => $class->class_code,
+            'issued_count' => $issued,
+        ]);
 
         return response()->json([
             'message' => "Berhasil menerbitkan {$issued} E-Sertifikat resmi Bank Woori Saudara bagi peserta yang lulus.",
@@ -927,7 +1234,7 @@ class ClassApiController extends Controller
      */
     public function evaluationsOverview(Request $request): JsonResponse
     {
-        $query = ClassEnrollment::with(['trainingClass.program', 'user']);
+        $query = ClassEnrollment::with(['trainingClass.program', 'user', 'evaluation']);
 
         if ($request->filled('program_id')) {
             $query->whereHas('trainingClass', function ($q) use ($request) {
@@ -945,29 +1252,45 @@ class ClassApiController extends Controller
 
         $enrollments = $query->orderByDesc('id')->get();
 
-        // Calculate global statistics
-        $allScored = ClassEnrollment::whereNotNull('post_test_score')->get();
-        $avgPre = ClassEnrollment::whereNotNull('pre_test_score')->avg('pre_test_score') ?? 62;
-        $avgPost = $allScored->avg('post_test_score') ?? 86;
-        $gainPct = $avgPre > 0 ? round((($avgPost - $avgPre) / $avgPre) * 100, 1) : 38.7;
+        // Calculate real statistics over filtered set (no fabricated defaults)
+        $avgPre = $enrollments->whereNotNull('pre_test_score')->avg('pre_test_score') ?? 0;
+        $avgPost = $enrollments->whereNotNull('post_test_score')->avg('post_test_score') ?? 0;
+        $gainPct = $avgPre > 0 ? round((($avgPost - $avgPre) / $avgPre) * 100, 1) : 0;
 
-        $totalEnrollments = ClassEnrollment::count();
-        $passedCount = ClassEnrollment::where('completion_status', 'PASSED')->count();
-        $passRate = $totalEnrollments > 0 ? round(($passedCount / $totalEnrollments) * 100, 1) : 92.5;
+        $totalEnrollments = $enrollments->count();
+        $passedCount = $enrollments->where('completion_status', 'PASSED')->count();
+        $passRate = $totalEnrollments > 0 ? round(($passedCount / $totalEnrollments) * 100, 1) : 0;
 
-        $avgInstructorRating = ClassEnrollment::whereNotNull('eval_instructor_rating')->avg('eval_instructor_rating') ?: 4.85;
+        $avgMaterialRating = $enrollments
+            ->map(fn (ClassEnrollment $e) => $e->eval_material_rating ?? $e->evaluation?->material_avg)
+            ->filter(fn ($v) => $v !== null)
+            ->avg();
+        $avgInstructorRating = $enrollments
+            ->map(fn (ClassEnrollment $e) => $e->eval_instructor_rating ?? $e->evaluation?->instructor_avg)
+            ->filter(fn ($v) => $v !== null)
+            ->avg();
+        $avgCommitteeRating = $enrollments
+            ->map(fn (ClassEnrollment $e) => $e->eval_committee_rating ?? $e->evaluation?->committee_avg)
+            ->filter(fn ($v) => $v !== null)
+            ->avg();
+        $avgOverallRating = $enrollments
+            ->map(fn (ClassEnrollment $e) => $e->evaluation?->overall_avg)
+            ->filter(fn ($v) => $v !== null)
+            ->avg();
 
         // Distinct programs and classes for dropdown filters
         $programs = TrainingProgram::select('id', 'program_code', 'title')->orderBy('title')->get();
         $classes = TrainingClass::select('id', 'program_id', 'class_code', 'batch_name')->orderByDesc('id')->get();
 
-        $rows = $enrollments->map(function ($e) {
-            $pre = (float) $e->pre_test_score;
-            $post = (float) $e->post_test_score;
-            $delta = ($pre > 0 && $post > 0) ? round((($post - $pre) / $pre) * 100, 1) : 0;
+        $rows = $enrollments->map(function (ClassEnrollment $e) {
+            $pre = $e->pre_test_score !== null ? (float) $e->pre_test_score : null;
+            $post = $e->post_test_score !== null ? (float) $e->post_test_score : null;
+            $delta = ($pre !== null && $post !== null && $pre > 0) ? round((($post - $pre) / $pre) * 100, 1) : null;
+            $eval = $e->evaluation;
 
             return [
                 'id' => $e->id,
+                'participant_code' => $e->participant_code,
                 'class_id' => $e->training_class_id,
                 'class_code' => $e->trainingClass->class_code ?? 'CLS',
                 'batch_name' => $e->trainingClass->batch_name ?? 'Batch',
@@ -975,15 +1298,31 @@ class ClassApiController extends Controller
                 'nik' => $e->nik ?: ($e->user->nik ?? '-'),
                 'name' => $e->participant_name ?: ($e->user->name ?? 'Peserta'),
                 'department' => $e->department ?: ($e->user->department ?? '-'),
-                'pre_score' => $pre ?: null,
-                'post_score' => $post ?: null,
+                'pre_score' => $pre,
+                'post_score' => $post,
                 'delta_pct' => $delta,
-                'attendance_pct' => (float) $e->attendance_percentage,
-                'final_score' => (float) $e->final_score,
+                'attendance_pct' => (float) ($e->attendance_percentage ?? 0),
+                'invitation_point' => (int) ($e->invitation_point ?? 1),
+                'point_add' => (int) ($e->point_add ?? 0),
+                'final_score' => $e->final_score !== null ? (float) $e->final_score : null,
                 'grade' => $e->grade,
-                'status' => $e->completion_status ?: 'IN_PROGRESS',
-                'instructor_rating' => $e->eval_instructor_rating ?: 5,
-                'eval_notes' => $e->eval_notes ?: ($post >= 80 ? 'Sangat Baik & Kompeten' : 'Cukup'),
+                'status' => $e->completion_status ?: 'ONGOING',
+                'material_rating' => $e->eval_material_rating !== null ? (float) $e->eval_material_rating : $eval?->material_avg,
+                'instructor_rating' => $e->eval_instructor_rating !== null ? (float) $e->eval_instructor_rating : $eval?->instructor_avg,
+                'committee_rating' => $e->eval_committee_rating !== null ? (float) $e->eval_committee_rating : $eval?->committee_avg,
+                'overall_rating' => $eval?->overall_avg,
+                'evaluation_detail' => $eval ? [
+                    'evaluation_code' => $eval->evaluation_code,
+                    'material_scores' => $eval->material_scores,
+                    'instructor_scores' => $eval->instructor_scores,
+                    'committee_scores' => $eval->committee_scores,
+                    'material_avg' => $eval->material_avg,
+                    'instructor_avg' => $eval->instructor_avg,
+                    'committee_avg' => $eval->committee_avg,
+                    'overall_avg' => $eval->overall_avg,
+                    'feedback_notes' => $eval->feedback_notes,
+                ] : null,
+                'eval_notes' => $e->eval_notes ?? $eval?->feedback_notes,
                 'certificate_number' => $e->certificate_number,
                 'certificate_issued_at' => $e->certificate_issued_at,
             ];
@@ -991,11 +1330,14 @@ class ClassApiController extends Controller
 
         return response()->json([
             'stats' => [
-                'avg_pre_test' => round($avgPre, 1),
-                'avg_post_test' => round($avgPost, 1),
+                'avg_pre_test' => round((float) $avgPre, 1),
+                'avg_post_test' => round((float) $avgPost, 1),
                 'competency_gain_pct' => $gainPct,
                 'pass_rate_pct' => $passRate,
-                'avg_instructor_rating' => round($avgInstructorRating, 2),
+                'avg_material_rating' => $avgMaterialRating !== null ? round((float) $avgMaterialRating, 2) : null,
+                'avg_instructor_rating' => $avgInstructorRating !== null ? round((float) $avgInstructorRating, 2) : null,
+                'avg_committee_rating' => $avgCommitteeRating !== null ? round((float) $avgCommitteeRating, 2) : null,
+                'avg_overall_rating' => $avgOverallRating !== null ? round((float) $avgOverallRating, 2) : null,
                 'total_evaluated' => $totalEnrollments,
             ],
             'programs' => $programs,

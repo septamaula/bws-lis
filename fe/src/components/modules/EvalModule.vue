@@ -39,11 +39,14 @@ const evaluationRecords = ref([])
 const programs = ref([])
 const classes = ref([])
 const stats = ref({
-  avg_pre_test: 62,
-  avg_post_test: 86.8,
-  competency_gain_pct: 44.7,
-  pass_rate_pct: 92.5,
-  avg_instructor_rating: 4.85,
+  avg_pre_test: 0,
+  avg_post_test: 0,
+  competency_gain_pct: 0,
+  pass_rate_pct: 0,
+  avg_material_rating: null,
+  avg_instructor_rating: null,
+  avg_committee_rating: null,
+  avg_overall_rating: null,
   total_evaluated: 0
 })
 
@@ -63,6 +66,15 @@ const modalClassInfo = ref(null)
 const modalParticipants = ref([])
 const modalSearchParticipant = ref('')
 const scoreRecords = ref({})
+
+// Detail Breakdown Modal (List Evl 1-4)
+const showDetailModal = ref(false)
+const detailRow = ref(null)
+
+function openEvalDetail(row) {
+  detailRow.value = row
+  showDetailModal.value = true
+}
 
 async function fetchEvaluations() {
   loading.value = true
@@ -109,7 +121,7 @@ const statusFilterOptions = computed(() => [
   { value: '', label: l('-- All Completion Statuses --', '-- Seluruh Status Kelulusan --') },
   { value: 'PASSED', label: l('Passed', 'Lulus') },
   { value: 'FAILED', label: l('Failed', 'Tidak Lulus') },
-  { value: 'IN_PROGRESS', label: l('In Progress / Pending Exam', 'Dalam Proses / Belum Ujian') }
+  { value: 'ONGOING', label: l('In Progress / Pending Exam', 'Dalam Proses / Belum Ujian') }
 ])
 
 const evalColumns = computed(() => [
@@ -122,35 +134,35 @@ const evalColumns = computed(() => [
     sortable: true,
     align: 'center',
     width: '90px',
-    format: (val) => `${val || 0}%`
+    format: (val) => `${val ?? 0}%`
   },
   {
     key: 'pre_score',
     label: l('Pre-Test', 'Tes Awal'),
     sortable: true,
     align: 'center',
-    width: '95px',
-    format: (val) => val ? `${val} / 100` : '-'
+    width: '90px',
+    format: (val) => val !== null && val !== undefined ? `${val} / 100` : '-'
   },
   {
     key: 'post_score',
     label: l('Post-Test', 'Tes Akhir'),
     sortable: true,
     align: 'center',
-    width: '95px',
-    format: (val) => val ? `${val} / 100` : '-'
+    width: '90px',
+    format: (val) => val !== null && val !== undefined ? `${val} / 100` : '-'
   },
   {
     key: 'delta_pct',
     label: l('Gain (Δ%)', 'Peningkatan (Δ%)'),
     sortable: true,
     align: 'center',
-    width: '100px'
+    width: '95px'
   },
-  { key: 'status', label: l('Completion Result', 'Hasil Kelulusan'), sortable: true, align: 'center', width: '130px' },
-  { key: 'instructor_rating', label: l('Trainer Rating', 'Nilai Pengajar'), sortable: true, align: 'center', width: '120px' },
-  { key: 'certificate_number', label: l('E-Certificate', 'E-Sertifikat'), sortable: true, width: '160px' },
-  { key: 'actions', label: l('Action', 'Aksi'), sortable: false, align: 'center', width: '90px' }
+  { key: 'status', label: l('Completion Result', 'Hasil Kelulusan'), sortable: true, align: 'center', width: '125px' },
+  { key: 'instructor_rating', label: l('L1 Rating (1-4)', 'Nilai L1 (1-4)'), sortable: true, align: 'center', width: '140px' },
+  { key: 'certificate_number', label: l('E-Certificate', 'E-Sertifikat'), sortable: true, width: '155px' },
+  { key: 'actions', label: l('Action', 'Aksi'), sortable: false, align: 'center', width: '120px' }
 ])
 
 const modalClassOptions = computed(() =>
@@ -164,13 +176,13 @@ const modalClassOptions = computed(() =>
   })
 )
 
-const ratingSelectOptions = [
-  { value: 5, label: '5 ★' },
-  { value: 4, label: '4 ★' },
-  { value: 3, label: '3 ★' },
-  { value: 2, label: '2 ★' },
-  { value: 1, label: '1 ★' }
-]
+const ratingSelectOptions = computed(() => [
+  { value: '', label: '-' },
+  { value: 4, label: l('4 ★ (Excellent)', '4 ★ (Sangat Baik)') },
+  { value: 3, label: l('3 ★ (Good)', '3 ★ (Baik)') },
+  { value: 2, label: l('2 ★ (Fair)', '2 ★ (Cukup)') },
+  { value: 1, label: l('1 ★ (Poor)', '1 ★ (Kurang)') }
+])
 
 const filteredModalParticipants = computed(() => {
   if (!modalSearchParticipant.value.trim()) return modalParticipants.value
@@ -213,19 +225,19 @@ async function loadClassEvaluation(classId) {
       class_code: data.class_code,
       batch_name: data.batch_name,
       program_title: data.program_title,
-      passing_grade: data.passing_grade ?? 75
+      passing_grade: data.passing_grade ?? 70
     }
     modalParticipants.value = data.participants || []
     const map = {}
     modalParticipants.value.forEach(p => {
       map[p.id] = {
         enrollment_id: p.id,
-        pre_test_score: p.pre_test_score ?? '',
-        post_test_score: p.post_test_score ?? '',
-        task_score: p.task_score ?? '',
-        eval_instructor_rating: p.eval_instructor_rating ?? 5,
-        eval_material_rating: p.eval_material_rating ?? 5,
-        eval_facility_rating: p.eval_facility_rating ?? 5,
+        pre_test_score: p.pre_test_score !== null && p.pre_test_score !== undefined ? p.pre_test_score : '',
+        post_test_score: p.post_test_score !== null && p.post_test_score !== undefined ? p.post_test_score : '',
+        task_score: p.task_score !== null && p.task_score !== undefined ? p.task_score : '',
+        eval_instructor_rating: p.eval_instructor_rating ?? '',
+        eval_material_rating: p.eval_material_rating ?? '',
+        eval_committee_rating: p.eval_committee_rating ?? '',
         eval_notes: p.eval_notes ?? ''
       }
     })
@@ -244,12 +256,12 @@ async function saveEvaluationScores() {
   try {
     const scoresPayload = Object.values(scoreRecords.value).map(r => ({
       enrollment_id: r.enrollment_id,
-      pre_test_score: r.pre_test_score === '' ? null : Number(r.pre_test_score),
-      post_test_score: r.post_test_score === '' ? null : Number(r.post_test_score),
-      task_score: r.task_score === '' ? null : Number(r.task_score),
-      eval_instructor_rating: Number(r.eval_instructor_rating || 5),
-      eval_material_rating: Number(r.eval_material_rating || 5),
-      eval_facility_rating: Number(r.eval_facility_rating || 5),
+      pre_test_score: r.pre_test_score === '' || r.pre_test_score === null ? null : Number(r.pre_test_score),
+      post_test_score: r.post_test_score === '' || r.post_test_score === null ? null : Number(r.post_test_score),
+      task_score: r.task_score === '' || r.task_score === null ? null : Number(r.task_score),
+      eval_instructor_rating: r.eval_instructor_rating !== '' && r.eval_instructor_rating !== null ? Number(r.eval_instructor_rating) : null,
+      eval_material_rating: r.eval_material_rating !== '' && r.eval_material_rating !== null ? Number(r.eval_material_rating) : null,
+      eval_committee_rating: r.eval_committee_rating !== '' && r.eval_committee_rating !== null ? Number(r.eval_committee_rating) : null,
       eval_notes: r.eval_notes || null
     }))
     await apiClient.post(`/classes/${modalClassId.value}/evaluation/scores`, {
@@ -320,8 +332,14 @@ onMounted(() => {
           <Star class="w-5 h-5" />
         </div>
         <div>
-          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Instructor Rating', 'Penilaian Pengajar') }}</p>
-          <p class="text-xl font-extrabold text-purple-700 font-mono">{{ stats.avg_instructor_rating }} <span class="text-xs text-gray-400 font-normal">/ 5.0</span></p>
+          <p class="text-[11px] text-gray-400 font-medium">{{ $l('Kirkpatrick L1 Rating', 'Penilaian Kirkpatrick L1') }}</p>
+          <p class="text-xl font-extrabold text-purple-700 font-mono">
+            {{ stats.avg_instructor_rating ?? '-' }}
+            <span class="text-xs text-gray-400 font-normal">/ 4.0</span>
+          </p>
+          <p v-if="stats.avg_material_rating !== null || stats.avg_committee_rating !== null" class="text-[10px] text-gray-400 font-medium">
+            M: {{ stats.avg_material_rating ?? '-' }} &bull; KP: {{ stats.avg_committee_rating ?? '-' }}
+          </p>
         </div>
       </div>
     </div>
@@ -354,7 +372,7 @@ onMounted(() => {
             {{ $l('Pre-Test, Post-Test & Delivery Evaluation Summary', 'Rekapitulasi Nilai Tes Awal, Tes Akhir & Evaluasi Penyelenggaraan') }}
           </h2>
           <p class="text-xs text-gray-500 mt-0.5">
-            {{ $l('Monitoring banking training effectiveness under Kirkpatrick Level 1 (Reaction/Rating) & Level 2 (Learning Gain).', 'Pemantauan efektivitas pelatihan perbankan berdasarkan model evaluasi Kirkpatrick Tingkat 1 (Reaksi/Penilaian) & Tingkat 2 (Peningkatan Kompetensi).') }}
+            {{ $l('Monitoring banking training effectiveness under Kirkpatrick Level 1 (Reaction/Rating 1–4) & Level 2 (Learning Gain).', 'Pemantauan efektivitas pelatihan perbankan berdasarkan model evaluasi Kirkpatrick Tingkat 1 (Skala 1–4) & Tingkat 2 (Peningkatan Kompetensi).') }}
           </p>
         </div>
 
@@ -428,7 +446,7 @@ onMounted(() => {
       <!-- Custom Cell: Name & NIK -->
       <template #cell-name="{ row }">
         <p class="font-bold text-xs text-gray-900 leading-tight">{{ row.name }}</p>
-        <p class="font-mono text-[10px] text-gray-400 mt-0.5">{{ row.nik }}</p>
+        <p class="font-mono text-[10px] text-gray-400 mt-0.5">{{ row.nik }}<span v-if="row.participant_code"> • {{ row.participant_code }}</span></p>
       </template>
 
       <!-- Custom Cell: Program & Batch -->
@@ -454,7 +472,7 @@ onMounted(() => {
       <!-- Custom Cell: Delta Gain % -->
       <template #cell-delta_pct="{ row }">
         <span
-          v-if="row.post_score && row.pre_score"
+          v-if="row.post_score !== null && row.pre_score !== null && row.delta_pct !== null"
           class="font-mono text-xs font-black inline-flex items-center gap-0.5"
           :class="row.post_score >= row.pre_score ? 'text-emerald-700' : 'text-rose-600'"
         >
@@ -469,16 +487,23 @@ onMounted(() => {
           class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold whitespace-nowrap"
           :class="row.status === 'PASSED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : row.status === 'FAILED' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-gray-100 text-gray-600'"
         >
-          {{ row.status === 'PASSED' ? $l('PASSED', 'LULUS') + ' (' + (row.grade || 'B') + ')' : row.status === 'FAILED' ? $l('FAILED', 'TIDAK LULUS') : $l('In Progress', 'Dalam Proses') }}
+          {{ row.status === 'PASSED' ? $l('PASSED', 'LULUS') + ' (' + (row.grade || 'C') + ')' : row.status === 'FAILED' ? $l('FAILED', 'TIDAK LULUS') : $l('In Progress', 'Dalam Proses') }}
         </span>
       </template>
 
-      <!-- Custom Cell: Instructor Rating -->
+      <!-- Custom Cell: L1 Rating (1-4) -->
       <template #cell-instructor_rating="{ row }">
-        <div class="flex items-center justify-center gap-1 text-amber-500 font-bold text-xs">
-          <span>{{ row.instructor_rating }}</span>
-          <Star class="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+        <div v-if="row.instructor_rating !== null || row.material_rating !== null || row.committee_rating !== null" class="flex flex-col items-center">
+          <div class="flex items-center justify-center gap-1 text-amber-500 font-bold text-xs">
+            <span>{{ row.instructor_rating ?? '-' }}</span>
+            <Star class="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            <span class="text-[10px] text-gray-400 font-normal">/ 4</span>
+          </div>
+          <p class="text-[10px] font-mono text-gray-400">
+            M:{{ row.material_rating ?? '-' }} &bull; KP:{{ row.committee_rating ?? '-' }}
+          </p>
         </div>
+        <span v-else class="text-[11px] text-gray-300">-</span>
       </template>
 
       <!-- Custom Cell: E-Sertifikat -->
@@ -492,14 +517,24 @@ onMounted(() => {
 
       <!-- Custom Cell: Aksi -->
       <template #cell-actions="{ row }">
-        <button
-          @click="openAddEvalModal(row.class_id, row.nik !== '-' ? row.nik : row.name)"
-          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#EBF4FC] hover:bg-[#0067AC] text-[#0067AC] hover:text-white text-[11px] font-bold transition cursor-pointer"
-          :title="$l('Enter / Edit Evaluation Scores', 'Isi / Ubah Nilai Evaluasi')"
-        >
-          <Edit2 class="w-3 h-3" />
-          <span>{{ $l('Score', 'Nilai') }}</span>
-        </button>
+        <div class="flex items-center justify-center gap-1">
+          <button
+            v-if="row.evaluation_detail"
+            @click="openEvalDetail(row)"
+            class="p-1.5 rounded-full bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white transition cursor-pointer"
+            :title="$l('View 1–4 Evaluation Breakdown', 'Lihat Rincian Evaluasi 1–4')"
+          >
+            <Eye class="w-3 h-3" />
+          </button>
+          <button
+            @click="openAddEvalModal(row.class_id, row.nik !== '-' ? row.nik : row.name)"
+            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#EBF4FC] hover:bg-[#0067AC] text-[#0067AC] hover:text-white text-[11px] font-bold transition cursor-pointer"
+            :title="$l('Enter / Edit Evaluation Scores', 'Isi / Ubah Nilai Evaluasi')"
+          >
+            <Edit2 class="w-3 h-3" />
+            <span>{{ $l('Score', 'Nilai') }}</span>
+          </button>
+        </div>
       </template>
     </DataTable>
 
@@ -519,7 +554,7 @@ onMounted(() => {
             </div>
             <div>
               <h3 class="font-extrabold text-sm text-[#002855]">{{ $l('Enter & Update Training Evaluation Scores', 'Pengisian & Pembaruan Nilai Evaluasi Pelatihan') }}</h3>
-              <p class="text-[11px] text-gray-500">{{ $l('Select a class batch then enter Pre-Test, Post-Test, Assignment scores, and Evaluation Ratings (1–5 scale).', 'Pilih angkatan kelas lalu isi nilai Tes Awal, Tes Akhir, Tugas, dan Penilaian Evaluasi (Skala 1–5).') }}</p>
+              <p class="text-[11px] text-gray-500">{{ $l('Select a class batch then enter Pre-Test, Post-Test, Assignment scores, and Evaluation Ratings (1–4 scale).', 'Pilih angkatan kelas lalu isi nilai Tes Awal, Tes Akhir, Tugas, dan Penilaian Evaluasi (Skala 1–4).') }}</p>
             </div>
           </div>
           <button
@@ -599,9 +634,9 @@ onMounted(() => {
                 <th class="py-2.5 px-2 text-center w-22">{{ $l('Pre-Test', 'Tes Awal') }}</th>
                 <th class="py-2.5 px-2 text-center w-22">{{ $l('Post-Test', 'Tes Akhir') }}</th>
                 <th class="py-2.5 px-2 text-center w-22">{{ $l('Assignment', 'Tugas') }}</th>
-                <th class="py-2.5 px-2 text-center w-28">{{ $l('Trainer Rating', 'Nilai Pengajar') }}</th>
-                <th class="py-2.5 px-2 text-center w-28">{{ $l('Material Rating', 'Nilai Materi') }}</th>
-                <th class="py-2.5 px-2 text-center w-28">{{ $l('Committee Rating', 'Nilai Panitia') }}</th>
+                <th class="py-2.5 px-2 text-center w-32">{{ $l('Trainer (1–4)', 'Pengajar (1–4)') }}</th>
+                <th class="py-2.5 px-2 text-center w-32">{{ $l('Material (1–4)', 'Materi (1–4)') }}</th>
+                <th class="py-2.5 px-2 text-center w-32">{{ $l('Committee (1–4)', 'Panitia (1–4)') }}</th>
                 <th class="py-2.5 px-3 min-w-[160px]">{{ $l('Evaluation Notes', 'Catatan Evaluasi') }}</th>
               </tr>
             </thead>
@@ -648,7 +683,7 @@ onMounted(() => {
                   <AppSearchableSelect
                     v-model="scoreRecords[p.id].eval_instructor_rating"
                     :options="ratingSelectOptions"
-                    placeholder="5 ★"
+                    placeholder="-"
                     :search-placeholder="$t('common.search')"
                     input-class="bg-white border-gray-200 rounded-lg px-2 py-1.5 text-amber-600 font-bold"
                   />
@@ -657,16 +692,16 @@ onMounted(() => {
                   <AppSearchableSelect
                     v-model="scoreRecords[p.id].eval_material_rating"
                     :options="ratingSelectOptions"
-                    placeholder="5 ★"
+                    placeholder="-"
                     :search-placeholder="$t('common.search')"
                     input-class="bg-white border-gray-200 rounded-lg px-2 py-1.5 text-amber-600 font-bold"
                   />
                 </td>
                 <td class="py-2 px-2">
                   <AppSearchableSelect
-                    v-model="scoreRecords[p.id].eval_facility_rating"
+                    v-model="scoreRecords[p.id].eval_committee_rating"
                     :options="ratingSelectOptions"
-                    placeholder="5 ★"
+                    placeholder="-"
                     :search-placeholder="$t('common.search')"
                     input-class="bg-white border-gray-200 rounded-lg px-2 py-1.5 text-amber-600 font-bold"
                   />
@@ -702,6 +737,88 @@ onMounted(() => {
             <Save class="w-3.5 h-3.5" />
             <span>{{ modalSaving ? $l('Saving...', 'Menyimpan...') : $l('Save Evaluation', 'Simpan Evaluasi') }}</span>
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Structured List Evl Breakdown (1-4 Scale) -->
+    <div
+      v-if="showDetailModal && detailRow"
+      class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4"
+    >
+      <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs" @click="showDetailModal = false"></div>
+      <div class="relative bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-gray-100 flex flex-col gap-4 z-10 max-h-[85vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-wider text-[#0067AC]">
+              {{ detailRow.evaluation_detail?.evaluation_code || 'LIST EVL' }}
+            </p>
+            <h3 class="text-sm font-extrabold text-[#002855]">
+              {{ $l('Course Evaluation Breakdown (1–4 Scale)', 'Rincian Evaluasi Pelatihan (Skala 1–4)') }}
+            </h3>
+            <p class="text-xs text-gray-500">{{ detailRow.name }} ({{ detailRow.nik }}) &bull; {{ detailRow.program_title }}</p>
+          </div>
+          <button @click="showDetailModal = false" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer">
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
+          <div class="p-3 rounded-2xl bg-blue-50/60 border border-blue-100">
+            <p class="text-[10px] text-gray-500 font-semibold">{{ $l('Material Avg', 'Rata-rata Materi') }}</p>
+            <p class="text-lg font-extrabold text-[#0067AC] font-mono">{{ detailRow.evaluation_detail?.material_avg ?? '-' }}</p>
+          </div>
+          <div class="p-3 rounded-2xl bg-amber-50/60 border border-amber-100">
+            <p class="text-[10px] text-gray-500 font-semibold">{{ $l('Instructor Avg', 'Rata-rata Pengajar') }}</p>
+            <p class="text-lg font-extrabold text-amber-700 font-mono">{{ detailRow.evaluation_detail?.instructor_avg ?? '-' }}</p>
+          </div>
+          <div class="p-3 rounded-2xl bg-emerald-50/60 border border-emerald-100">
+            <p class="text-[10px] text-gray-500 font-semibold">{{ $l('Committee Avg', 'Rata-rata Panitia') }}</p>
+            <p class="text-lg font-extrabold text-emerald-700 font-mono">{{ detailRow.evaluation_detail?.committee_avg ?? '-' }}</p>
+          </div>
+          <div class="p-3 rounded-2xl bg-purple-50/60 border border-purple-100">
+            <p class="text-[10px] text-gray-500 font-semibold">{{ $l('Overall Avg', 'Rata-rata Total') }}</p>
+            <p class="text-lg font-extrabold text-purple-700 font-mono">{{ detailRow.evaluation_detail?.overall_avg ?? '-' }}</p>
+          </div>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100">
+            <p class="font-bold text-gray-700 mb-1.5">{{ $l('Training Material Items (M1–M3)', 'Penilaian Materi (M1–M3)') }}</p>
+            <div class="flex gap-2 font-mono">
+              <span v-for="(score, idx) in detailRow.evaluation_detail?.material_scores || []" :key="idx" class="px-2.5 py-1 rounded-lg bg-white border border-gray-200 font-bold text-[#0067AC]">
+                M{{ idx + 1 }}: {{ score }} / 4
+              </span>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100 space-y-2">
+            <p class="font-bold text-gray-700">{{ $l('Instructors (P1–P15)', 'Pengajar / Instruktur (P1–P15)') }}</p>
+            <div v-for="(inst, i) in detailRow.evaluation_detail?.instructor_scores || []" :key="i" class="flex flex-wrap items-center justify-between gap-2 bg-white p-2.5 rounded-xl border border-gray-200">
+              <div>
+                <span class="font-mono text-[10px] font-bold text-[#0067AC] mr-1.5">{{ inst.slot }}</span>
+                <span class="font-semibold text-gray-800">{{ inst.name }}</span>
+              </div>
+              <div class="flex items-center gap-1.5 font-mono text-[11px]">
+                <span v-for="(sc, k) in inst.scores" :key="k" class="px-2 py-0.5 rounded bg-amber-50 text-amber-800">{{ sc }}</span>
+                <span class="font-extrabold text-[#002855] ml-1">({{ inst.avg }})</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100">
+            <p class="font-bold text-gray-700 mb-1.5">{{ $l('Committee Support Items (KP1–KP3)', 'Penilaian Kepanitiaan (KP1–KP3)') }}</p>
+            <div class="flex gap-2 font-mono">
+              <span v-for="(score, idx) in detailRow.evaluation_detail?.committee_scores || []" :key="idx" class="px-2.5 py-1 rounded-lg bg-white border border-gray-200 font-bold text-emerald-700">
+                KP{{ idx + 1 }}: {{ score }} / 4
+              </span>
+            </div>
+          </div>
+
+          <div v-if="detailRow.evaluation_detail?.feedback_notes" class="p-3 rounded-2xl bg-blue-50/40 border border-blue-100">
+            <p class="font-bold text-gray-700 mb-1">{{ $l('Participant Feedback', 'Saran & Masukan Peserta') }}</p>
+            <p class="text-gray-600">{{ detailRow.evaluation_detail.feedback_notes }}</p>
+          </div>
         </div>
       </div>
     </div>

@@ -85,7 +85,7 @@ const form = ref({
   location_or_url: 'Ruang 1 - BWS Corporate Learning Center',
   max_quota: 25,
   trainer_name: 'PT Mitra Konsultan Perbankan',
-  passing_grade: 75,
+  passing_grade: 70,
   description: '',
   notes: '',
   auto_approve: true,
@@ -649,7 +649,7 @@ async function loadData() {
       form.value.location_or_url = c.location_or_url || 'Ruang 1'
       form.value.max_quota = c.max_quota || 25
       form.value.trainer_name = c.trainer_name || ''
-      form.value.passing_grade = c.passing_grade || 75
+      form.value.passing_grade = c.passing_grade || 70
       form.value.description = c.description || ''
       form.value.notes = c.notes || ''
 
@@ -779,6 +779,13 @@ async function submitForm() {
   feedback.value = { type: '', message: '' }
 
   try {
+    const instructorList = Array.from(
+      new Set([
+        ...form.value.sessions.map(s => s.trainer_name).filter(Boolean),
+        ...(form.value.trainer_name ? [form.value.trainer_name] : [])
+      ])
+    ).slice(0, 15)
+
     const payload = {
       tna_proposal_id: form.value.tna_id,
       program_id: form.value.program_id,
@@ -792,7 +799,8 @@ async function submitForm() {
       location_or_url: form.value.location_or_url,
       max_quota: form.value.max_quota,
       trainer_name: form.value.trainer_name,
-      passing_grade: form.value.passing_grade,
+      instructors: instructorList,
+      passing_grade: form.value.passing_grade || 70,
       description: form.value.description,
       notes: form.value.notes,
       auto_approve: true,
@@ -947,7 +955,7 @@ async function submitForm() {
               <div class="text-center px-2">
                 <span class="text-[10px] text-gray-400 block font-bold uppercase">{{ $l('Passing Grade', 'Nilai Lulus') }}</span>
                 <span class="text-sm font-black text-emerald-600">
-                  {{ selectedProgram.passing_grade || 75 }} / 100
+                  {{ selectedProgram.passing_grade || 70 }} / 100
                 </span>
               </div>
             </div>

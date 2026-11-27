@@ -28,6 +28,7 @@ class TrainingClass extends Model
         'approved_at',
         'daily_schedule',
         'trainer_name',
+        'instructors',
         'passing_grade',
         'description',
         'notes',
@@ -48,6 +49,7 @@ class TrainingClass extends Model
         'documents' => 'array',
         'documentation_photos' => 'array',
         'evaluation_config' => 'array',
+        'instructors' => 'array',
     ];
 
     public function tnaProposal(): BelongsTo

@@ -9,11 +9,15 @@ use App\Models\FinancialTransaction;
 use App\Models\TnaItem;
 use App\Models\TnaProposal;
 use App\Models\TrainingClass;
+use App\Services\ParticipantScoringService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class OperationApiController extends Controller
 {
+    public function __construct(private readonly ParticipantScoringService $scoring) {}
+
     public function storeTna(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -243,25 +247,56 @@ class OperationApiController extends Controller
 
     public function submitTask(Request $request, int $id): JsonResponse
     {
-        $request->validate([
-            'notes' => 'nullable|string',
+        $validated = $request->validate([
+            'notes' => 'nullable|string|max:2000',
+            'file' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png|max:10240',
         ]);
 
-        $enrollment = ClassEnrollment::where('id', $id)
-            ->firstOrFail();
-
+        $enrollment = ClassEnrollment::findOrFail($id);
         $user = $request->user();
-        $filename = 'action_plan_'.strtolower(str_replace('-', '_', $user->nik ?? 'bws')).'.pdf';
+
+        $isAdminOrFacilitator = in_array(
+            $user->role_name ?? '',
+            ['Super Admin', 'HC Learning Head (Checker)', 'Staff HC Training (Maker)', 'Facilitator'],
+            true
+        );
+
+        if ((int) $enrollment->user_id !== (int) $user->id && ! $isAdminOrFacilitator) {
+            return response()->json([
+                'message' => 'Anda tidak memiliki otorisasi untuk mengumpulkan tugas peserta lain.',
+            ], 403);
+        }
+
+        $submissionUrl = $enrollment->task_submission_url;
+        $storedFileName = null;
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $storedPath = $file->store('attachments/tasks', 'public');
+            $submissionUrl = '/storage/'.$storedPath;
+            $storedFileName = $file->getClientOriginalName();
+        } elseif (! empty($validated['notes'])) {
+            $nikClean = preg_replace('/[^a-zA-Z0-9_-]/', '_', strtolower($user->nik ?? 'bws'));
+            $notePath = "attachments/tasks/action_plan_{$nikClean}_{$enrollment->id}_".time().'.txt';
+            Storage::disk('public')->put($notePath, $validated['notes']);
+            $submissionUrl = '/storage/'.$notePath;
+            $storedFileName = basename($notePath);
+        } else {
+            return response()->json([
+                'message' => 'Silakan unggah berkas Action Plan atau isi catatan implementasi terlebih dahulu.',
+            ], 422);
+        }
 
         $enrollment->update([
-            'task_submission_url' => '/secure_storage/submissions/'.$filename,
+            'task_submission_url' => $submissionUrl,
             'task_submitted_at' => now(),
-            'elapse_progress_pct' => max((int) $enrollment->elapse_progress_pct, 90),
+            'elapse_progress_pct' => max((int) ($enrollment->elapse_progress_pct ?? 0), 90),
         ]);
 
         AuditLog::record('PARTICIPANT_SUBMIT_TASK', $enrollment, null, [
             'class_id' => $enrollment->training_class_id,
-            'file' => $filename,
+            'file' => $storedFileName,
+            'url' => $submissionUrl,
         ]);
 
         return response()->json([
@@ -278,31 +313,35 @@ class OperationApiController extends Controller
             'task_feedback' => 'nullable|string',
         ]);
 
-        $enrollment = ClassEnrollment::findOrFail($id);
-        $finalScore = round((($enrollment->pre_test_score ?? 70) * 0.2) + ($request->post_test_score * 0.4) + ($request->task_score * 0.4), 2);
-        $passed = $finalScore >= ($enrollment->trainingClass->program->passing_grade ?? 75);
+        $enrollment = ClassEnrollment::with(['trainingClass.program'])->findOrFail($id);
+        $passingGrade = $this->scoring->resolvePassingGrade($enrollment->trainingClass);
 
-        $certId = $passed ? 'BWS-CERT-'.date('Y').'-'.strtoupper(substr(md5(uniqid()), 0, 8)) : null;
+        $preScore = $enrollment->pre_test_score !== null ? (float) $enrollment->pre_test_score : null;
+        $postScore = (float) $request->post_test_score;
+        $taskScore = (float) $request->task_score;
+
+        $eval = $this->scoring->evaluateScores($preScore, $postScore, $taskScore, $passingGrade, $enrollment->completion_status ?? 'ONGOING');
 
         $enrollment->update([
-            'post_test_score' => $request->post_test_score,
-            'task_score' => $request->task_score,
-            'final_score' => $finalScore,
+            'post_test_score' => $postScore,
+            'task_score' => $taskScore,
+            'final_score' => $eval['final_score'],
+            'grade' => $eval['grade'],
             'task_feedback' => $request->task_feedback,
-            'completion_status' => $passed ? 'PASSED' : 'FAILED',
+            'completion_status' => $eval['completion_status'],
             'elapse_progress_pct' => 100,
-            'certificate_id' => $certId,
-            'certificate_url' => $passed ? "/secure_storage/certificates/{$certId}.pdf" : null,
         ]);
 
+        $certId = $this->scoring->issueCertificateIfEligible($enrollment->fresh(['trainingClass.program']));
+
         AuditLog::record('FACILITATOR_GRADE_PARTICIPANT', $enrollment, null, [
-            'final_score' => $finalScore,
-            'passed' => $passed,
+            'final_score' => $eval['final_score'],
+            'passed' => $eval['completion_status'] === 'PASSED',
             'certificate_id' => $certId,
         ]);
 
         return response()->json([
-            'message' => "Penilaian peserta berhasil disimpan. Nilai akhir: {$finalScore} (".($passed ? 'LULUS' : 'REMEDIAL').')',
+            'message' => "Penilaian peserta berhasil disimpan. Nilai akhir: {$eval['final_score']} (".($eval['completion_status'] === 'PASSED' ? 'LULUS' : 'REMEDIAL').')',
             'enrollment' => $enrollment->fresh(['trainingClass.program', 'user']),
         ]);
     }

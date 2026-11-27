@@ -29,8 +29,14 @@ import {
   Download,
   Check,
   Search,
-  HelpCircle
+  HelpCircle,
+  Upload,
+  FileSpreadsheet,
+  X,
+  Eye,
+  FileText
 } from 'lucide-vue-next'
+import * as XLSX from 'xlsx'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from '@/i18n'
@@ -232,10 +238,12 @@ function initScoreState() {
   const records = {}
   trainingClass.value.enrollments?.forEach(e => {
     records[e.id] = {
-      pre_test_score: e.pre_test_score !== null ? e.pre_test_score : '',
-      post_test_score: e.post_test_score !== null ? e.post_test_score : '',
-      task_score: e.task_score !== null ? e.task_score : '',
-      eval_instructor_rating: e.eval_instructor_rating || 5,
+      pre_test_score: e.pre_test_score !== null && e.pre_test_score !== undefined ? e.pre_test_score : '',
+      post_test_score: e.post_test_score !== null && e.post_test_score !== undefined ? e.post_test_score : '',
+      task_score: e.task_score !== null && e.task_score !== undefined ? e.task_score : '',
+      eval_instructor_rating: e.eval_instructor_rating ?? '',
+      eval_material_rating: e.eval_material_rating ?? '',
+      eval_committee_rating: e.eval_committee_rating ?? '',
       eval_notes: e.eval_notes || ''
     }
   })
@@ -340,11 +348,13 @@ async function handleSaveScores() {
     const payload = {
       scores: Object.entries(scoreRecords.value).map(([enrollmentId, s]) => ({
         enrollment_id: parseInt(enrollmentId),
-        pre_test_score: s.pre_test_score !== '' ? parseFloat(s.pre_test_score) : null,
-        post_test_score: s.post_test_score !== '' ? parseFloat(s.post_test_score) : null,
-        task_score: s.task_score !== '' ? parseFloat(s.task_score) : null,
-        eval_instructor_rating: s.eval_instructor_rating ? parseInt(s.eval_instructor_rating) : null,
-        eval_notes: s.eval_notes
+        pre_test_score: s.pre_test_score !== '' && s.pre_test_score !== null ? parseFloat(s.pre_test_score) : null,
+        post_test_score: s.post_test_score !== '' && s.post_test_score !== null ? parseFloat(s.post_test_score) : null,
+        task_score: s.task_score !== '' && s.task_score !== null ? parseFloat(s.task_score) : null,
+        eval_instructor_rating: s.eval_instructor_rating !== '' && s.eval_instructor_rating !== null ? Number(s.eval_instructor_rating) : null,
+        eval_material_rating: s.eval_material_rating !== '' && s.eval_material_rating !== null ? Number(s.eval_material_rating) : null,
+        eval_committee_rating: s.eval_committee_rating !== '' && s.eval_committee_rating !== null ? Number(s.eval_committee_rating) : null,
+        eval_notes: s.eval_notes || null
       }))
     }
     await apiClient.post(`/classes/${props.classId}/evaluation/scores`, payload)
@@ -357,6 +367,200 @@ async function handleSaveScores() {
     }
   } finally {
     isSavingScores.value = false
+  }
+}
+
+// Excel LD Part Import (Download Template -> Parse -> Dry-Run Preview -> Submit)
+const showExcelImportModal = ref(false)
+const excelFileName = ref('')
+const excelParseError = ref('')
+const excelRawRows = ref([])
+const excelPreviewData = ref(null)
+const isPreviewingExcel = ref(false)
+const isSubmittingExcel = ref(false)
+
+// List Evl Detail Modal per Participant
+const showEvalDetailModal = ref(false)
+const selectedEvalDetailParticipant = ref(null)
+
+function openParticipantEvalDetail(enrollment) {
+  selectedEvalDetailParticipant.value = enrollment
+  showEvalDetailModal.value = true
+}
+
+function openExcelImportModal() {
+  excelFileName.value = ''
+  excelParseError.value = ''
+  excelRawRows.value = []
+  excelPreviewData.value = null
+  showExcelImportModal.value = true
+}
+
+function downloadLdPartTemplate() {
+  const c = trainingClass.value
+  const classCode = c?.class_code || 'CLS-2026-001'
+  const trainingTitle = c?.program?.title || 'Banking Training Program'
+
+  const header = [
+    'Class ID',
+    'Attendence Remarks',
+    'NIK',
+    'Nama',
+    'Position',
+    'Working Unit',
+    'Nama Training',
+    'Pre Test',
+    'Post Test'
+  ]
+
+  const rows = (c?.enrollments || []).map(e => [
+    classCode,
+    e.attendance_remark || (e.attendance_status === 'PRESENT' ? 'Present' : 'Present'),
+    e.nik || e.user?.nik || '',
+    e.participant_name || e.user?.name || '',
+    e.position || 'Staff',
+    e.department || 'Operations',
+    trainingTitle,
+    e.pre_test_score !== null && e.pre_test_score !== undefined ? Number(e.pre_test_score) : '',
+    e.post_test_score !== null && e.post_test_score !== undefined ? Number(e.post_test_score) : ''
+  ])
+
+  if (rows.length === 0) {
+    rows.push([
+      classCode,
+      'Present',
+      'BWS-2024-0045',
+      'Rina Kartika',
+      'Teller',
+      'Cabang Bandung',
+      trainingTitle,
+      60,
+      85
+    ])
+  }
+
+  const wsMain = XLSX.utils.aoa_to_sheet([header, ...rows])
+  wsMain['!cols'] = [
+    { wch: 20 },
+    { wch: 20 },
+    { wch: 16 },
+    { wch: 26 },
+    { wch: 22 },
+    { wch: 24 },
+    { wch: 36 },
+    { wch: 10 },
+    { wch: 10 }
+  ]
+
+  const wsParam = XLSX.utils.aoa_to_sheet([
+    ['Attendence Remarks', 'Invitation Point', 'Point Add', 'Notes'],
+    ['Present', 1, 1, 'Attended class session'],
+    ['Absent', 1, 0, 'Unexcused absence'],
+    ['Absent - Busy', 1, 0, 'Busy / Unapproved absence'],
+    ['Absent - Sick', 0, 0, 'With medical / sick note'],
+    ['Absent - Maternity', 0, 0, 'Confirmed maternity leave'],
+    ['Absent - Business', 0, 0, 'Confirmed official business duty']
+  ])
+  wsParam['!cols'] = [{ wch: 22 }, { wch: 18 }, { wch: 12 }, { wch: 32 }]
+
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, wsMain, 'LD Part')
+  XLSX.utils.book_append_sheet(wb, wsParam, 'Parameter')
+  XLSX.writeFile(wb, `LD_Part_${classCode}.xlsx`)
+}
+
+function normalizeHeaderKey(key) {
+  return String(key || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+async function handleExcelFileUpload(event) {
+  const file = event?.target?.files?.[0]
+  if (!file) return
+
+  excelFileName.value = file.name
+  excelParseError.value = ''
+  excelRawRows.value = []
+  excelPreviewData.value = null
+  isPreviewingExcel.value = true
+
+  try {
+    const buffer = await file.arrayBuffer()
+    const wb = XLSX.read(buffer, { type: 'array' })
+    const preferredSheet = wb.SheetNames.find(n => n.toLowerCase().includes('ld part')) || wb.SheetNames[0]
+    const sheet = wb.Sheets[preferredSheet]
+    const rawObjects = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+
+    const mappedRows = []
+    for (const raw of rawObjects) {
+      const normalized = {}
+      Object.entries(raw).forEach(([k, v]) => {
+        normalized[normalizeHeaderKey(k)] = v
+      })
+
+      const nik = String(normalized.nik ?? normalized.nip ?? '').trim()
+      if (!nik) continue
+
+      const rawPre = normalized.pretest ?? normalized.tesawal ?? normalized.prescore
+      const rawPost = normalized.posttest ?? normalized.tesakhir ?? normalized.postscore
+
+      const preVal = rawPre === '' || rawPre === null || rawPre === undefined ? null : Number(rawPre)
+      const postVal = rawPost === '' || rawPost === null || rawPost === undefined ? null : Number(rawPost)
+
+      if ((preVal !== null && Number.isNaN(preVal)) || (postVal !== null && Number.isNaN(postVal))) {
+        throw new Error(l(`Invalid test score number for NIK ${nik}.`, `Format nilai tes tidak valid pada NIK ${nik}.`))
+      }
+
+      mappedRows.push({
+        nik,
+        name: String(normalized.nama ?? normalized.name ?? normalized.namalengkap ?? '').trim(),
+        position: String(normalized.position ?? normalized.jabatan ?? '').trim(),
+        working_unit: String(normalized.workingunit ?? normalized.unitkerja ?? normalized.department ?? normalized.divisi ?? '').trim(),
+        attendance_remark: String(normalized.attendenceremarks ?? normalized.attendanceremarks ?? normalized.kehadiran ?? 'Present').trim(),
+        pre_test_score: preVal,
+        post_test_score: postVal
+      })
+    }
+
+    if (mappedRows.length === 0) {
+      excelParseError.value = l('No valid rows containing NIK were found in the uploaded sheet.', 'Tidak ada baris valid berisi NIK pada file yang diunggah.')
+      return
+    }
+
+    excelRawRows.value = mappedRows
+    const { data } = await apiClient.post(`/classes/${props.classId}/import-participants`, {
+      dry_run: true,
+      rows: mappedRows
+    })
+    excelPreviewData.value = data
+  } catch (err) {
+    excelParseError.value = err.response?.data?.message || err.message || l('Failed to parse or preview uploaded Excel file.', 'Gagal membaca atau mempratinjau file Excel.')
+  } finally {
+    isPreviewingExcel.value = false
+  }
+}
+
+async function handleConfirmExcelImport() {
+  if (!excelRawRows.value.length) return
+  isSubmittingExcel.value = true
+  excelParseError.value = ''
+  try {
+    const { data } = await apiClient.post(`/classes/${props.classId}/import-participants`, {
+      dry_run: false,
+      rows: excelRawRows.value
+    })
+    showExcelImportModal.value = false
+    actionFeedback.value = {
+      type: 'success',
+      message: l(
+        `Excel import completed: ${data.summary?.created || 0} added, ${data.summary?.updated || 0} updated.`,
+        `Impor Excel berhasil: ${data.summary?.created || 0} ditambahkan, ${data.summary?.updated || 0} diperbarui.`
+      )
+    }
+    await fetchClassDetail()
+  } catch (err) {
+    excelParseError.value = err.response?.data?.message || l('Failed to import participant records.', 'Gagal mengimpor data peserta.')
+  } finally {
+    isSubmittingExcel.value = false
   }
 }
 
@@ -559,7 +763,7 @@ onMounted(() => {
             <Award class="w-3.5 h-3.5" />
             <span>{{ $l('Class Evaluation & Exams', 'Evaluasi Hasil Kelas & Ujian') }}</span>
             <span class="px-1.5 py-0.2 rounded-full text-[10px]" :class="activeSubTab === 'evaluation' ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-700'">
-              {{ $l('Pass:', 'Lulus:') }} {{ trainingClass.passing_grade || 75 }}
+              {{ $l('Pass:', 'Lulus:') }} {{ trainingClass.passing_grade || 70 }}
             </span>
           </button>
 
@@ -868,15 +1072,24 @@ onMounted(() => {
             </h3>
             <p class="text-xs text-gray-500 mt-0.5">
               <template v-if="$locale === 'en'">
-                Minimum passing grade: <strong class="text-emerald-700">{{ trainingClass.passing_grade || 75 }} points</strong>. Score weighting: Pre-Test 30%, Post-Test 70%.
+                Minimum passing grade: <strong class="text-emerald-700">{{ trainingClass.passing_grade || 70 }} points</strong> (Post-Test &ge; {{ trainingClass.passing_grade || 70 }} Pass). Kirkpatrick L1 scale: 1–4.
               </template>
               <template v-else>
-                Batas nilai kelulusan: <strong class="text-emerald-700">{{ trainingClass.passing_grade || 75 }} poin</strong>. Bobot nilai: Tes Awal 30%, Tes Akhir 70%.
+                Batas nilai kelulusan: <strong class="text-emerald-700">{{ trainingClass.passing_grade || 70 }} poin</strong> (Tes Akhir &ge; {{ trainingClass.passing_grade || 70 }} Lulus). Skala evaluasi L1: 1–4.
               </template>
             </p>
           </div>
 
-          <div class="flex items-center gap-2 shrink-0">
+          <div class="flex items-center gap-2 flex-wrap shrink-0">
+            <button
+              type="button"
+              @click="openExcelImportModal"
+              class="px-4 py-2 rounded-full bg-white hover:bg-blue-50 border border-[#0067AC]/30 text-[#0067AC] text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <FileSpreadsheet class="w-3.5 h-3.5" />
+              <span>{{ $l('Import Excel (LD Part)', 'Impor Excel (LD Part)') }}</span>
+            </button>
+
             <button
               type="button"
               :disabled="isGeneratingCertificates"
@@ -936,8 +1149,11 @@ onMounted(() => {
               <Star class="w-5 h-5" />
             </div>
             <div>
-              <p class="text-[11px] text-gray-400 font-medium">{{ $l('Instructor Rating', 'Penilaian Pengajar') }}</p>
-              <p class="text-xl font-extrabold text-purple-700 font-mono">{{ classStats.avg_instructor_rating || '4.8' }} <span class="text-xs text-gray-400 font-normal">/ 5.0</span></p>
+              <p class="text-[11px] text-gray-400 font-medium">{{ $l('L1 Evaluation Rating', 'Rating Evaluasi L1') }}</p>
+              <p class="text-xl font-extrabold text-purple-700 font-mono">{{ classStats.avg_instructor_rating ?? '-' }} <span class="text-xs text-gray-400 font-normal">/ 4.0</span></p>
+              <p v-if="classStats.avg_material_rating !== null || classStats.avg_committee_rating !== null" class="text-[10px] text-gray-400">
+                M: {{ classStats.avg_material_rating ?? '-' }} &bull; KP: {{ classStats.avg_committee_rating ?? '-' }}
+              </p>
             </div>
           </div>
         </div>
@@ -947,7 +1163,7 @@ onMounted(() => {
           <div class="flex items-center justify-between pb-2 border-b border-gray-100">
             <div>
               <h4 class="text-sm font-extrabold text-[#002855]">{{ $l('Exam Scores & Completion Status Entry Table', 'Tabel Pengisian Nilai Ujian & Status Kelulusan') }}</h4>
-              <p class="text-[11px] text-gray-500">{{ $l('Enter Pre-Test and Post-Test scores for each participant.', 'Masukkan nilai Tes Awal dan Tes Akhir untuk setiap peserta.') }}</p>
+              <p class="text-[11px] text-gray-500">{{ $l('Enter Pre-Test and Post-Test scores or import directly via LD Part Excel template.', 'Masukkan nilai Tes Awal dan Tes Akhir atau impor langsung melalui templat Excel LD Part.') }}</p>
             </div>
             <span class="text-xs font-bold text-emerald-700">
               {{ classStats.passed_count || 0 }} {{ $l('PASSED', 'LULUS') }} • {{ classStats.failed_count || 0 }} {{ $l('NOT PASSED', 'BELUM LULUS') }}
@@ -966,8 +1182,10 @@ onMounted(() => {
                   <th class="py-2.5 px-3 w-24 text-center">{{ $l('Final Score', 'Nilai Akhir') }}</th>
                   <th class="py-2.5 px-3 w-24 text-center">{{ $l('Delta (Δ%)', 'Selisih (Δ%)') }}</th>
                   <th class="py-2.5 px-3 w-28 text-center">{{ $l('Completion Status', 'Status Kelulusan') }}</th>
-                  <th class="py-2.5 px-3 w-24 text-center">{{ $l('Trainer Rating', 'Nilai Pengajar') }}</th>
-                  <th class="py-2.5 px-3">{{ $l('E-Certificate No.', 'No. E-Sertifikat') }}</th>
+                  <th class="py-2.5 px-3 w-24 text-center">{{ $l('Trainer (1-4)', 'Pengajar (1-4)') }}</th>
+                  <th class="py-2.5 px-3 w-24 text-center">{{ $l('Material (1-4)', 'Materi (1-4)') }}</th>
+                  <th class="py-2.5 px-3 w-24 text-center">{{ $l('Committee (1-4)', 'Panitia (1-4)') }}</th>
+                  <th class="py-2.5 px-3">{{ $l('E-Certificate & L1', 'E-Sertifikat & L1') }}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100 text-gray-700">
@@ -975,7 +1193,9 @@ onMounted(() => {
                   <td class="py-2 px-3 text-center text-gray-400">{{ idx + 1 }}</td>
                   <td class="py-2 px-3">
                     <p class="font-bold text-gray-900">{{ e.participant_name || e.user?.name }}</p>
-                    <p class="font-mono text-[10px] text-gray-400">{{ e.nik || e.user?.nik || '-' }}</p>
+                    <p class="font-mono text-[10px] text-gray-400">
+                      {{ e.nik || e.user?.nik || '-' }}<span v-if="e.participant_code"> • {{ e.participant_code }}</span>
+                    </p>
                   </td>
                   <td class="py-2 px-3 text-center font-mono font-bold"
                     :class="e.attendance_percentage >= 80 ? 'text-emerald-700' : 'text-rose-600'">
@@ -989,7 +1209,7 @@ onMounted(() => {
                       min="0"
                       max="100"
                       v-model="scoreRecords[e.id].pre_test_score"
-                      placeholder="60"
+                      placeholder="-"
                       class="w-16 bg-white border border-gray-200 rounded-xl px-2 py-1 text-center font-mono text-xs font-bold text-gray-800 focus:outline-none focus:border-[#0067AC]"
                     />
                   </td>
@@ -1001,7 +1221,7 @@ onMounted(() => {
                       min="0"
                       max="100"
                       v-model="scoreRecords[e.id].post_test_score"
-                      placeholder="85"
+                      placeholder="-"
                       class="w-16 bg-white border border-gray-200 rounded-xl px-2 py-1 text-center font-mono text-xs font-bold text-[#0067AC] focus:outline-none focus:border-[#0067AC]"
                     />
                   </td>
@@ -1014,8 +1234,8 @@ onMounted(() => {
                   <!-- Delta Gain % -->
                   <td class="py-2 px-3 text-center font-mono font-bold">
                     <span v-if="e.pre_test_score && e.post_test_score"
-                      :class="e.post_test_score >= e.pre_test_score ? 'text-emerald-700' : 'text-rose-600'">
-                      {{ e.post_test_score >= e.pre_test_score ? '+' : '' }}{{ Math.round(((e.post_test_score - e.pre_test_score) / e.pre_test_score) * 100) }}%
+                      :class="Number(e.post_test_score) >= Number(e.pre_test_score) ? 'text-emerald-700' : 'text-rose-600'">
+                      {{ Number(e.post_test_score) >= Number(e.pre_test_score) ? '+' : '' }}{{ Math.round(((Number(e.post_test_score) - Number(e.pre_test_score)) / Number(e.pre_test_score)) * 100) }}%
                     </span>
                     <span v-else class="text-gray-300">-</span>
                   </td>
@@ -1026,17 +1246,17 @@ onMounted(() => {
                       class="px-2.5 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap"
                       :class="e.completion_status === 'PASSED' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : e.completion_status === 'FAILED' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-gray-100 text-gray-600'"
                     >
-                      {{ e.completion_status === 'PASSED' ? $l('PASSED', 'LULUS') + ' (' + (e.grade || 'B') + ')' : e.completion_status === 'FAILED' ? $l('FAILED', 'TIDAK LULUS') : $l('Pending Exam', 'Belum Ujian') }}
+                      {{ e.completion_status === 'PASSED' ? $l('PASSED', 'LULUS') + ' (' + (e.grade || 'C') + ')' : e.completion_status === 'FAILED' ? $l('FAILED', 'TIDAK LULUS') : $l('Pending Exam', 'Belum Ujian') }}
                     </span>
                   </td>
 
-                  <!-- Instructor Rating Input -->
+                  <!-- Instructor Rating Input (1-4) -->
                   <td class="py-2 px-3 text-center">
                     <select
                       v-model="scoreRecords[e.id].eval_instructor_rating"
                       class="bg-white border border-gray-200 rounded-xl px-2 py-1 text-xs text-amber-600 font-bold focus:outline-none"
                     >
-                      <option :value="5">5 &starf;</option>
+                      <option value="">-</option>
                       <option :value="4">4 &starf;</option>
                       <option :value="3">3 &starf;</option>
                       <option :value="2">2 &starf;</option>
@@ -1044,13 +1264,53 @@ onMounted(() => {
                     </select>
                   </td>
 
-                  <!-- Certificate Number -->
+                  <!-- Material Rating Input (1-4) -->
+                  <td class="py-2 px-3 text-center">
+                    <select
+                      v-model="scoreRecords[e.id].eval_material_rating"
+                      class="bg-white border border-gray-200 rounded-xl px-2 py-1 text-xs text-amber-600 font-bold focus:outline-none"
+                    >
+                      <option value="">-</option>
+                      <option :value="4">4 &starf;</option>
+                      <option :value="3">3 &starf;</option>
+                      <option :value="2">2 &starf;</option>
+                      <option :value="1">1 &starf;</option>
+                    </select>
+                  </td>
+
+                  <!-- Committee Rating Input (1-4) -->
+                  <td class="py-2 px-3 text-center">
+                    <select
+                      v-model="scoreRecords[e.id].eval_committee_rating"
+                      class="bg-white border border-gray-200 rounded-xl px-2 py-1 text-xs text-amber-600 font-bold focus:outline-none"
+                    >
+                      <option value="">-</option>
+                      <option :value="4">4 &starf;</option>
+                      <option :value="3">3 &starf;</option>
+                      <option :value="2">2 &starf;</option>
+                      <option :value="1">1 &starf;</option>
+                    </select>
+                  </td>
+
+                  <!-- Certificate Number & Evaluation Breakdown -->
                   <td class="py-2 px-3">
-                    <div v-if="e.certificate_number" class="flex items-center gap-1.5 text-[11px] font-mono text-emerald-700 font-bold">
-                      <FileCheck2 class="w-3.5 h-3.5 shrink-0" />
-                      <span class="truncate">{{ e.certificate_number }}</span>
+                    <div class="flex items-center justify-between gap-1.5">
+                      <div v-if="e.certificate_number" class="flex items-center gap-1.5 text-[11px] font-mono text-emerald-700 font-bold">
+                        <FileCheck2 class="w-3.5 h-3.5 shrink-0" />
+                        <span class="truncate">{{ e.certificate_number }}</span>
+                      </div>
+                      <span v-else class="text-[10px] text-gray-400 italic">{{ $l('Not issued yet', 'Belum terbit') }}</span>
+
+                      <button
+                        v-if="e.evaluation"
+                        type="button"
+                        @click="openParticipantEvalDetail(e)"
+                        class="p-1 rounded-lg bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white transition cursor-pointer shrink-0"
+                        :title="$l('View List Evl Breakdown', 'Lihat Rincian List Evl')"
+                      >
+                        <Eye class="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                    <span v-else class="text-[10px] text-gray-400 italic">{{ $l('Not issued yet', 'Belum terbit') }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -1097,7 +1357,7 @@ onMounted(() => {
               </div>
               <div>
                 <span class="text-gray-400 block font-medium">{{ $l('Minimum Passing Grade', 'Nilai Minimum Kelulusan') }}</span>
-                <span class="font-bold text-emerald-700 text-sm">{{ trainingClass.passing_grade || 75 }} {{ $l('Points Min.', 'Poin Minimal') }}</span>
+                <span class="font-bold text-emerald-700 text-sm">{{ trainingClass.passing_grade || 70 }} {{ $l('Points Min.', 'Poin Minimal') }}</span>
               </div>
             </div>
 
@@ -1207,6 +1467,14 @@ onMounted(() => {
           <div class="flex items-center gap-2 flex-wrap">
             <button
               type="button"
+              @click="openExcelImportModal"
+              class="px-4 py-2 bg-white hover:bg-blue-50 border border-[#0067AC]/30 text-[#0067AC] rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <FileSpreadsheet class="w-3.5 h-3.5" />
+              <span>{{ $l('Import Excel (LD Part)', 'Impor Excel (LD Part)') }}</span>
+            </button>
+            <button
+              type="button"
               @click="showPegawaiModal = true"
               class="px-4 py-2 bg-[#0067AC] hover:bg-[#00528c] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
@@ -1231,11 +1499,11 @@ onMounted(() => {
             <thead class="bg-gray-50/80 text-gray-600 font-bold border-b border-gray-100">
               <tr>
                 <th class="py-2.5 px-3 w-10 text-center">No</th>
-                <th class="py-2.5 px-3 w-28">NIK</th>
-                <th class="py-2.5 px-3">{{ $l('Full Name', 'Nama Lengkap') }}</th>
+                <th class="py-2.5 px-3">{{ $l('NIK & Code', 'NIK & Kode') }}</th>
+                <th class="py-2.5 px-3">{{ $l('Full Name & Position', 'Nama Lengkap & Jabatan') }}</th>
                 <th class="py-2.5 px-3">{{ $l('Division / Work Unit', 'Divisi / Unit Kerja') }}</th>
-                <th class="py-2.5 px-3">{{ $l('Position', 'Jabatan') }}</th>
-                <th class="py-2.5 px-3 text-center">{{ $l('Attendance (%)', 'Kehadiran (%)') }}</th>
+                <th class="py-2.5 px-3 text-center">{{ $l('Attendance & Points', 'Kehadiran & Poin') }}</th>
+                <th class="py-2.5 px-3 text-center">{{ $l('E-Commitment', 'E-Komitmen') }}</th>
                 <th class="py-2.5 px-3 text-center">{{ $l('Final Score', 'Nilai Akhir') }}</th>
                 <th class="py-2.5 px-3 text-center">{{ $l('Completion Status', 'Status Kelulusan') }}</th>
                 <th class="py-2.5 px-3 w-16 text-center">{{ $l('Action', 'Aksi') }}</th>
@@ -1244,13 +1512,42 @@ onMounted(() => {
             <tbody class="divide-y divide-gray-100 text-gray-700">
               <tr v-for="(e, idx) in trainingClass.enrollments" :key="e.id" class="hover:bg-gray-50/50">
                 <td class="py-2 px-3 text-center text-gray-400">{{ idx + 1 }}</td>
-                <td class="py-2 px-3 font-mono font-bold text-[#0067AC]">{{ e.nik || e.user?.nik || '-' }}</td>
-                <td class="py-2 px-3 font-bold text-gray-900">{{ e.participant_name || e.user?.name }}</td>
+                <td class="py-2 px-3">
+                  <p class="font-mono font-bold text-[#0067AC]">{{ e.nik || e.user?.nik || '-' }}</p>
+                  <p v-if="e.participant_code" class="font-mono text-[10px] text-gray-400">{{ e.participant_code }}</p>
+                </td>
+                <td class="py-2 px-3">
+                  <p class="font-bold text-gray-900">{{ e.participant_name || e.user?.name }}</p>
+                  <p class="text-[10px] text-gray-400">{{ e.position || e.user?.role_name || '-' }}</p>
+                </td>
                 <td class="py-2 px-3 text-gray-600">{{ e.department || e.user?.department || 'Operations' }}</td>
-                <td class="py-2 px-3 text-gray-500">{{ e.position || e.user?.role_name || '-' }}</td>
-                <td class="py-2 px-3 text-center font-mono font-bold"
-                  :class="e.attendance_percentage >= 80 ? 'text-emerald-700' : 'text-rose-600'">
-                  {{ e.attendance_percentage || 0 }}%
+                <td class="py-2 px-3 text-center">
+                  <p class="font-mono font-bold" :class="e.attendance_percentage >= 80 ? 'text-emerald-700' : 'text-rose-600'">
+                    {{ e.attendance_percentage || 0 }}%
+                  </p>
+                  <p class="text-[10px] text-gray-500">
+                    {{ e.attendance_remark || e.attendance_status || '-' }}
+                    ({{ $l('Inv', 'Und') }}:{{ e.invitation_point ?? 1 }}/{{ $l('Add', 'Had') }}:{{ e.point_add ?? 0 }})
+                  </p>
+                  <div v-if="e.leave_status" class="mt-0.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-bold">
+                    <span>{{ e.leave_status }}</span>
+                    <a
+                      v-if="e.leave_attachment_url"
+                      :href="e.leave_attachment_url"
+                      target="_blank"
+                      rel="noopener"
+                      class="underline text-[#0067AC]"
+                    >{{ $l('Doc', 'Surat') }}</a>
+                  </div>
+                </td>
+                <td class="py-2 px-3 text-center">
+                  <span
+                    v-if="e.commitment_signed_at"
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  >
+                    {{ $l('Signed', 'Ditandatangani') }}
+                  </span>
+                  <span v-else class="text-[10px] text-gray-400">{{ $l('Pending', 'Menunggu') }}</span>
                 </td>
                 <td class="py-2 px-3 text-center font-mono font-black text-gray-900">
                   {{ e.final_score !== null ? e.final_score : '-' }}
@@ -1276,6 +1573,234 @@ onMounted(() => {
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Modal: Excel LD Part Import & Pre/Post-Test Preview -->
+      <div v-if="showExcelImportModal" class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity" @click="showExcelImportModal = false"></div>
+        <div class="relative bg-white rounded-3xl max-w-4xl w-full p-6 shadow-2xl border border-gray-100 flex flex-col gap-4 z-10 max-h-[90vh]">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-100 shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                <FileSpreadsheet class="w-5 h-5" />
+              </div>
+              <div>
+                <h3 class="font-extrabold text-sm text-[#002855]">
+                  {{ $l('Import Participants & Pre/Post-Test Excel (LD Part)', 'Impor Peserta & Nilai Tes Awal/Akhir Excel (LD Part)') }}
+                </h3>
+                <p class="text-[11px] text-gray-500">
+                  {{ $l('Download the standard LD Part template, fill participant scores & attendance remarks, then upload to preview before saving.', 'Unduh templat standar LD Part, lengkapi nilai & keterangan kehadiran peserta, lalu unggah untuk pratinjau sebelum disimpan.') }}
+                </p>
+              </div>
+            </div>
+            <button @click="showExcelImportModal = false" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer">
+              <X class="w-4 h-4" />
+            </button>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-3 bg-[#f8fafc] p-4 rounded-2xl border border-gray-200 text-xs shrink-0">
+            <div>
+              <p class="font-bold text-gray-800">{{ $l('Step 1: Download Batch Excel Template', 'Langkah 1: Unduh Templat Excel Angkatan') }}</p>
+              <p class="text-[11px] text-gray-500 mt-0.5">{{ $l('Includes current class roster and valid Parameter attendance remark rules.', 'Sudah memuat daftar peserta kelas saat ini beserta lembar aturan keterangan kehadiran.') }}</p>
+            </div>
+            <button
+              type="button"
+              @click="downloadLdPartTemplate"
+              class="px-4 py-2 rounded-xl bg-white hover:bg-blue-50 border border-[#0067AC]/30 text-[#0067AC] font-bold flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <Download class="w-3.5 h-3.5" />
+              <span>{{ $l('Download .xlsx Template', 'Unduh Templat .xlsx') }}</span>
+            </button>
+          </div>
+
+          <div class="border-2 border-dashed border-gray-300 hover:border-[#0067AC] rounded-2xl p-5 text-center transition shrink-0">
+            <label class="cursor-pointer flex flex-col items-center gap-2">
+              <Upload class="w-7 h-7 text-[#0067AC]" />
+              <span class="text-xs font-bold text-gray-800">
+                {{ excelFileName ? excelFileName : $l('Step 2: Select filled .xlsx / .xls / .csv file to preview', 'Langkah 2: Pilih file .xlsx / .xls / .csv yang telah diisi untuk pratinjau') }}
+              </span>
+              <span class="text-[11px] text-gray-400">
+                {{ $l('Required column: NIK. Optional: Attendence Remarks, Nama, Position, Working Unit, Pre Test, Post Test.', 'Kolom wajib: NIK. Opsional: Attendence Remarks, Nama, Position, Working Unit, Pre Test, Post Test.') }}
+              </span>
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                class="hidden"
+                @change="handleExcelFileUpload"
+              />
+            </label>
+          </div>
+
+          <div v-if="excelParseError" class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 shrink-0">
+            <AlertCircle class="w-4 h-4 shrink-0" />
+            <span>{{ excelParseError }}</span>
+          </div>
+
+          <div v-if="isPreviewingExcel" class="py-6 text-center text-xs text-gray-500 font-semibold">
+            {{ $l('Validating uploaded rows against master employee database...', 'Memvalidasi baris unggahan terhadap data induk pegawai...') }}
+          </div>
+
+          <div v-if="excelPreviewData" class="flex-1 overflow-auto space-y-3">
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <span class="px-2.5 py-1 rounded-full bg-blue-50 text-[#0067AC] font-bold">
+                {{ $l('Total Rows:', 'Total Baris:') }} {{ excelPreviewData.summary?.total_rows || 0 }}
+              </span>
+              <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold">
+                {{ $l('New:', 'Baru:') }} {{ excelPreviewData.summary?.created || 0 }} &bull; {{ $l('Update:', 'Perbarui:') }} {{ excelPreviewData.summary?.updated || 0 }}
+              </span>
+              <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 font-bold">
+                {{ $l('Pass:', 'Lulus:') }} {{ excelPreviewData.summary?.passed || 0 }} &bull; {{ $l('Fail:', 'Tidak Lulus:') }} {{ excelPreviewData.summary?.failed || 0 }}
+              </span>
+              <span v-if="excelPreviewData.summary?.unmatched_niks?.length" class="px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 font-bold">
+                {{ $l('Unmatched NIKs:', 'NIK Belum Terdaftar:') }} {{ excelPreviewData.summary.unmatched_niks.length }}
+              </span>
+            </div>
+
+            <div class="overflow-x-auto border border-gray-200 rounded-2xl">
+              <table class="w-full text-left text-[11px]">
+                <thead class="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
+                  <tr>
+                    <th class="py-2 px-2.5">{{ $l('Mode', 'Aksi') }}</th>
+                    <th class="py-2 px-2.5">NIK & {{ $l('Name', 'Nama') }}</th>
+                    <th class="py-2 px-2.5">{{ $l('Attendance Remark', 'Keterangan Hadir') }}</th>
+                    <th class="py-2 px-2.5 text-center">{{ $l('Inv/Add', 'Und/Had') }}</th>
+                    <th class="py-2 px-2.5 text-center">Pre</th>
+                    <th class="py-2 px-2.5 text-center">Post</th>
+                    <th class="py-2 px-2.5 text-center">{{ $l('Result', 'Hasil') }}</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr v-for="(r, idx) in excelPreviewData.preview_rows" :key="idx">
+                    <td class="py-1.5 px-2.5">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="r.action === 'CREATE' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-[#0067AC]'">
+                        {{ r.action === 'CREATE' ? $l('New', 'Baru') : $l('Update', 'Ubah') }}
+                      </span>
+                    </td>
+                    <td class="py-1.5 px-2.5">
+                      <p class="font-bold text-gray-900">{{ r.name }}</p>
+                      <p class="font-mono text-[10px] text-gray-400">
+                        {{ r.nik }}
+                        <span v-if="!r.matched_system_user" class="text-amber-600 font-semibold">({{ $l('External / Unmatched', 'Eksternal / Baru') }})</span>
+                      </p>
+                    </td>
+                    <td class="py-1.5 px-2.5 text-gray-700">{{ r.attendance_remark }}</td>
+                    <td class="py-1.5 px-2.5 text-center font-mono">{{ r.invitation_point }} / {{ r.point_add }}</td>
+                    <td class="py-1.5 px-2.5 text-center font-mono">{{ r.pre_test_score ?? '-' }}</td>
+                    <td class="py-1.5 px-2.5 text-center font-mono font-bold text-[#0067AC]">{{ r.post_test_score ?? '-' }}</td>
+                    <td class="py-1.5 px-2.5 text-center">
+                      <span
+                        class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                        :class="r.completion_status === 'PASSED' ? 'bg-emerald-50 text-emerald-700' : r.completion_status === 'FAILED' ? 'bg-rose-50 text-rose-700' : 'bg-gray-100 text-gray-600'"
+                      >
+                        {{ r.completion_status === 'PASSED' ? $l('PASSED', 'LULUS') : r.completion_status === 'FAILED' ? $l('FAILED', 'TIDAK LULUS') : $l('Ongoing', 'Berjalan') }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 shrink-0">
+            <button
+              type="button"
+              @click="showExcelImportModal = false"
+              class="px-4 py-2 rounded-full border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 cursor-pointer"
+            >
+              {{ $t('common.cancel') }}
+            </button>
+            <button
+              type="button"
+              :disabled="!excelPreviewData || isSubmittingExcel"
+              @click="handleConfirmExcelImport"
+              class="px-5 py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold transition cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
+            >
+              <Check class="w-3.5 h-3.5" />
+              <span>{{ isSubmittingExcel ? $l('Importing...', 'Mengimpor...') : $l('Confirm & Submit Import', 'Konfirmasi & Simpan Impor') }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal: List Evl Detail Breakdown per Participant -->
+      <div v-if="showEvalDetailModal && selectedEvalDetailParticipant?.evaluation" class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" @click="showEvalDetailModal = false"></div>
+        <div class="relative bg-white rounded-3xl max-w-2xl w-full p-6 shadow-2xl border border-gray-100 flex flex-col gap-4 z-10 max-h-[85vh] overflow-y-auto">
+          <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-wider text-[#0067AC]">
+                {{ selectedEvalDetailParticipant.evaluation.evaluation_code || 'LIST EVL' }}
+              </p>
+              <h3 class="text-sm font-extrabold text-[#002855]">
+                {{ $l('Course Evaluation Breakdown (1–4 Scale)', 'Rincian Evaluasi Pelatihan (Skala 1–4)') }}
+              </h3>
+              <p class="text-xs text-gray-500">
+                {{ selectedEvalDetailParticipant.participant_name || selectedEvalDetailParticipant.user?.name }} ({{ selectedEvalDetailParticipant.nik }})
+              </p>
+            </div>
+            <button @click="showEvalDetailModal = false" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer">
+              <X class="w-4 h-4" />
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
+            <div class="p-3 rounded-2xl bg-blue-50/60 border border-blue-100">
+              <p class="text-[10px] text-gray-500 font-semibold">{{ $l('Material Avg', 'Rata-rata Materi') }}</p>
+              <p class="text-lg font-extrabold text-[#0067AC] font-mono">{{ selectedEvalDetailParticipant.evaluation.material_avg ?? '-' }}</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-amber-50/60 border border-amber-100">
+              <p class="text-[10px] text-gray-500 font-semibold">{{ $l('Instructor Avg', 'Rata-rata Pengajar') }}</p>
+              <p class="text-lg font-extrabold text-amber-700 font-mono">{{ selectedEvalDetailParticipant.evaluation.instructor_avg ?? '-' }}</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-emerald-50/60 border border-emerald-100">
+              <p class="text-[10px] text-gray-500 font-semibold">{{ $l('Committee Avg', 'Rata-rata Panitia') }}</p>
+              <p class="text-lg font-extrabold text-emerald-700 font-mono">{{ selectedEvalDetailParticipant.evaluation.committee_avg ?? '-' }}</p>
+            </div>
+            <div class="p-3 rounded-2xl bg-purple-50/60 border border-purple-100">
+              <p class="text-[10px] text-gray-500 font-semibold">{{ $l('Overall Avg', 'Rata-rata Total') }}</p>
+              <p class="text-lg font-extrabold text-purple-700 font-mono">{{ selectedEvalDetailParticipant.evaluation.overall_avg ?? '-' }}</p>
+            </div>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100">
+              <p class="font-bold text-gray-700 mb-1.5">{{ $l('Training Material Items (M1–M3)', 'Penilaian Materi (M1–M3)') }}</p>
+              <div class="flex gap-2 font-mono">
+                <span v-for="(sc, idx) in selectedEvalDetailParticipant.evaluation.material_scores || []" :key="idx" class="px-2.5 py-1 rounded-lg bg-white border border-gray-200 font-bold text-[#0067AC]">
+                  M{{ idx + 1 }}: {{ sc }} / 4
+                </span>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100 space-y-2">
+              <p class="font-bold text-gray-700">{{ $l('Instructors (P1–P15)', 'Pengajar / Instruktur (P1–P15)') }}</p>
+              <div v-for="(inst, idx) in selectedEvalDetailParticipant.evaluation.instructor_scores || []" :key="idx" class="flex flex-wrap items-center justify-between gap-2 bg-white p-2.5 rounded-xl border border-gray-200">
+                <div>
+                  <span class="font-mono text-[10px] font-bold text-[#0067AC] mr-1.5">{{ inst.slot }}</span>
+                  <span class="font-semibold text-gray-800">{{ inst.name }}</span>
+                </div>
+                <div class="flex items-center gap-1.5 font-mono text-[11px]">
+                  <span v-for="(sc, k) in inst.scores" :key="k" class="px-2 py-0.5 rounded bg-amber-50 text-amber-800">{{ sc }}</span>
+                  <span class="font-extrabold text-[#002855] ml-1">({{ inst.avg }})</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-2xl bg-gray-50 border border-gray-100">
+              <p class="font-bold text-gray-700 mb-1.5">{{ $l('Committee Support Items (KP1–KP3)', 'Penilaian Kepanitiaan (KP1–KP3)') }}</p>
+              <div class="flex gap-2 font-mono">
+                <span v-for="(sc, idx) in selectedEvalDetailParticipant.evaluation.committee_scores || []" :key="idx" class="px-2.5 py-1 rounded-lg bg-white border border-gray-200 font-bold text-emerald-700">
+                  KP{{ idx + 1 }}: {{ sc }} / 4
+                </span>
+              </div>
+            </div>
+
+            <div v-if="selectedEvalDetailParticipant.evaluation.feedback_notes" class="p-3 rounded-2xl bg-blue-50/40 border border-blue-100">
+              <p class="font-bold text-gray-700 mb-1">{{ $l('Participant Feedback', 'Saran & Masukan Peserta') }}</p>
+              <p class="text-gray-600">{{ selectedEvalDetailParticipant.evaluation.feedback_notes }}</p>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -31,18 +31,25 @@ const passRate = computed(() => {
   return Math.round((passedCount.value / props.enrollments.length) * 100)
 })
 
+const avgAttendancePct = computed(() => {
+  if (!props.enrollments.length) return 0
+  const sum = props.enrollments.reduce((acc, e) => acc + Number(e.attendance_percentage ?? 0), 0)
+  return (sum / props.enrollments.length).toFixed(1)
+})
+
 const participantColumns = computed(() => [
+  { key: 'participant_code', label: l('Participant ID', 'Kode Peserta'), sortable: true, width: '115px' },
   { key: 'user.nik', label: l('Employee NIK', 'NIK Pegawai'), sortable: true },
   { key: 'user.name', label: l('Employee Name', 'Nama Pegawai'), sortable: true },
   { key: 'user.department', label: l('Division / Work Unit', 'Divisi / Unit Kerja'), sortable: true },
-  { key: 'user.branch', label: l('Branch Office', 'Kantor Cabang'), sortable: true },
   { key: 'training_class.program.title', label: l('Enrolled Training Class', 'Kelas Pelatihan Terdaftar'), sortable: true },
+  { key: 'attendance_remark', label: l('Attendance / Points', 'Kehadiran / Poin'), sortable: true, align: 'center' },
   {
     key: 'elapse_progress_pct',
-    label: l('LIS Learning Progress', 'Progres Belajar LIS'),
+    label: l('LIS Progress', 'Progres LIS'),
     sortable: true,
     align: 'center',
-    format: (val) => `${val ?? 100}%`
+    format: (val) => `${val ?? 0}%`
   },
   { key: 'completion_status', label: l('Completion Status', 'Status Kelulusan'), sortable: true, align: 'center' },
   {
@@ -95,7 +102,7 @@ const participantColumns = computed(() => [
         </div>
         <div>
           <p class="text-[11px] text-gray-400 font-medium">{{ $l('Average Attendance', 'Rata-rata Presensi') }}</p>
-          <p class="text-xl font-extrabold text-gray-900">96.8%</p>
+          <p class="text-xl font-extrabold text-gray-900">{{ avgAttendancePct }}%</p>
         </div>
       </div>
     </div>
@@ -108,21 +115,36 @@ const participantColumns = computed(() => [
       export-filename="bws_training_participants"
       :default-per-page="10"
     >
+      <!-- Custom Cell: Participant Code -->
+      <template #cell-participant_code="{ row }">
+        <span class="font-mono text-[11px] font-bold text-gray-700">{{ row.participant_code || '-' }}</span>
+      </template>
+
       <!-- Custom Cell: NIK -->
       <template #cell-user-nik="{ row }">
-        <span class="font-mono text-xs font-bold text-[#0067AC]">{{ row.user?.nik || 'NIK-BWS' }}</span>
+        <span class="font-mono text-xs font-bold text-[#0067AC]">{{ row.nik || row.user?.nik || '-' }}</span>
       </template>
 
       <!-- Custom Cell: Name -->
       <template #cell-user-name="{ row }">
-        <p class="font-bold text-xs text-gray-900">{{ row.user?.name }}</p>
-        <p class="text-[10px] text-gray-400">{{ row.user?.email }}</p>
+        <p class="font-bold text-xs text-gray-900">{{ row.participant_name || row.user?.name }}</p>
+        <p class="text-[10px] text-gray-400">{{ row.position || row.user?.email || '-' }}</p>
       </template>
 
       <!-- Custom Cell: Class -->
       <template #cell-training_class-program-title="{ row }">
         <p class="font-semibold text-xs text-gray-800 line-clamp-1">{{ row.training_class?.program?.title || $l('Training Batch', 'Angkatan Pelatihan') }}</p>
         <p class="text-[10px] text-gray-400">{{ row.training_class?.batch_name || $l('Batch I', 'Angkatan I') }}</p>
+      </template>
+
+      <!-- Custom Cell: Attendance & Points -->
+      <template #cell-attendance_remark="{ row }">
+        <div class="text-center">
+          <p class="text-[11px] font-bold text-gray-800">{{ row.attendance_remark || row.attendance_status || '-' }}</p>
+          <p class="font-mono text-[10px] text-gray-400">
+            {{ $l('Inv', 'Und') }}: {{ row.invitation_point ?? 1 }} &bull; {{ $l('Add', 'Hadir') }}: {{ row.point_add ?? 0 }}
+          </p>
+        </div>
       </template>
 
       <!-- Custom Cell: Completion Status -->
@@ -142,7 +164,7 @@ const participantColumns = computed(() => [
       <!-- Action Column Slot -->
       <template #action="{ row }">
         <button
-          v-if="row.completion_status === 'PASSED'"
+          v-if="row.completion_status === 'PASSED' && row.certificate_number"
           @click="emit('view-certificate', row)"
           class="px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-[#0067AC] text-xs font-semibold transition"
           :title="$l('View Completion E-Certificate', 'Lihat E-Sertifikat Kelulusan')"

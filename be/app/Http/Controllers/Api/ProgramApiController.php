@@ -290,7 +290,7 @@ class ProgramApiController extends Controller
                 'unit_initiator' => $validated['unit_initiator'] ?? null,
                 'activity_type' => $validated['activity_type'] ?? 'Pelatihan',
                 'bi_category' => $validated['bi_category'] ?? null,
-                'passing_grade' => $validated['passing_grade'] ?? 75,
+                'passing_grade' => $validated['passing_grade'] ?? 70,
                 'is_mandatory' => $request->boolean('is_mandatory', false),
                 'description' => $validated['description'] ?? null,
                 'notes' => $validated['notes'] ?? null,

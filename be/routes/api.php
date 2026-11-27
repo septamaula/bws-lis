@@ -44,8 +44,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard', [DashboardApiController::class, 'index']);
     Route::get('/audit/export', [DashboardApiController::class, 'exportAuditLogs']);
 
-    // Mobile PWA Learner Portal Endpoint
+    // Mobile PWA Learner Portal Endpoints
     Route::get('/portal/learner', [DashboardApiController::class, 'learnerPortal']);
+    Route::post('/portal/enrollments/{id}/leave-confirmation', [DashboardApiController::class, 'learnerSubmitLeave']);
+    Route::post('/portal/enrollments/{id}/evaluation', [DashboardApiController::class, 'learnerSubmitEvaluation']);
+    Route::post('/portal/enrollments/{id}/commitment', [DashboardApiController::class, 'learnerSignCommitment']);
 
     // TNA Proposals & Multi-Approval Engine
     Route::get('/tna', [TnaApiController::class, 'index']);
@@ -132,6 +135,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Class Evaluation & Results Module
     Route::get('/classes/{id}/evaluation', [ClassApiController::class, 'getEvaluation']);
     Route::post('/classes/{id}/evaluation/scores', [ClassApiController::class, 'saveScores']);
+    Route::post('/classes/{id}/import-participants', [ClassApiController::class, 'importParticipants']);
     Route::post('/classes/{id}/certificates/generate', [ClassApiController::class, 'generateCertificates']);
 
     // Bank-Wide Learning Evaluations Overview

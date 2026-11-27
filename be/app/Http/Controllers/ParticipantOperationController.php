@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\ClassEnrollment;
+use App\Services\ParticipantScoringService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ParticipantOperationController extends Controller
 {
+    public function __construct(private readonly ParticipantScoringService $scoring) {}
+
     /**
      * Participant uploads/submits their post-training task or action plan.
      */
@@ -49,29 +52,34 @@ class ParticipantOperationController extends Controller
             'task_feedback' => 'nullable|string',
         ]);
 
-        $enrollment = ClassEnrollment::findOrFail($id);
-        $finalScore = round(($enrollment->pre_test_score * 0.2) + ($request->post_test_score * 0.4) + ($request->task_score * 0.4), 2);
-        $passed = $finalScore >= ($enrollment->trainingClass->program->passing_grade ?? 75);
-
-        $certId = $passed ? 'BWS-CERT-'.date('Y').'-'.strtoupper(substr(md5(uniqid()), 0, 8)) : null;
+        $enrollment = ClassEnrollment::with(['trainingClass.program'])->findOrFail($id);
+        $passingGrade = $this->scoring->resolvePassingGrade($enrollment->trainingClass);
+        $eval = $this->scoring->evaluateScores(
+            $enrollment->pre_test_score !== null ? (float) $enrollment->pre_test_score : null,
+            (float) $request->post_test_score,
+            (float) $request->task_score,
+            $passingGrade,
+            $enrollment->completion_status ?? 'ONGOING'
+        );
 
         $enrollment->update([
-            'post_test_score' => $request->post_test_score,
-            'task_score' => $request->task_score,
-            'final_score' => $finalScore,
+            'post_test_score' => (float) $request->post_test_score,
+            'task_score' => (float) $request->task_score,
+            'final_score' => $eval['final_score'],
+            'grade' => $eval['grade'],
             'task_feedback' => $request->task_feedback,
-            'completion_status' => $passed ? 'PASSED' : 'FAILED',
+            'completion_status' => $eval['completion_status'],
             'elapse_progress_pct' => 100,
-            'certificate_id' => $certId,
-            'certificate_url' => $passed ? "/secure_storage/certificates/{$certId}.pdf" : null,
         ]);
+
+        $certId = $this->scoring->issueCertificateIfEligible($enrollment->fresh(['trainingClass.program']));
 
         AuditLog::record('FACILITATOR_GRADE_PARTICIPANT', $enrollment, null, [
-            'final_score' => $finalScore,
-            'passed' => $passed,
+            'final_score' => $eval['final_score'],
+            'passed' => $eval['completion_status'] === 'PASSED',
             'certificate_id' => $certId,
         ]);
 
-        return back()->with('success', "Penilaian peserta berhasil disimpan. Nilai akhir: {$finalScore} (".($passed ? 'LULUS' : 'REMEDIAL').')');
+        return back()->with('success', "Penilaian peserta berhasil disimpan. Nilai akhir: {$eval['final_score']} (".($eval['completion_status'] === 'PASSED' ? 'LULUS' : 'REMEDIAL').')');
     }
 }

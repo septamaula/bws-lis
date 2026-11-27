@@ -11,21 +11,38 @@ class ClassEvaluation extends Model
     use HasFactory;
 
     protected $fillable = [
+        'evaluation_code',
         'training_class_id',
         'class_enrollment_id',
         'user_id',
         'instructor_rating',
         'material_rating',
         'facility_rating',
+        'committee_rating',
         'recommendation_rating',
+        'material_scores',
+        'instructor_scores',
+        'committee_scores',
+        'material_avg',
+        'instructor_avg',
+        'committee_avg',
+        'overall_avg',
         'feedback_notes',
     ];
 
     protected $casts = [
-        'instructor_rating' => 'integer',
-        'material_rating' => 'integer',
-        'facility_rating' => 'integer',
-        'recommendation_rating' => 'integer',
+        'instructor_rating' => 'float',
+        'material_rating' => 'float',
+        'facility_rating' => 'float',
+        'committee_rating' => 'float',
+        'recommendation_rating' => 'float',
+        'material_scores' => 'array',
+        'instructor_scores' => 'array',
+        'committee_scores' => 'array',
+        'material_avg' => 'float',
+        'instructor_avg' => 'float',
+        'committee_avg' => 'float',
+        'overall_avg' => 'float',
     ];
 
     public function trainingClass(): BelongsTo
