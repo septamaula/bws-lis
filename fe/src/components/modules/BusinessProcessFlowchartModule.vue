@@ -17,7 +17,8 @@ import {
   Award,
   ListTodo,
   Download,
-  CreditCard
+  CreditCard,
+  Star
 } from 'lucide-vue-next'
 
 const { l } = useI18n()
@@ -86,7 +87,7 @@ function openStandalone() {
             {{ l('Application Business Process Flowchart', 'Bagan Alir (Flowchart) Proses Bisnis Aplikasi') }}
           </h1>
           <p class="text-xs text-gray-500 mt-0.5">
-            {{ l('Integrated Flow: Login & HR Sync -> TNA & Budget -> Class & Task Module -> Evaluation & Certification (Internal/External) -> LIS Claim, Excel Export & Manual Reimbursement', 'Alur Terintegrasi: Login & Sync API HR -> TNA & Anggaran -> Kelas & Modul Task -> Evaluasi & Sertifikasi (Internal/Eksternal) -> Klaim LIS, Export Excel & Reimburse Manual') }}
+            {{ l('Integrated Flow: Login & HR Sync -> TNA & Budget -> Class & Task Module -> Class Quality Evaluation & Certification -> LIS Claim, Excel Export & Manual Reimbursement', 'Alur Terintegrasi: Login & Sync API HR -> TNA & Anggaran -> Kelas & Modul Task -> Evaluasi Kualitas Kelas & Sertifikasi -> Klaim LIS, Export Excel & Reimburse Manual') }}
           </p>
         </div>
       </div>
@@ -134,49 +135,54 @@ function openStandalone() {
           <span class="text-[8px] text-slate-400 font-semibold">{{ l('Clearly Preserved on Save PDF / Print A4 Landscape', 'Tersimpan Jelas Saat Save PDF / Cetak 1 Halaman') }}</span>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-1.5 text-[8.5px]">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10 gap-1.5 text-[8px]">
           <!-- 1. Terminator -->
-          <div class="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-2xs">
+          <div class="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-2xs">
             <span class="w-2.5 h-2.5 rounded-full bg-[#002855] shrink-0"></span>
             <span class="font-bold text-[#002855] leading-tight">{{ l('Terminator (Start/End)', 'Terminator (Mulai/Selesai)') }}</span>
           </div>
           <!-- 2. Sync HR -->
-          <div class="flex items-center gap-1.5 bg-[#EFF6FF] px-2 py-1 rounded-lg border border-[#0067AC]/40 shadow-2xs">
+          <div class="flex items-center gap-1 bg-[#EFF6FF] px-2 py-1 rounded-lg border border-[#0067AC]/40 shadow-2xs">
             <span class="w-2.5 h-2.5 bg-[#0067AC] rounded-xs shrink-0"></span>
             <span class="font-bold text-[#0067AC] leading-tight">{{ l('HR App API Sync', 'Sync API Aplikasi HR') }}</span>
           </div>
           <!-- 3. Proses Operasional -->
-          <div class="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-[#0067AC] shadow-2xs">
+          <div class="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-[#0067AC] shadow-2xs">
             <span class="w-2.5 h-2.5 bg-white border border-[#0067AC] rounded-xs shrink-0"></span>
             <span class="font-bold text-slate-700 leading-tight">{{ l('Process / Form', 'Proses Kerja / Form') }}</span>
           </div>
-          <!-- 4. Import Excel -->
-          <div class="flex items-center gap-1.5 bg-[#F0FDF4] px-2 py-1 rounded-lg border border-[#16A34A]/40 shadow-2xs">
+          <!-- 4. Evaluasi Mutu Kelas -->
+          <div class="flex items-center gap-1 bg-[#F0FDFA] px-2 py-1 rounded-lg border border-[#0D9488]/40 shadow-2xs">
+            <span class="w-2.5 h-2.5 bg-[#0D9488] rounded-xs shrink-0"></span>
+            <span class="font-bold text-teal-900 leading-tight">{{ l('Class Quality Eval', 'Evaluasi Mutu Kelas') }}</span>
+          </div>
+          <!-- 5. Import Excel -->
+          <div class="flex items-center gap-1 bg-[#F0FDF4] px-2 py-1 rounded-lg border border-[#16A34A]/40 shadow-2xs">
             <span class="w-2.5 h-2.5 bg-[#16A34A] rounded-xs shrink-0"></span>
             <span class="font-bold text-emerald-800 leading-tight">{{ l('Excel Import (Score)', 'Import Excel (Absen/Nilai)') }}</span>
           </div>
-          <!-- 5. Modul Task -->
-          <div class="flex items-center gap-1.5 bg-[#EEF2FF] px-2 py-1 rounded-lg border border-[#6366F1]/50 shadow-2xs">
+          <!-- 6. Modul Task -->
+          <div class="flex items-center gap-1 bg-[#EEF2FF] px-2 py-1 rounded-lg border border-[#6366F1]/50 shadow-2xs">
             <span class="w-2.5 h-2.5 bg-[#4F46E5] rounded-xs shrink-0"></span>
             <span class="font-bold text-indigo-900 leading-tight">{{ l('Self-Task Module', 'Modul Task Mandiri') }}</span>
           </div>
-          <!-- 6. Sertifikasi -->
-          <div class="flex items-center gap-1.5 bg-[#FAF5FF] px-2 py-1 rounded-lg border border-[#9333EA]/50 shadow-2xs">
+          <!-- 7. Sertifikasi -->
+          <div class="flex items-center gap-1 bg-[#FAF5FF] px-2 py-1 rounded-lg border border-[#9333EA]/50 shadow-2xs">
             <span class="w-2.5 h-2.5 bg-[#7E22CE] rounded-xs shrink-0"></span>
             <span class="font-bold text-purple-900 leading-tight">{{ l('Certification (Int/Ext)', 'Sertifikasi (Internal/Luar)') }}</span>
           </div>
-          <!-- 7. Titik Otorisasi -->
-          <div class="flex items-center gap-1.5 bg-[#FEF3C7] px-2 py-1 rounded-lg border border-[#D97706]/50 shadow-2xs">
+          <!-- 8. Titik Otorisasi -->
+          <div class="flex items-center gap-1 bg-[#FEF3C7] px-2 py-1 rounded-lg border border-[#D97706]/50 shadow-2xs">
             <span class="w-2.5 h-2.5 bg-[#D97706] rounded-xs shrink-0"></span>
             <span class="font-bold text-amber-950 leading-tight">{{ l('Decision Gate', 'Otorisasi (Keputusan)') }}</span>
           </div>
-          <!-- 8. Klaim LIS -->
-          <div class="flex items-center gap-1.5 bg-[#FFF1F2] px-2 py-1 rounded-lg border border-[#E11D48]/40 shadow-2xs">
+          <!-- 9. Klaim LIS -->
+          <div class="flex items-center gap-1 bg-[#FFF1F2] px-2 py-1 rounded-lg border border-[#E11D48]/40 shadow-2xs">
             <span class="w-2.5 h-2.5 bg-[#E11D48] rounded-xs shrink-0"></span>
             <span class="font-bold text-rose-900 leading-tight">{{ l('LIS Expense Claim', 'Klaim Biaya di LIS') }}</span>
           </div>
-          <!-- 9. Export Excel Reimburse -->
-          <div class="flex items-center gap-1.5 bg-[#F0FDF4] px-2 py-1 rounded-lg border border-[#059669] shadow-2xs">
+          <!-- 10. Export Excel Reimburse -->
+          <div class="flex items-center gap-1 bg-[#F0FDF4] px-2 py-1 rounded-lg border border-[#059669] shadow-2xs">
             <span class="w-2.5 h-2.5 bg-[#059669] rounded-xs shrink-0"></span>
             <span class="font-bold text-emerald-900 leading-tight">{{ l('Excel Export Reimburse', 'Export Excel Reimburse') }}</span>
           </div>
@@ -319,11 +325,11 @@ function openStandalone() {
 
           <div class="w-0.5 h-2.5 bg-emerald-600 mx-auto"></div>
 
-          <!-- Process 3.1: Buat Batch Kelas -->
+          <!-- Process 3.1: Buat Batch Kelas & Setup Evaluasi Kualitas -->
           <div class="bg-emerald-50/50 border-2 border-emerald-600 rounded-xl p-1.5 text-center">
             <span class="text-[7.5px] font-bold text-emerald-700 block">{{ l('STEP 3.1 (MAKER)', 'TAHAP 3.1 (MAKER)') }}</span>
-            <p class="text-[10px] font-black text-emerald-950 leading-tight">{{ l('Schedule & Quota Setup', 'Setting Jadwal & Kuota') }}</p>
-            <p class="text-[8px] text-gray-500 mt-0.5">{{ l('In-Person / Virtual / Hybrid', 'Tatap Muka / Virtual / Hybrid') }}</p>
+            <p class="text-[10px] font-black text-emerald-950 leading-tight">{{ l('Schedule, Quota & Quality Setup', 'Jadwal, Kuota & Setup Evaluasi') }}</p>
+            <p class="text-[7.5px] text-gray-500 mt-0.5">{{ l('In-Person/Virtual + Class Quality Metrics Setup', 'Tatap Muka/Virtual + Setup Evaluasi Mutu Kelas') }}</p>
           </div>
 
           <div class="w-0.5 h-2.5 bg-emerald-600 mx-auto"></div>
@@ -351,7 +357,7 @@ function openStandalone() {
 
           <div class="w-0.5 h-2.5 bg-emerald-600 mx-auto"></div>
 
-          <!-- Process 3.3: MODUL TASK MANDIRI (POINT 2) -->
+          <!-- Process 3.3: MODUL TASK MANDIRI -->
           <div class="bg-indigo-50/80 border-2 border-indigo-600 rounded-xl p-1.5 text-center relative shadow-2xs">
             <span class="text-[6.5px] bg-indigo-600 text-white font-extrabold px-1.5 py-0.2 rounded-full absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-0.5 whitespace-nowrap">
               <ListTodo class="w-2 h-2 inline" /> {{ l('SELF-TASK MODULE', 'MODUL TASK MANDIRI') }}
@@ -371,24 +377,31 @@ function openStandalone() {
           <div class="bg-emerald-50/70 border-2 border-emerald-600 rounded-xl p-1.5 text-center">
             <span class="text-[7.5px] font-bold text-emerald-700 block">{{ l('STEP 3.4', 'TAHAP 3.4') }}</span>
             <p class="text-[10px] font-black text-emerald-950 leading-tight">{{ l('Training Delivery Session', 'Pelaksanaan Pelatihan') }}</p>
-            <p class="text-[8px] text-gray-500 mt-0.5">{{ l('Learning Materials & Classroom Delivery', 'Materi Diklat & Sesi Pembelajaran') }}</p>
+            <p class="text-[8px] text-gray-500 mt-0.5">{{ l('Learning Materials & Interactive Classroom Delivery', 'Materi Diklat & Sesi Pembelajaran Interaktif') }}</p>
           </div>
         </div>
 
         <!-- ============================================== -->
-        <!-- LANE 4: EVALUASI & SERTIFIKASI (INTERNAL/LUAR) -->
+        <!-- LANE 4: EVALUASI KUALITAS & SERTIFIKASI       -->
         <!-- ============================================== -->
         <div class="bg-white rounded-2xl border border-teal-200 p-2.5 flex flex-col justify-between gap-1.5 shadow-2xs">
           <div class="bg-teal-800 text-white py-1 px-2 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center justify-between">
-            <span class="truncate">{{ l('4. Evaluation & Cert.', '4. Evaluasi & Sertifikasi') }}</span>
-            <span class="text-[7px] bg-teal-400/20 px-1 py-0.5 rounded text-teal-200 font-bold shrink-0">{{ l('Evaluation & License', 'Evaluasi & Lisensi') }}</span>
+            <span class="truncate">{{ l('4. Quality & Cert.', '4. Kualitas & Sertifikasi') }}</span>
+            <span class="text-[7px] bg-teal-400/20 px-1 py-0.5 rounded text-teal-200 font-bold shrink-0">{{ l('Quality & License', 'Mutu & Lisensi') }}</span>
           </div>
 
-          <!-- Process 4.1: Evaluasi Pelatihan -->
-          <div class="bg-teal-50/50 border-2 border-teal-600 rounded-xl p-1.5 text-center">
-            <span class="text-[7.5px] font-bold text-teal-700 block">{{ l('STEP 4.1', 'TAHAP 4.1') }}</span>
-            <p class="text-[10px] font-black text-teal-950 leading-tight">{{ l('Training Feedback Evaluation', 'Evaluasi Feedback Peserta') }}</p>
-            <p class="text-[8px] text-gray-500 mt-0.5">{{ l('Kirkpatrick Level 1 Survey in PWA', 'Kuesioner Kirkpatrick Level 1 di PWA') }}</p>
+          <!-- Process 4.1: EVALUASI KUALITAS KELAS & PENGAJAR (USER REQUIREMENT) -->
+          <div class="bg-teal-50/90 border-2 border-teal-600 rounded-xl p-1.5 text-center relative shadow-2xs">
+            <span class="text-[6.5px] bg-teal-600 text-white font-extrabold px-1.5 py-0.2 rounded-full absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-0.5 whitespace-nowrap">
+              <Star class="w-2 h-2 inline text-amber-300" /> {{ l('CLASS QUALITY EVAL', 'EVALUASI KUALITAS KELAS') }}
+            </span>
+            <span class="text-[7.5px] font-bold text-teal-800 block mt-0.5">{{ l('STEP 4.1', 'TAHAP 4.1') }}</span>
+            <p class="text-[10px] font-black text-teal-950 leading-tight">{{ l('Class & Trainer Quality Evaluation', 'Evaluasi Mutu & Kualitas Kelas') }}</p>
+            <p class="text-[7.5px] text-teal-900 font-semibold leading-tight mt-0.5">
+              &bull; {{ l('3-Dimension Rating: Trainer, Material, Committee', 'Rating 3 Dimensi: Pengajar, Materi, Panitia') }}<br>
+              &bull; {{ l('Class Quality Score Output (Kirkpatrick L1)', 'Skor Indeks Mutu Kelas (Quality Score)') }}<br>
+              &bull; {{ l('Participant Feedback Questionnaire in PWA', 'Kuesioner Feedback Peserta di PWA') }}
+            </p>
           </div>
 
           <div class="w-0.5 h-2.5 bg-teal-600 mx-auto"></div>
@@ -400,7 +413,7 @@ function openStandalone() {
             </span>
             <span class="text-[7.5px] font-bold text-emerald-800 block mt-0.5">{{ l('STEP 4.2', 'TAHAP 4.2') }}</span>
             <p class="text-[10px] font-black text-emerald-950 leading-tight">{{ l('Import Attendance & Scores', 'Import Absen & Score Nilai') }}</p>
-            <p class="text-[8px] text-emerald-700 font-medium mt-0.5">{{ l('Attendance Recap, Pre-Test & Post-Test', 'Rekap Absensi, Pre-Test & Post-Test') }}</p>
+            <p class="text-[7.5px] text-emerald-700 font-medium mt-0.5">{{ l('Attendance, Pre-Test & Post-Test (Competency Gain)', 'Rekap Absensi, Pre & Post-Test (Gain Kompetensi)') }}</p>
           </div>
 
           <div class="w-0.5 h-2.5 bg-teal-600 mx-auto"></div>
@@ -431,7 +444,7 @@ function openStandalone() {
 
           <div class="w-0.5 h-2.5 bg-teal-600 mx-auto"></div>
 
-          <!-- DUA JALUR SERTIFIKASI (POINT 3) -->
+          <!-- DUA JALUR SERTIFIKASI -->
           <div class="flex flex-col gap-1.5">
             <!-- Jalur Internal: E-Sertifikat -->
             <div class="bg-purple-50/70 border-2 border-purple-600 rounded-xl p-1.5 text-center">
@@ -460,7 +473,7 @@ function openStandalone() {
             <span class="text-[7px] bg-rose-400/20 px-1 py-0.5 rounded text-rose-200 font-bold shrink-0">{{ l('Finance & Audit', 'Finance & Audit') }}</span>
           </div>
 
-          <!-- Process 5.1: Klaim Biaya di LIS (POINT 1) -->
+          <!-- Process 5.1: Klaim Biaya di LIS -->
           <div class="bg-rose-50/50 border-2 border-rose-600 rounded-xl p-1.5 text-center">
             <span class="text-[7.5px] font-bold text-rose-700 block">{{ l('STEP 5.1', 'TAHAP 5.1') }}</span>
             <p class="text-[10px] font-black text-rose-950 leading-tight">{{ l('Expense Claim Submission in LIS', 'Pengajuan Klaim di LIS') }}</p>
@@ -484,7 +497,7 @@ function openStandalone() {
 
           <div class="w-0.5 h-2.5 bg-rose-600 mx-auto"></div>
 
-          <!-- Process 5.2: Export Excel & Reimburse Manual (POINT 1) -->
+          <!-- Process 5.2: Export Excel & Reimburse Manual -->
           <div class="bg-emerald-50/90 border-2 border-emerald-600 rounded-xl p-1.5 text-center relative shadow-2xs">
             <span class="text-[6.5px] bg-emerald-600 text-white font-extrabold px-1.5 py-0.2 rounded-full absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-0.5 whitespace-nowrap">
               <Download class="w-2 h-2 inline" /> EXPORT EXCEL & REIMBURSE
@@ -521,7 +534,7 @@ function openStandalone() {
       <div class="flex flex-col sm:flex-row items-center justify-between pt-2 border-t border-gray-100 text-[10px] text-gray-500 gap-2">
         <div class="flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span>{{ l('Operational Cycle: Authentication & HR API Sync -> TNA & Budget -> Class & Task Module -> Evaluation & Certification -> LIS Claim, Excel Export & Manual Reimbursement', 'Siklus Operasional: Otentikasi & Sync API HR -> TNA & Anggaran -> Kelas & Modul Task -> Evaluasi & Sertifikasi -> Klaim LIS, Export Excel & Reimburse Manual') }}</span>
+          <span>{{ l('Operational Cycle: Authentication & HR API Sync -> TNA & Budget -> Class & Task Module -> Class Quality Evaluation & Certification -> LIS Claim, Excel Export & Manual Reimbursement', 'Siklus Operasional: Otentikasi & Sync API HR -> TNA & Anggaran -> Kelas & Modul Task -> Evaluasi Kualitas Kelas & Sertifikasi -> Klaim LIS, Export Excel & Reimburse Manual') }}</span>
         </div>
         <div class="text-[9.5px] font-semibold text-gray-400">
           Learning Integrated System &copy; 2026 Bank Woori Saudara
