@@ -41,7 +41,7 @@ import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useI18n } from '@/i18n'
 
-const { l, t } = useI18n()
+const { l, t, locale } = useI18n()
 
 const props = defineProps({
   classId: {
@@ -250,6 +250,18 @@ function initScoreState() {
   scoreRecords.value = records
 }
 
+function formatSessionDate(dateStr) {
+  if (!dateStr) return '-'
+  const isoDay = String(dateStr).substring(0, 10)
+  const parsed = new Date(`${isoDay}T00:00:00`)
+  if (Number.isNaN(parsed.getTime())) return isoDay
+  return new Intl.DateTimeFormat(locale.value === 'en' ? 'en-US' : 'id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }).format(parsed)
+}
+
 function onSessionChange(sessId) {
   selectedSessionId.value = sessId
   initAttendanceState()
@@ -258,6 +270,18 @@ function onSessionChange(sessId) {
 const currentSession = computed(() => {
   return trainingClass.value?.sessions?.find(s => s.id === selectedSessionId.value)
 })
+
+const sessionSelectOptions = computed(() =>
+  (trainingClass.value?.sessions || []).map(s => {
+    const formattedDate = formatSessionDate(s.session_date)
+    const titlePart = s.topic || s.session_name || l('Training Session', 'Sesi Pelatihan')
+    return {
+      value: s.id,
+      label: `${l('Session', 'Sesi')} ${s.session_number} — ${titlePart} (${formattedDate})`,
+      subLabel: `${formattedDate} • ${s.start_time || '08:30'} - ${s.end_time || '16:30'} WIB`
+    }
+  })
+)
 
 // Current Session Attendance Summary
 const currentSessionStats = computed(() => {
@@ -807,21 +831,23 @@ onMounted(() => {
       <!-- ============================================================== -->
       <div v-if="activeSubTab === 'attendance'" class="flex flex-col gap-5">
         
-        <!-- Session Pills Bar -->
-        <div class="bg-white p-4 rounded-3xl border border-gray-100 shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider shrink-0 mr-1">{{ $l('Select Session:', 'Pilih Sesi:') }}</span>
-            <button
-              v-for="s in trainingClass.sessions"
-              :key="s.id"
-              @click="onSessionChange(s.id)"
-              class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 cursor-pointer"
-              :class="selectedSessionId === s.id ? 'bg-[#002855] text-white shadow-2xs' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'"
-            >
-              <Clock class="w-3.5 h-3.5" />
-              <span>{{ $l('Session', 'Sesi') }} {{ s.session_number }}</span>
-              <span class="text-[10px] opacity-80 font-normal">({{ s.session_date?.substring(5) }})</span>
-            </button>
+        <!-- Session Selector Dropdown Bar -->
+        <div class="bg-white p-4 rounded-3xl border border-gray-100 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-1 min-w-0">
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider shrink-0 flex items-center gap-1.5">
+              <Clock class="w-3.5 h-3.5 text-[#0067AC]" />
+              <span>{{ $l('Select Session:', 'Pilih Sesi:') }}</span>
+            </span>
+            <div class="w-full sm:max-w-md">
+              <AppSearchableSelect
+                :model-value="selectedSessionId"
+                :options="sessionSelectOptions"
+                :placeholder="$l('-- Select Training Session --', '-- Pilih Sesi Pelatihan --')"
+                :search-placeholder="$l('Search session number, topic, or date...', 'Cari nomor sesi, materi, atau tanggal...')"
+                input-class="bg-[#f8fafc] border-gray-200 rounded-xl text-xs font-bold text-[#002855]"
+                @change="onSessionChange"
+              />
+            </div>
           </div>
 
           <!-- Session Quick Actions -->
@@ -854,7 +880,7 @@ onMounted(() => {
             <div class="flex items-center gap-2 text-xs">
               <span class="font-bold text-[#0067AC]">{{ $l('Session', 'Sesi') }} {{ currentSession.session_number }}</span>
               <span class="text-gray-300">•</span>
-              <span class="text-gray-500">{{ currentSession.session_date }}</span>
+              <span class="text-gray-500">{{ formatSessionDate(currentSession.session_date) }}</span>
               <span class="text-gray-300">•</span>
               <span class="font-mono text-gray-600">{{ currentSession.start_time }} - {{ currentSession.end_time }} WIB</span>
             </div>
@@ -1387,7 +1413,7 @@ onMounted(() => {
                     <h4 class="font-bold text-gray-900 text-sm">{{ s.session_name }}</h4>
                     <p class="text-gray-500 mt-0.5">{{ s.topic || $l('Training Material', 'Materi Pelatihan') }}</p>
                     <div class="flex items-center gap-2 text-[11px] text-gray-400 mt-1">
-                      <span>{{ s.session_date }}</span>
+                      <span>{{ formatSessionDate(s.session_date) }}</span>
                       <span>•</span>
                       <span>{{ s.start_time }} - {{ s.end_time }} WIB</span>
                     </div>
