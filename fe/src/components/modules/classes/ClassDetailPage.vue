@@ -493,6 +493,38 @@ function downloadLdPartTemplate() {
   XLSX.writeFile(wb, `LD_Part_${classCode}.xlsx`)
 }
 
+function downloadLdPartCsvTemplate() {
+  const c = trainingClass.value
+  const classCode = c?.class_code || 'CLS-2026-001'
+  const trainingTitle = c?.program?.title || 'Banking Training Program'
+  const header = ['Class ID', 'Attendence Remarks', 'NIK', 'Nama', 'Position', 'Working Unit', 'Nama Training', 'Pre Test', 'Post Test']
+  const rows = (c?.enrollments || []).map(e => [
+    classCode,
+    e.attendance_remark || (e.attendance_status === 'PRESENT' ? 'Present' : 'Present'),
+    e.nik || e.user?.nik || '',
+    e.participant_name || e.user?.name || '',
+    e.position || 'Staff',
+    e.department || 'Operations',
+    trainingTitle,
+    e.pre_test_score !== null && e.pre_test_score !== undefined ? Number(e.pre_test_score) : '',
+    e.post_test_score !== null && e.post_test_score !== undefined ? Number(e.post_test_score) : ''
+  ])
+  if (rows.length === 0) {
+    rows.push([classCode, 'Present', 'BWS-2024-0045', 'Rina Kartika', 'Teller', 'Cabang Bandung', trainingTitle, 60, 85])
+  }
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows])
+  const csvContent = XLSX.utils.sheet_to_csv(ws)
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `LD_Part_${classCode}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
 function normalizeHeaderKey(key) {
   return String(key || '').toLowerCase().replace(/[^a-z0-9]/g, '')
 }
@@ -1113,7 +1145,7 @@ onMounted(() => {
               class="px-4 py-2 rounded-full bg-white hover:bg-blue-50 border border-[#0067AC]/30 text-[#0067AC] text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
               <FileSpreadsheet class="w-3.5 h-3.5" />
-              <span>{{ $l('Import Excel (LD Part)', 'Impor Excel (LD Part)') }}</span>
+              <span>{{ $l('Import CSV / Excel', 'Impor CSV / Excel') }}</span>
             </button>
 
             <button
@@ -1497,7 +1529,7 @@ onMounted(() => {
               class="px-4 py-2 bg-white hover:bg-blue-50 border border-[#0067AC]/30 text-[#0067AC] rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
             >
               <FileSpreadsheet class="w-3.5 h-3.5" />
-              <span>{{ $l('Import Excel (LD Part)', 'Impor Excel (LD Part)') }}</span>
+              <span>{{ $l('Import CSV / Excel', 'Impor CSV / Excel') }}</span>
             </button>
             <button
               type="button"
@@ -1613,10 +1645,10 @@ onMounted(() => {
               </div>
               <div>
                 <h3 class="font-extrabold text-sm text-[#002855]">
-                  {{ $l('Import Participants & Pre/Post-Test Excel (LD Part)', 'Impor Peserta & Nilai Tes Awal/Akhir Excel (LD Part)') }}
+                  {{ $l('Import Participants & Pre/Post-Test (CSV / Excel)', 'Impor Peserta & Nilai Tes Awal/Akhir (CSV / Excel)') }}
                 </h3>
                 <p class="text-[11px] text-gray-500">
-                  {{ $l('Download the standard LD Part template, fill participant scores & attendance remarks, then upload to preview before saving.', 'Unduh templat standar LD Part, lengkapi nilai & keterangan kehadiran peserta, lalu unggah untuk pratinjau sebelum disimpan.') }}
+                  {{ $l('Download the standard LD Part template (.xlsx or .csv), fill participant scores & attendance remarks, then upload to preview before saving.', 'Unduh templat standar LD Part (.xlsx atau .csv), lengkapi nilai & keterangan kehadiran peserta, lalu unggah untuk pratinjau sebelum disimpan.') }}
                 </p>
               </div>
             </div>
@@ -1627,17 +1659,27 @@ onMounted(() => {
 
           <div class="flex flex-wrap items-center justify-between gap-3 bg-[#f8fafc] p-4 rounded-2xl border border-gray-200 text-xs shrink-0">
             <div>
-              <p class="font-bold text-gray-800">{{ $l('Step 1: Download Batch Excel Template', 'Langkah 1: Unduh Templat Excel Angkatan') }}</p>
-              <p class="text-[11px] text-gray-500 mt-0.5">{{ $l('Includes current class roster and valid Parameter attendance remark rules.', 'Sudah memuat daftar peserta kelas saat ini beserta lembar aturan keterangan kehadiran.') }}</p>
+              <p class="font-bold text-gray-800">{{ $l('Step 1: Download Batch Template (.xlsx / .csv)', 'Langkah 1: Unduh Templat Angkatan (.xlsx / .csv)') }}</p>
+              <p class="text-[11px] text-gray-500 mt-0.5">{{ $l('Includes current class roster and valid Parameter attendance remark rules.', 'Sudah memuat daftar peserta kelas saat ini beserta aturan keterangan kehadiran.') }}</p>
             </div>
-            <button
-              type="button"
-              @click="downloadLdPartTemplate"
-              class="px-4 py-2 rounded-xl bg-white hover:bg-blue-50 border border-[#0067AC]/30 text-[#0067AC] font-bold flex items-center gap-1.5 transition cursor-pointer"
-            >
-              <Download class="w-3.5 h-3.5" />
-              <span>{{ $l('Download .xlsx Template', 'Unduh Templat .xlsx') }}</span>
-            </button>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                @click="downloadLdPartTemplate"
+                class="px-3.5 py-2 rounded-xl bg-white hover:bg-blue-50 border border-[#0067AC]/30 text-[#0067AC] font-bold flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <Download class="w-3.5 h-3.5" />
+                <span>{{ $l('Download .xlsx', 'Unduh .xlsx') }}</span>
+              </button>
+              <button
+                type="button"
+                @click="downloadLdPartCsvTemplate"
+                class="px-3.5 py-2 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <Download class="w-3.5 h-3.5" />
+                <span>{{ $l('Download .csv', 'Unduh .csv') }}</span>
+              </button>
+            </div>
           </div>
 
           <div class="border-2 border-dashed border-gray-300 hover:border-[#0067AC] rounded-2xl p-5 text-center transition shrink-0">

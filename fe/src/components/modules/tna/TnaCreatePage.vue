@@ -156,6 +156,32 @@ function downloadTemplate() {
   XLSX.writeFile(wb, l('BWS_TNA_Program_Proposal_Template.xlsx', 'Template_Usulan_Program_TNA_BWS.xlsx'))
 }
 
+function downloadCsvTemplate() {
+  const wsData = [
+    [
+      l('No', 'No'),
+      l('Training Category', 'Kategori Pelatihan'),
+      l('Training Program Title', 'Judul Program Pelatihan'),
+      l('Investment Ceiling (IDR)', 'Pagu Investasi (Rp)'),
+      l('Estimated Realization (IDR)', 'Estimasi Realisasi (Rp)')
+    ],
+    [1, 'Operasional & Layanan Perbankan', 'Frontliner, Teller & Service Excellence', 65000000, 0],
+    [2, 'Kredit & Pembiayaan Komersial', 'Analisis Kelayakan Kredit & Cashflow Modelling', 95000000, 0],
+    [3, 'Manajemen Risiko, Kepatuhan & Regulasi OJK', 'Sertifikasi Manajemen Risiko Perbankan (BSMR 1 - 4)', 115000000, 0]
+  ]
+  const ws = XLSX.utils.aoa_to_sheet(wsData)
+  const csvContent = XLSX.utils.sheet_to_csv(ws)
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = l('BWS_TNA_Program_Proposal_Template.csv', 'Template_Usulan_Program_TNA_BWS.csv')
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
 function handleImportFileChange(e) {
   const file = e.target?.files?.[0]
   if (file) processExcelFile(file)
@@ -740,7 +766,7 @@ async function submitForm() {
               >
                 <span class="flex items-center gap-1.5">
                   <FileSpreadsheet class="w-3.5 h-3.5 text-emerald-600" />
-                  {{ $l('Import Excel', 'Impor Excel') }}
+                  {{ $l('Import CSV / Excel', 'Impor CSV / Excel') }}
                 </span>
               </AppButton>
               <AppButton
@@ -903,14 +929,24 @@ async function submitForm() {
                 {{ $l('Use the standard template format with Category, Program, and Investment Budget columns for accurate auto-parsing.', 'Gunakan format templat standar dengan kolom Kategori Pelatihan, Program, dan Pagu Investasi agar data terbaca otomatis.') }}
               </p>
             </div>
-            <button
-              type="button"
-              @click="downloadTemplate"
-              class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-blue-200 text-[#0067AC] hover:bg-blue-50 font-bold text-xs transition shadow-2xs hover:shadow-xs shrink-0 cursor-pointer"
-            >
-              <Download class="w-4 h-4 text-[#0067AC]" />
-              <span>{{ $l('Download Template (.xlsx)', 'Unduh Templat (.xlsx)') }}</span>
-            </button>
+            <div class="flex items-center gap-2 flex-wrap shrink-0">
+              <button
+                type="button"
+                @click="downloadTemplate"
+                class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white border border-blue-200 text-[#0067AC] hover:bg-blue-50 font-bold text-xs transition shadow-2xs hover:shadow-xs cursor-pointer"
+              >
+                <Download class="w-4 h-4 text-[#0067AC]" />
+                <span>{{ $l('Download .xlsx', 'Unduh .xlsx') }}</span>
+              </button>
+              <button
+                type="button"
+                @click="downloadCsvTemplate"
+                class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 font-bold text-xs transition shadow-2xs hover:shadow-xs cursor-pointer"
+              >
+                <Download class="w-4 h-4 text-emerald-700" />
+                <span>{{ $l('Download .csv', 'Unduh .csv') }}</span>
+              </button>
+            </div>
           </div>
 
           <!-- Step 2: Upload File Area -->

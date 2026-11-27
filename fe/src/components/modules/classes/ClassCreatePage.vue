@@ -29,8 +29,12 @@ import {
   Check,
   Search,
   HelpCircle,
-  Layers
+  Layers,
+  FileSpreadsheet,
+  Download,
+  X
 } from 'lucide-vue-next'
+import * as XLSX from 'xlsx'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import SubpageHeader from '@/components/SubpageHeader.vue'
@@ -450,6 +454,183 @@ function selectAllNominations() {
 
 function clearAllParticipants() {
   form.value.enrolled_participants = []
+}
+
+// Import Participant CSV / Excel Modal State & Methods
+const showParticipantImportModal = ref(false)
+const participantImportFileName = ref('')
+const participantImportError = ref('')
+const participantImportParsed = ref([])
+const participantImportMode = ref('append') // 'append' | 'replace'
+const participantImportInputRef = ref(null)
+
+function openParticipantImportModal() {
+  participantImportFileName.value = ''
+  participantImportError.value = ''
+  participantImportParsed.value = []
+  participantImportMode.value = 'append'
+  showParticipantImportModal.value = true
+}
+
+function buildParticipantTemplateRows() {
+  const header = ['NIK', 'Nama', 'Divisi / Unit Kerja', 'Jabatan', 'Kantor Cabang']
+  const existing = (form.value.enrolled_participants || []).map(p => [
+    p.nik || '',
+    p.name || '',
+    p.department || 'Operations',
+    p.position || 'Staff',
+    p.branch || 'Kantor Pusat'
+  ])
+  if (existing.length > 0) {
+    return [header, ...existing]
+  }
+  const sampleFromMaster = (masterPegawai.value || []).slice(0, 3).map(k => [
+    k.nik || '',
+    k.nama || '',
+    k.departemen || 'Operations',
+    k.jabatan || 'Staff',
+    k.kantor_cabang || 'Kantor Pusat'
+  ])
+  if (sampleFromMaster.length > 0) {
+    return [header, ...sampleFromMaster]
+  }
+  return [
+    header,
+    ['BWS-2024-0045', 'Rina Kartika', 'Cabang Bandung', 'Teller', 'KC Bandung'],
+    ['BWS-2024-0082', 'Bagus Pratama', 'Divisi Kredit', 'Credit Analyst', 'Kantor Pusat Sudirman']
+  ]
+}
+
+function downloadParticipantXlsxTemplate() {
+  const rows = buildParticipantTemplateRows()
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols'] = [{ wch: 18 }, { wch: 28 }, { wch: 26 }, { wch: 22 }, { wch: 24 }]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, l('Participants', 'Peserta'))
+  XLSX.writeFile(wb, l('BWS_Class_Participants_Template.xlsx', 'Templat_Peserta_Kelas_BWS.xlsx'))
+}
+
+function downloadParticipantCsvTemplate() {
+  const rows = buildParticipantTemplateRows()
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  const csvContent = XLSX.utils.sheet_to_csv(ws)
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = l('BWS_Class_Participants_Template.csv', 'Templat_Peserta_Kelas_BWS.csv')
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+function normalizeColKey(key) {
+  return String(key || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+async function processParticipantImportFile(file) {
+  if (!file) return
+  participantImportFileName.value = file.name
+  participantImportError.value = ''
+  participantImportParsed.value = []
+
+  try {
+    const buffer = await file.arrayBuffer()
+    const wb = XLSX.read(buffer, { type: 'array' })
+    const sheet = wb.Sheets[wb.SheetNames[0]]
+    const rawObjects = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+
+    const mapped = []
+    for (const raw of rawObjects) {
+      const norm = {}
+      Object.entries(raw).forEach(([k, v]) => {
+        norm[normalizeColKey(k)] = v
+      })
+
+      const nik = String(norm.nik ?? norm.nip ?? norm.employeeid ?? '').trim()
+      const rawName = String(norm.nama ?? norm.name ?? norm.namalengkap ?? norm.namapeserta ?? '').trim()
+      if (!nik && !rawName) continue
+
+      const matched = masterPegawai.value.find(
+        k => (nik && String(k.nik).toLowerCase() === nik.toLowerCase()) ||
+             (!nik && rawName && String(k.nama).toLowerCase() === rawName.toLowerCase())
+      )
+
+      const resolvedName = rawName || matched?.nama || nik
+      const resolvedNik = nik || matched?.nik || '-'
+      const resolvedDept = String(norm.divisiunitkerja ?? norm.workingunit ?? norm.unitkerja ?? norm.department ?? norm.divisi ?? '').trim() || matched?.departemen || 'Operations'
+      const resolvedPos = String(norm.jabatan ?? norm.position ?? '').trim() || matched?.jabatan || 'Staff'
+      const resolvedBranch = String(norm.kantorcabang ?? norm.branch ?? norm.office ?? '').trim() || matched?.kantor_cabang || 'Kantor Pusat'
+
+      mapped.push({
+        user_id: matched?.user_id || null,
+        nik: resolvedNik,
+        name: resolvedName,
+        department: resolvedDept,
+        position: resolvedPos,
+        branch: resolvedBranch,
+        matched_master: !!matched
+      })
+    }
+
+    if (mapped.length === 0) {
+      participantImportError.value = l(
+        'No valid participant rows were found. Make sure NIK or Name column is filled.',
+        'Tidak ditemukan baris peserta yang valid. Pastikan kolom NIK atau Nama telah diisi.'
+      )
+      return
+    }
+
+    participantImportParsed.value = mapped
+  } catch (err) {
+    participantImportError.value = err.message || l(
+      'Failed to parse CSV / Excel file. Please use the provided template.',
+      'Gagal membaca berkas CSV / Excel. Silakan gunakan templat yang tersedia.'
+    )
+  }
+}
+
+function handleParticipantFileChange(e) {
+  const file = e.target?.files?.[0]
+  if (file) processParticipantImportFile(file)
+}
+
+function handleParticipantFileDrop(e) {
+  const file = e.dataTransfer?.files?.[0]
+  if (file) processParticipantImportFile(file)
+}
+
+function confirmParticipantImport() {
+  if (participantImportParsed.value.length === 0) return
+
+  if (participantImportMode.value === 'replace') {
+    form.value.enrolled_participants = participantImportParsed.value.map(p => ({
+      user_id: p.user_id,
+      nik: p.nik,
+      name: p.name,
+      department: p.department,
+      branch: p.branch,
+      position: p.position
+    }))
+  } else {
+    participantImportParsed.value.forEach(p => {
+      const exists = form.value.enrolled_participants.some(
+        ep => (p.nik !== '-' && ep.nik === p.nik) || ep.name.toLowerCase() === p.name.toLowerCase()
+      )
+      if (!exists) {
+        form.value.enrolled_participants.push({
+          user_id: p.user_id,
+          nik: p.nik,
+          name: p.name,
+          department: p.department,
+          branch: p.branch,
+          position: p.position
+        })
+      }
+    })
+  }
+  showParticipantImportModal.value = false
 }
 
 // Master Pegawai Picker Logics
@@ -1348,7 +1529,7 @@ async function submitForm() {
             </div>
             <div>
               <h3 class="text-sm font-extrabold text-gray-900">{{ $l('Upload Documentation', 'Unggah Dokumentasi') }}</h3>
-              <p class="text-[11px] text-gray-500">{{ $l('Upload banking training activity documentation photos (Photo 1 to Photo 10)', 'Unggah foto dokumentasi kegiatan pelatihan perbankan (Foto 1 s/d Foto 10)') }}</p>
+              <p class="text-[11px] text-gray-500">{{ $l('Upload training activity documentation photos (Photo 1 to Photo 10)', 'Unggah foto dokumentasi kegiatan pelatihan (Foto 1 s/d Foto 10)') }}</p>
             </div>
           </div>
           <span class="text-xs font-mono font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
@@ -1419,7 +1600,7 @@ async function submitForm() {
             </div>
             <div>
               <h3 class="text-sm font-extrabold text-gray-900">{{ $l('Evaluation', 'Evaluasi') }}</h3>
-              <p class="text-[11px] text-gray-500">{{ $l('Standard Kirkpatrick Level 1 evaluation questionnaire (satisfaction scale 1 to 4)', 'Standar kuesioner evaluasi Tingkat 1 Kirkpatrick (skala kepuasan 1 s/d 4)') }}</p>
+              <p class="text-[11px] text-gray-500">{{ $l('Satisfaction scale 1 to 4', 'Skala kepuasan 1 s/d 4') }}</p>
             </div>
           </div>
 
@@ -1521,6 +1702,14 @@ async function submitForm() {
           </div>
 
           <div class="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              @click="openParticipantImportModal"
+              class="px-3.5 py-2 bg-white hover:bg-blue-50 border border-[#0067AC]/30 text-[#0067AC] rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <FileSpreadsheet class="w-3.5 h-3.5" />
+              <span>{{ $l('Import CSV / Excel', 'Impor CSV / Excel') }}</span>
+            </button>
             <button
               v-if="availableNominations.length > 0"
               type="button"
@@ -1780,6 +1969,170 @@ async function submitForm() {
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: IMPORT PARTICIPANTS (CSV / EXCEL)   -->
+    <!-- ========================================== -->
+    <div
+      v-if="showParticipantImportModal"
+      class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4"
+      @click.self="showParticipantImportModal = false"
+    >
+      <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs transition-opacity" @click="showParticipantImportModal = false"></div>
+
+      <div class="relative bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-gray-100 flex flex-col gap-4 z-10 max-h-[90vh]">
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100 shrink-0">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-blue-50 text-[#0067AC] flex items-center justify-center font-bold">
+              <FileSpreadsheet class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="font-extrabold text-sm text-[#002855]">
+                {{ $l('Import Class Participants (CSV / Excel)', 'Impor Peserta Angkatan Kelas (CSV / Excel)') }}
+              </h3>
+              <p class="text-[11px] text-gray-500">
+                {{ $l('Download the template (.xlsx or .csv) first, fill participant rows, then upload to preview before adding.', 'Unduh templat (.xlsx atau .csv) terlebih dahulu, lengkapi daftar peserta, lalu unggah untuk pratinjau sebelum ditambahkan.') }}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            @click="showParticipantImportModal = false"
+            class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer"
+          >
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <!-- Step 1: Download Template (.xlsx / .csv) -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-[#f8fafc] p-4 rounded-2xl border border-gray-200 text-xs shrink-0">
+          <div>
+            <p class="font-bold text-gray-800">{{ $l('Step 1: Download Participant Template', 'Langkah 1: Unduh Templat Daftar Peserta') }}</p>
+            <p class="text-[11px] text-gray-500 mt-0.5">{{ $l('Columns: NIK, Nama, Divisi / Unit Kerja, Jabatan, Kantor Cabang.', 'Kolom: NIK, Nama, Divisi / Unit Kerja, Jabatan, Kantor Cabang.') }}</p>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              @click="downloadParticipantXlsxTemplate"
+              class="px-3.5 py-2 rounded-xl bg-white hover:bg-blue-50 border border-[#0067AC]/30 text-[#0067AC] font-bold flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <Download class="w-3.5 h-3.5" />
+              <span>{{ $l('Download .xlsx', 'Unduh .xlsx') }}</span>
+            </button>
+            <button
+              type="button"
+              @click="downloadParticipantCsvTemplate"
+              class="px-3.5 py-2 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <Download class="w-3.5 h-3.5" />
+              <span>{{ $l('Download .csv', 'Unduh .csv') }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Upload CSV / Excel -->
+        <div
+          @dragover.prevent
+          @drop.prevent="handleParticipantFileDrop"
+          @click="participantImportInputRef?.click()"
+          class="border-2 border-dashed border-gray-300 hover:border-[#0067AC] rounded-2xl p-5 text-center transition cursor-pointer shrink-0"
+        >
+          <input
+            ref="participantImportInputRef"
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            class="hidden"
+            @change="handleParticipantFileChange"
+          />
+          <div class="flex flex-col items-center gap-2">
+            <Upload class="w-7 h-7 text-[#0067AC]" />
+            <span class="text-xs font-bold text-gray-800">
+              {{ participantImportFileName ? participantImportFileName : $l('Step 2: Select or drop a .csv / .xlsx / .xls file', 'Langkah 2: Pilih atau seret berkas .csv / .xlsx / .xls') }}
+            </span>
+            <span class="text-[11px] text-gray-400">
+              {{ $l('Matches employee NIK automatically against BWS Employee Master.', 'Mencocokkan NIK pegawai secara otomatis terhadap Master Data Karyawan BWS.') }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Parse Error -->
+        <div v-if="participantImportError" class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 shrink-0">
+          <AlertCircle class="w-4 h-4 shrink-0" />
+          <span>{{ participantImportError }}</span>
+        </div>
+
+        <!-- Preview Table & Mode -->
+        <div v-if="participantImportParsed.length > 0" class="flex-1 overflow-auto space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span class="px-2.5 py-1 rounded-full bg-blue-50 text-[#0067AC] font-bold">
+              {{ $l('Parsed Rows:', 'Baris Terbaca:') }} {{ participantImportParsed.length }}
+            </span>
+
+            <div class="flex items-center gap-3">
+              <label class="flex items-center gap-1.5 cursor-pointer font-semibold text-gray-700">
+                <input type="radio" v-model="participantImportMode" value="append" class="text-[#0067AC]" />
+                <span>{{ $l('Append to List', 'Tambahkan ke Daftar') }}</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer font-semibold text-gray-700">
+                <input type="radio" v-model="participantImportMode" value="replace" class="text-[#0067AC]" />
+                <span>{{ $l('Replace Current List', 'Ganti Daftar Saat Ini') }}</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto border border-gray-200 rounded-2xl">
+            <table class="w-full text-left text-[11px]">
+              <thead class="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
+                <tr>
+                  <th class="py-2 px-3">NIK</th>
+                  <th class="py-2 px-3">{{ $l('Full Name', 'Nama Lengkap') }}</th>
+                  <th class="py-2 px-3">{{ $l('Division / Work Unit', 'Divisi / Unit Kerja') }}</th>
+                  <th class="py-2 px-3">{{ $l('Position', 'Jabatan') }}</th>
+                  <th class="py-2 px-3 text-center">{{ $l('Master Match', 'Cocok Master') }}</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr v-for="(row, idx) in participantImportParsed" :key="idx">
+                  <td class="py-1.5 px-3 font-mono font-bold text-[#0067AC]">{{ row.nik }}</td>
+                  <td class="py-1.5 px-3 font-bold text-gray-900">{{ row.name }}</td>
+                  <td class="py-1.5 px-3 text-gray-600">{{ row.department }}</td>
+                  <td class="py-1.5 px-3 text-gray-600">{{ row.position }}</td>
+                  <td class="py-1.5 px-3 text-center">
+                    <span
+                      class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                      :class="row.matched_master ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'"
+                    >
+                      {{ row.matched_master ? $l('Matched', 'Terdaftar') : $l('Manual / External', 'Manual / Eksternal') }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 shrink-0">
+          <button
+            type="button"
+            @click="showParticipantImportModal = false"
+            class="px-4 py-2 rounded-full border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 cursor-pointer"
+          >
+            {{ $t('common.cancel') }}
+          </button>
+          <button
+            type="button"
+            :disabled="participantImportParsed.length === 0"
+            @click="confirmParticipantImport"
+            class="px-5 py-2 rounded-full bg-[#0067AC] hover:bg-[#00528c] text-white text-xs font-bold transition cursor-pointer disabled:opacity-40 flex items-center gap-1.5"
+          >
+            <Check class="w-3.5 h-3.5" />
+            <span>{{ $l('Apply to Participant List', 'Terapkan ke Daftar Peserta') }} ({{ participantImportParsed.length }})</span>
+          </button>
+        </div>
       </div>
     </div>
 
